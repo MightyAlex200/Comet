@@ -59,7 +59,7 @@ function postDelete() {
 }
 
 function fromSub(sub) {
-  return getLinks(anchor("sub", sub), "post", { Load: true });
+  return JSON.stringify(getLinks(anchor("sub", sub), "post", { Load: true }));
 }
 
 function fromUser(text) {

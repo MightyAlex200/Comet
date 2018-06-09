@@ -32,7 +32,7 @@ function commentDelete(commentLinkHash) {
 }
 
 function fromHash(hash) {
-  return getLinks(hash, "comment", { Load: true });
+  return JSON.stringify(getLinks(hash, "comment", { Load: true }));
 }
 
 
