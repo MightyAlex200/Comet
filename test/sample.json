@@ -1,0 +1,74 @@
+{
+    "Tests": [
+        {
+            "Convey": "Create a Post",
+            "Zome": "posts",
+            "FnName": "postCreate",
+            "Input": {
+                "postEntry": {
+                    "title": "Hello, Holo!",
+                    "content": "This is Comet, the distributed reddit-like application!"
+                },
+                "sub": "test"
+            },
+            "Output": "%h1%",
+            "Err": null,
+            "ErrMsg": "",
+            "Regexp": "",
+            "Time": 0,
+            "Wait": 0,
+            "Exposure": "public",
+            "Raw": false,
+            "Repeat": 2,
+            "Benchmark": false
+        },
+        {
+            "Convey": "Vote on a Post",
+            "Zome": "votes",
+            "FnName": "voteCreate",
+            "Input": {
+                "voteEntry": {
+                    "isPositive": true,
+                    "fraction": 1
+                },
+                "targetHash": "%r1%"
+            },
+            "Output": "%h1%",
+            "Err": null,
+            "ErrMsg": "",
+            "Regexp": "",
+            "Time": 0,
+            "Wait": 0,
+            "Exposure": "public",
+            "Raw": false,
+            "Repeat": 2,
+            "Benchmark": false
+        },
+        {
+            "Convey": "Comment on a Post",
+            "Zome": "comments",
+            "FnName": "commentCreate",
+            "Input": {
+                "commentEntry": {
+                    "content": "Thank you Kanye, very cool!"
+                },
+                "targetHash": "%r2%"
+            },
+            "Output": "%h1%",
+            "Err": null,
+            "ErrMsg": "",
+            "Regexp": "",
+            "Time": 0,
+            "Wait": 0,
+            "Exposure": "public",
+            "Raw": false,
+            "Repeat": 2,
+            "Benchmark": false
+        }
+    ],
+    "Identity": "",
+    "Fixtures": {
+        "Agents": null
+    },
+    "Benchmark": false
+}

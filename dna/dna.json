@@ -1,0 +1,225 @@
+{
+    "Version": 1,
+    "UUID": "1bcc0267-5cb3-4d03-9a0a-1ca85a39a024",
+    "Name": "comet",
+    "Properties": {
+        "description": "Community Content (like reddit)",
+        "language": "en"
+    },
+    "PropertiesSchemaFile": "properties_schema.json",
+    "BasedOn": "",
+    "RequiresVersion": 0,
+    "DHTConfig": {
+        "HashType": "sha2-256",
+        "RedundancyFactor": 0
+    },
+    "Progenitor": {
+        "Identity": "",
+        "PubKey": null
+    },
+    "Zomes": [
+        {
+            "Name": "posts",
+            "Description": "Comet Post Zomes",
+            "CodeFile": "posts.js",
+            "RibosomeType": "js",
+            "BridgeFuncs": null,
+            "Config": null,
+            "Entries": [
+                {
+                    "Name": "post",
+                    "DataFormat": "json",
+                    "Schema": "",
+                    "SchemaFile": "post.json",
+                    "Sharing": "public"
+                },
+                {
+                    "Name": "subLink",
+                    "DataFormat": "links",
+                    "Schema": "",
+                    "SchemaFile": "",
+                    "Sharing": "public"
+                },
+                {
+                    "Name": "sub",
+                    "DataFormat": "string",
+                    "Schema": "",
+                    "SchemaFile": "",
+                    "Sharing": "public"
+                }
+            ],
+            "Functions": [
+                {
+                    "Name": "postCreate",
+                    "CallingType": "json",
+                    "Exposure": "public"
+                },
+                {
+                    "Name": "postRead",
+                    "CallingType": "json",
+                    "Exposure": "public"
+                },
+                {
+                    "Name": "postUpdate",
+                    "CallingType": "json",
+                    "Exposure": "public"
+                },
+                {
+                    "Name": "postDelete",
+                    "CallingType": "json",
+                    "Exposure": "public"
+                },
+                {
+                    "Name": "fromSub",
+                    "CallingType": "string",
+                    "Exposure": "public"
+                },
+                {
+                    "Name": "fromUser",
+                    "CallingType": "string",
+                    "Exposure": "public"
+                }
+            ]
+        },
+        {
+            "Name": "comments",
+            "Description": "Commenting on things",
+            "CodeFile": "comments.js",
+            "RibosomeType": "js",
+            "BridgeFuncs": null,
+            "Config": null,
+            "Entries": [
+                {
+                    "Name": "comment",
+                    "DataFormat": "json",
+                    "Schema": "",
+                    "SchemaFile": "comment.json",
+                    "Sharing": "public"
+                },
+                {
+                    "Name": "commentLink",
+                    "DataFormat": "links",
+                    "Schema": "",
+                    "SchemaFile": "",
+                    "Sharing": "public"
+                }
+            ],
+            "Functions": [
+                {
+                    "Name": "commentCreate",
+                    "CallingType": "json",
+                    "Exposure": "public"
+                },
+                {
+                    "Name": "commentRead",
+                    "CallingType": "json",
+                    "Exposure": "public"
+                },
+                {
+                    "Name": "commentUpdate",
+                    "CallingType": "json",
+                    "Exposure": "public"
+                },
+                {
+                    "Name": "commentDelete",
+                    "CallingType": "json",
+                    "Exposure": "public"
+                },
+                {
+                    "Name": "fromHash",
+                    "CallingType": "string",
+                    "Exposure": "public"
+                }
+            ]
+        },
+        {
+            "Name": "votes",
+            "Description": "Voting on things",
+            "CodeFile": "votes.js",
+            "RibosomeType": "js",
+            "BridgeFuncs": null,
+            "Config": null,
+            "Entries": [
+                {
+                    "Name": "vote",
+                    "DataFormat": "json",
+                    "Schema": "",
+                    "SchemaFile": "vote.json",
+                    "Sharing": "public"
+                },
+                {
+                    "Name": "voteLink",
+                    "DataFormat": "links",
+                    "Schema": "",
+                    "SchemaFile": "",
+                    "Sharing": "public"
+                }
+            ],
+            "Functions": [
+                {
+                    "Name": "voteCreate",
+                    "CallingType": "json",
+                    "Exposure": "public"
+                },
+                {
+                    "Name": "voteRead",
+                    "CallingType": "json",
+                    "Exposure": "public"
+                },
+                {
+                    "Name": "voteUpdate",
+                    "CallingType": "json",
+                    "Exposure": "public"
+                },
+                {
+                    "Name": "voteDelete",
+                    "CallingType": "json",
+                    "Exposure": "public"
+                },
+                {
+                    "Name": "fromHash",
+                    "CallingType": "string",
+                    "Exposure": "public"
+                }
+            ]
+        },
+        {
+            "Name": "anchors",
+            "Description": "anchors mixin",
+            "RibosomeType": "js",
+            "CodeFile": "anchors.js",
+            "Config": {
+              "ErrorHandling": "throwErrors"
+            },
+            "Entries": [
+              {
+                "Name": "anchor",
+                "DataFormat": "json",
+                "SchemaFile": "anchor.json",
+                "Sharing": "public"
+              },
+              {
+                "Name": "anchor_link",
+                "DataFormat": "links"
+              }
+            ],
+            "Functions": [
+              {
+                "Name": "anchor",
+                "CallingType": "json",
+                "Exposure": "public"
+              },
+              {
+                "Name": "exists",
+                "CallingType": "json",
+                "Exposure": "public"
+              },
+              {
+                "Name": "anchors",
+                "CallingType": "string",
+                "Exposure": "public"
+              }
+            ]
+          }
+    ]
+}
