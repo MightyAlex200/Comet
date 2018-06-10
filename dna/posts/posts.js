@@ -27,7 +27,7 @@ function anchorExists(anchorType, anchorText) {
 // Exposed functions
 
 function postCreate(input) {
-  var anchorHash = anchor("sub", input.sub);
+  var anchorHash = anchor("sub", input.sub || '');
   var postHash = commit("post", input.postEntry);
   var linkHash = commit("subLink", {
     Links: [
