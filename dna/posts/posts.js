@@ -31,7 +31,7 @@ function postCreate(input) {
   for(var i = 0; i < input.subs.length; i++) {
     var sub = input.subs[i];
     var anchorHash = anchor("sub", sub || '');
-    var linkHash = commit("subLink", {
+    var subLinkHash = commit("subLink", {
       Links: [
         {
           Base: anchorHash,
@@ -40,6 +40,15 @@ function postCreate(input) {
         }
       ]
     });
+    var userLinkHash = commit("userLink", {
+      Links: [
+        {
+          Base: App.Agent.Hash,
+          Link: postHash,
+          Tag: 'post'
+        }
+      ]
+    })
   }
   return postHash;
 }
@@ -65,9 +74,8 @@ function fromSub(sub) {
   return JSON.stringify(getLinks(anchor("sub", sub), "post", { Load: true }));
 }
 
-function fromUser(text) {
-  // TODO: this
-  throw "Not implemented";
+function fromUser(keyHash) {
+  return JSON.stringify(getLinks(keyHash, 'post', { Load: true }));
 }
 
 
@@ -108,6 +116,8 @@ function validateCommit(entryName, entry, header, pkg, sources) {
       // do not just flip this to true without considering what that means
       // the action will ONLY be successfull if this returns true, so watch out!
       return true;
+    case "userLink":
+      return true;
     default:
       // invalid entry name
       return false;
@@ -134,6 +144,8 @@ function validatePut(entryName, entry, header, pkg, sources) {
       // be sure to consider many edge cases for validating
       // do not just flip this to true without considering what that means
       // the action will ONLY be successfull if this returns true, so watch out!
+      return true;
+    case "userLink":
       return true;
     default:
       // invalid entry name
@@ -163,6 +175,8 @@ function validateMod(entryName, entry, header, replaces, pkg, sources) {
       // do not just flip this to true without considering what that means
       // the action will ONLY be successfull if this returns true, so watch out!
       return false;
+    case "userLink":
+      return false;
     default:
       // invalid entry name
       return false;
@@ -188,6 +202,8 @@ function validateDel(entryName, hash, pkg, sources) {
       // be sure to consider many edge cases for validating
       // do not just flip this to true without considering what that means
       // the action will ONLY be successfull if this returns true, so watch out!
+      return true;
+    case "userLink":
       return true;
     default:
       // invalid entry name
@@ -215,6 +231,8 @@ function validateLink(entryName, baseHash, links, pkg, sources) {
       // be sure to consider many edge cases for validating
       // do not just flip this to true without considering what that means
       // the action will ONLY be successfull if this returns true, so watch out!
+      return true;
+    case "userLink":
       return true;
     default:
       // invalid entry name

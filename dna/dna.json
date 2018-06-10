@@ -39,6 +39,13 @@
                     "Schema": "",
                     "SchemaFile": "",
                     "Sharing": "public"
+                },
+                {
+                    "Name": "userLink",
+                    "DataFormat": "links",
+                    "Schema": "",
+                    "SchemaFile": "",
+                    "Sharing": "public"
                 }
             ],
             "Functions": [
