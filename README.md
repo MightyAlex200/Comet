@@ -5,7 +5,8 @@ Comet is a reddit-like Holochain application.
 
 - [ ] Posts
     - `fromUser` not done
-- [x] Subs ([Bought from Subway™](https://youtu.be/oQYwFND7rHE))
+- [ ] Subs ([Bought from Subway™](https://youtu.be/oQYwFND7rHE))
+    - Remove useless "sub" entry type
 - [x] Comments
 - [ ] Voting
     - Make sure you can only vote on something once
