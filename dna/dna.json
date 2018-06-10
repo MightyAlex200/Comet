@@ -39,13 +39,6 @@
                     "Schema": "",
                     "SchemaFile": "",
                     "Sharing": "public"
-                },
-                {
-                    "Name": "sub",
-                    "DataFormat": "string",
-                    "Schema": "",
-                    "SchemaFile": "",
-                    "Sharing": "public"
                 }
             ],
             "Functions": [

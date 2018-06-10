@@ -105,11 +105,6 @@ function validateCommit(entryName, entry, header, pkg, sources) {
       // do not just flip this to true without considering what that means
       // the action will ONLY be successfull if this returns true, so watch out!
       return true;
-    case "sub":
-      // be sure to consider many edge cases for validating
-      // do not just flip this to true without considering what that means
-      // the action will ONLY be successfull if this returns true, so watch out!
-      return true;
     default:
       // invalid entry name
       return false;
@@ -133,11 +128,6 @@ function validatePut(entryName, entry, header, pkg, sources) {
       // the action will ONLY be successfull if this returns true, so watch out!
       return true;
     case "subLink":
-      // be sure to consider many edge cases for validating
-      // do not just flip this to true without considering what that means
-      // the action will ONLY be successfull if this returns true, so watch out!
-      return true;
-    case "sub":
       // be sure to consider many edge cases for validating
       // do not just flip this to true without considering what that means
       // the action will ONLY be successfull if this returns true, so watch out!
@@ -170,11 +160,6 @@ function validateMod(entryName, entry, header, replaces, pkg, sources) {
       // do not just flip this to true without considering what that means
       // the action will ONLY be successfull if this returns true, so watch out!
       return false;
-    case "sub":
-      // be sure to consider many edge cases for validating
-      // do not just flip this to true without considering what that means
-      // the action will ONLY be successfull if this returns true, so watch out!
-      return false;
     default:
       // invalid entry name
       return false;
@@ -201,11 +186,6 @@ function validateDel(entryName, hash, pkg, sources) {
       // do not just flip this to true without considering what that means
       // the action will ONLY be successfull if this returns true, so watch out!
       return true;
-    case "sub":
-      // be sure to consider many edge cases for validating
-      // do not just flip this to true without considering what that means
-      // the action will ONLY be successfull if this returns true, so watch out!
-      return false;
     default:
       // invalid entry name
       return false;
@@ -233,11 +213,6 @@ function validateLink(entryName, baseHash, links, pkg, sources) {
       // do not just flip this to true without considering what that means
       // the action will ONLY be successfull if this returns true, so watch out!
       return true;
-    case "sub":
-      // be sure to consider many edge cases for validating
-      // do not just flip this to true without considering what that means
-      // the action will ONLY be successfull if this returns true, so watch out!
-      return false;
     default:
       // invalid entry name
       return false;
