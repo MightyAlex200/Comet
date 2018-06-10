@@ -32,9 +32,10 @@ function voteDelete(voteLinkHash) {
 }
 
 function fromHash(hash) {
-  return JSON.stringify(
-    getLinks(hash, "vote", { Load: true })
+  var it = JSON.stringify(
+    getLinks(hash, "vote", { Load: false })
   );
+  return it;
 }
 
 
