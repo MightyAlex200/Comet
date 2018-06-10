@@ -27,17 +27,20 @@ function anchorExists(anchorType, anchorText) {
 // Exposed functions
 
 function postCreate(input) {
-  var anchorHash = anchor("sub", input.sub || '');
   var postHash = commit("post", input.postEntry);
-  var linkHash = commit("subLink", {
-    Links: [
-      {
-        Base: anchorHash,
-        Link: postHash,
-        Tag: 'post'
-      }
-    ]
-  });
+  for(var i = 0; i < input.subs.length; i++) {
+    var sub = input.subs[i];
+    var anchorHash = anchor("sub", sub || '');
+    var linkHash = commit("subLink", {
+      Links: [
+        {
+          Base: anchorHash,
+          Link: postHash,
+          Tag: 'post'
+        }
+      ]
+    });
+  }
   return postHash;
 }
 

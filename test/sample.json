@@ -9,9 +9,9 @@
                     "title": "Hello, Holo!",
                     "content": "This is Comet, the distributed reddit-like application!"
                 },
-                "sub": "test"
+                "subs": ["test", "introductions", "holochain"]
             },
-            "Output": "%h1%",
+            "Output": "QmTw1XpJFmVUCkiNjd63UrjRnAsziGBjLcu3YzsAFLDuux",
             "Err": null,
             "ErrMsg": "",
             "Regexp": "",
