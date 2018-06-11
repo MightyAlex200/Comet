@@ -45,6 +45,13 @@
                     "Schema": "",
                     "SchemaFile": "",
                     "Sharing": "public"
+                },
+                {
+                    "Name": "crosspost",
+                    "DataFormat": "links",
+                    "Schema": "",
+                    "SchemaFile": "",
+                    "Sharing": "public"
                 }
             ],
             "Functions": [
@@ -65,6 +72,11 @@
                 },
                 {
                     "Name": "postDelete",
+                    "CallingType": "json",
+                    "Exposure": "public"
+                },
+                {
+                    "Name": "crosspost",
                     "CallingType": "json",
                     "Exposure": "public"
                 },

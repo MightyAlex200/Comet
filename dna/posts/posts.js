@@ -78,6 +78,31 @@ function fromUser(keyHash) {
   return JSON.stringify(getLinks(keyHash, 'post', { Load: true }));
 }
 
+function crosspost(input) {
+  for(var i = 0; i < input.to.length; i++) {
+    var sub = input.to[i];
+    var anchorHash = anchor("sub", sub);
+    var subLinkHash = commit("subLink", {
+      Links: [
+        {
+          Base: anchorHash,
+          Link: input.from,
+          Tag: 'post'
+        }
+      ]
+    });
+    var userLinkHash = commit("userLink", {
+      Links: [
+        {
+          Base: App.Agent.Hash,
+          Link: input.from,
+          Tag: 'post'
+        }
+      ]
+    });
+  }
+}
+
 
 // -----------------------------------------------------------------
 //  The Genesis Function https://developer.holochain.org/genesis
@@ -118,6 +143,8 @@ function validateCommit(entryName, entry, header, pkg, sources) {
       return true;
     case "userLink":
       return true;
+    case "crosspost":
+      return true;
     default:
       // invalid entry name
       return false;
@@ -146,6 +173,8 @@ function validatePut(entryName, entry, header, pkg, sources) {
       // the action will ONLY be successfull if this returns true, so watch out!
       return true;
     case "userLink":
+      return true;
+    case "crosspost":
       return true;
     default:
       // invalid entry name
@@ -177,6 +206,8 @@ function validateMod(entryName, entry, header, replaces, pkg, sources) {
       return false;
     case "userLink":
       return false;
+    case "crosspost":
+      return false;
     default:
       // invalid entry name
       return false;
@@ -204,6 +235,8 @@ function validateDel(entryName, hash, pkg, sources) {
       // the action will ONLY be successfull if this returns true, so watch out!
       return true;
     case "userLink":
+      return true;
+    case "crosspost":
       return true;
     default:
       // invalid entry name
@@ -233,6 +266,8 @@ function validateLink(entryName, baseHash, links, pkg, sources) {
       // the action will ONLY be successfull if this returns true, so watch out!
       return true;
     case "userLink":
+      return true;
+    case "crosspost":
       return true;
     default:
       // invalid entry name
