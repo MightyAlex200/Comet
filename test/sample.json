@@ -83,6 +83,22 @@
             "Benchmark": false
         },
         {
+            "Convey": "Read Votes from a post",
+            "Zome": "votes",
+            "FnName": "fromHash",
+            "Input": "QmTw1XpJFmVUCkiNjd63UrjRnAsziGBjLcu3YzsAFLDuux",
+            "Output": "[{\"Entry\":{\"fraction\":1,\"isPositive\":true},\"EntryType\":\"vote\",\"Hash\":\"QmR6A6ZihLvuZ2SLXLCbyRubpPbwrEGc8PwTUEjLfLBSka\",\"Source\":\"Qmc6yUrT2oAEKcTJ6AD1kaZGnNGYwPwVBzGxMReRAt5UFf\"}]",
+            "Err": null,
+            "ErrMsg": "",
+            "Regexp": "",
+            "Time": 0,
+            "Wait": 0,
+            "Exposure": "public",
+            "Raw": false,
+            "Repeat": 0,
+            "Benchmark": false
+        },
+        {
             "Convey": "Fail to vote on a Post",
             "Zome": "votes",
             "FnName": "voteCreate",
@@ -131,6 +147,22 @@
             "Output": {
                 "content": "Thank you Kanye, very cool!"
             },
+            "Err": null,
+            "ErrMsg": "",
+            "Regexp": "",
+            "Time": 0,
+            "Wait": 0,
+            "Exposure": "public",
+            "Raw": false,
+            "Repeat": 0,
+            "Benchmark": false
+        },
+        {
+            "Convey": "Read comments from a Post",
+            "Zome": "comments",
+            "FnName": "fromHash",
+            "Input": "QmTw1XpJFmVUCkiNjd63UrjRnAsziGBjLcu3YzsAFLDuux",
+            "Output": "[{\"Entry\":{\"content\":\"Thank you Kanye, very cool!\"},\"EntryType\":\"comment\",\"Hash\":\"Qmf6ohf5KsGzjZtCqn6q9ru177a1MzV5Y6HFCAC56gpdyE\",\"Source\":\"Qmc6yUrT2oAEKcTJ6AD1kaZGnNGYwPwVBzGxMReRAt5UFf\"}]",
             "Err": null,
             "ErrMsg": "",
             "Regexp": "",
