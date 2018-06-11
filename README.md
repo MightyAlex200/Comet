@@ -19,7 +19,7 @@ Comet is a reddit-like Holochain application.
         - [ ] `fromHash`
     - [ ] Votes
         - [x] Creating a vote
-        - [ ] Can vote only once
+        - [x] Can vote only once
         - [ ] Reading a vote
         - [ ] Changing a vote
         - [ ] Deleting a vote

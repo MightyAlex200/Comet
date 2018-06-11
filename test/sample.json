@@ -45,6 +45,26 @@
             "Benchmark": false
         },
         {
+            "Convey": "Fail to vote on a Post",
+            "Zome": "votes",
+            "FnName": "voteCreate",
+            "Input": {
+                "voteEntry": {
+                    "isPositive": false,
+                    "fraction": 0.5
+                },
+                "targetHash": "%r2%"
+            },
+            "ErrMsg": "Validation Failed",
+            "Regexp": "",
+            "Time": 0,
+            "Wait": 0,
+            "Exposure": "public",
+            "Raw": false,
+            "Repeat": 2,
+            "Benchmark": false
+        },
+        {
             "Convey": "Comment on a Post",
             "Zome": "comments",
             "FnName": "commentCreate",
@@ -52,7 +72,7 @@
                 "commentEntry": {
                     "content": "Thank you Kanye, very cool!"
                 },
-                "targetHash": "%r2%"
+                "targetHash": "QmTw1XpJFmVUCkiNjd63UrjRnAsziGBjLcu3YzsAFLDuux"
             },
             "Output": "%h1%",
             "Err": null,
