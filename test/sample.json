@@ -19,7 +19,7 @@
             "Wait": 0,
             "Exposure": "public",
             "Raw": false,
-            "Repeat": 2,
+            "Repeat": 0,
             "Benchmark": false
         },
         {
@@ -31,9 +31,9 @@
                     "isPositive": true,
                     "fraction": 1
                 },
-                "targetHash": "%r1%"
+                "targetHash": "QmTw1XpJFmVUCkiNjd63UrjRnAsziGBjLcu3YzsAFLDuux"
             },
-            "Output": "%h1%",
+            "Output": "QmR6A6ZihLvuZ2SLXLCbyRubpPbwrEGc8PwTUEjLfLBSka",
             "Err": null,
             "ErrMsg": "",
             "Regexp": "",
@@ -41,7 +41,7 @@
             "Wait": 0,
             "Exposure": "public",
             "Raw": false,
-            "Repeat": 2,
+            "Repeat": 0,
             "Benchmark": false
         },
         {
@@ -53,7 +53,7 @@
                     "isPositive": false,
                     "fraction": 0.5
                 },
-                "targetHash": "%r2%"
+                "targetHash": "QmTw1XpJFmVUCkiNjd63UrjRnAsziGBjLcu3YzsAFLDuux"
             },
             "ErrMsg": "Validation Failed",
             "Regexp": "",
@@ -61,7 +61,7 @@
             "Wait": 0,
             "Exposure": "public",
             "Raw": false,
-            "Repeat": 2,
+            "Repeat": 0,
             "Benchmark": false
         },
         {
@@ -74,7 +74,7 @@
                 },
                 "targetHash": "QmTw1XpJFmVUCkiNjd63UrjRnAsziGBjLcu3YzsAFLDuux"
             },
-            "Output": "%h1%",
+            "Output": "Qmf6ohf5KsGzjZtCqn6q9ru177a1MzV5Y6HFCAC56gpdyE",
             "Err": null,
             "ErrMsg": "",
             "Regexp": "",
@@ -82,7 +82,7 @@
             "Wait": 0,
             "Exposure": "public",
             "Raw": false,
-            "Repeat": 2,
+            "Repeat": 0,
             "Benchmark": false
         }
     ],
