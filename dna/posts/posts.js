@@ -137,12 +137,7 @@ function validateCommit(entryName, entry, header, pkg, sources) {
       // the action will ONLY be successfull if this returns true, so watch out!
       return true;
     case "subLink":
-      // be sure to consider many edge cases for validating
-      // do not just flip this to true without considering what that means
-      // the action will ONLY be successfull if this returns true, so watch out!
-      return true;
     case "userLink":
-      return true;
     case "crosspost":
       return true;
     default:
@@ -168,12 +163,7 @@ function validatePut(entryName, entry, header, pkg, sources) {
       // the action will ONLY be successfull if this returns true, so watch out!
       return true;
     case "subLink":
-      // be sure to consider many edge cases for validating
-      // do not just flip this to true without considering what that means
-      // the action will ONLY be successfull if this returns true, so watch out!
-      return true;
     case "userLink":
-      return true;
     case "crosspost":
       return true;
     default:
@@ -200,12 +190,7 @@ function validateMod(entryName, entry, header, replaces, pkg, sources) {
       // the action will ONLY be successfull if this returns true, so watch out!
       return true;
     case "subLink":
-      // be sure to consider many edge cases for validating
-      // do not just flip this to true without considering what that means
-      // the action will ONLY be successfull if this returns true, so watch out!
-      return false;
     case "userLink":
-      return false;
     case "crosspost":
       return false;
     default:
@@ -230,12 +215,7 @@ function validateDel(entryName, hash, pkg, sources) {
       // the action will ONLY be successfull if this returns true, so watch out!
       return true;
     case "subLink":
-      // be sure to consider many edge cases for validating
-      // do not just flip this to true without considering what that means
-      // the action will ONLY be successfull if this returns true, so watch out!
-      return true;
     case "userLink":
-      return true;
     case "crosspost":
       return true;
     default:
@@ -261,14 +241,10 @@ function validateLink(entryName, baseHash, links, pkg, sources) {
       // the action will ONLY be successfull if this returns true, so watch out!
       return false;
     case "subLink":
-      // be sure to consider many edge cases for validating
-      // do not just flip this to true without considering what that means
-      // the action will ONLY be successfull if this returns true, so watch out!
-      return true;
     case "userLink":
-      return true;
     case "crosspost":
-      return true;
+      var linkEntryType = get(links[0].Link, { GetMask: HC.GetMask.EntryType });
+      return linkEntryType == "post";
     default:
       // invalid entry name
       return false;
