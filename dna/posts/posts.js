@@ -48,7 +48,7 @@ function postCreate(input) {
           Tag: 'post'
         }
       ]
-    })
+    });
   }
   return postHash;
 }
