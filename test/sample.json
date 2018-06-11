@@ -23,6 +23,25 @@
             "Benchmark": false
         },
         {
+            "Convey": "Read a Post",
+            "Zome": "posts",
+            "FnName": "postRead",
+            "Input": "QmTw1XpJFmVUCkiNjd63UrjRnAsziGBjLcu3YzsAFLDuux",
+            "Output": {
+                "title": "Hello, Holo!",
+                "content": "This is Comet, the distributed reddit-like application!"
+            },
+            "Err": null,
+            "ErrMsg": "",
+            "Regexp": "",
+            "Time": 0,
+            "Wait": 0,
+            "Exposure": "public",
+            "Raw": false,
+            "Repeat": 0,
+            "Benchmark": false
+        },
+        {
             "Convey": "Vote on a Post",
             "Zome": "votes",
             "FnName": "voteCreate",
@@ -34,6 +53,25 @@
                 "targetHash": "QmTw1XpJFmVUCkiNjd63UrjRnAsziGBjLcu3YzsAFLDuux"
             },
             "Output": "QmR6A6ZihLvuZ2SLXLCbyRubpPbwrEGc8PwTUEjLfLBSka",
+            "Err": null,
+            "ErrMsg": "",
+            "Regexp": "",
+            "Time": 0,
+            "Wait": 0,
+            "Exposure": "public",
+            "Raw": false,
+            "Repeat": 0,
+            "Benchmark": false
+        },
+        {
+            "Convey": "Read a Vote",
+            "Zome": "votes",
+            "FnName": "voteRead",
+            "Input": "QmR6A6ZihLvuZ2SLXLCbyRubpPbwrEGc8PwTUEjLfLBSka",
+            "Output": {
+                "isPositive": true,
+                "fraction": 1
+            },
             "Err": null,
             "ErrMsg": "",
             "Regexp": "",
@@ -75,6 +113,24 @@
                 "targetHash": "QmTw1XpJFmVUCkiNjd63UrjRnAsziGBjLcu3YzsAFLDuux"
             },
             "Output": "Qmf6ohf5KsGzjZtCqn6q9ru177a1MzV5Y6HFCAC56gpdyE",
+            "Err": null,
+            "ErrMsg": "",
+            "Regexp": "",
+            "Time": 0,
+            "Wait": 0,
+            "Exposure": "public",
+            "Raw": false,
+            "Repeat": 0,
+            "Benchmark": false
+        },
+        {
+            "Convey": "Read a comment",
+            "Zome": "comments",
+            "FnName": "commentRead",
+            "Input": "Qmf6ohf5KsGzjZtCqn6q9ru177a1MzV5Y6HFCAC56gpdyE",
+            "Output": {
+                "content": "Thank you Kanye, very cool!"
+            },
             "Err": null,
             "ErrMsg": "",
             "Regexp": "",
