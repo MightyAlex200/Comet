@@ -9,7 +9,7 @@ Comet is a reddit-like Holochain application.
         - [x] Reading a post
         - [ ] Changing a post
         - [ ] Deleting a post
-        - [ ] `fromSub`
+        - [x] `fromSub`
         - [ ] `fromUser`
     - [ ] Comments
         - [x] Creating a comment
