@@ -1,7 +1,7 @@
 {
     "Tests": [
         {
-            "Convey": "Create a Post",
+            "Convey": "Create a post",
             "Zome": "posts",
             "FnName": "postCreate",
             "Input": {
@@ -23,7 +23,7 @@
             "Benchmark": false
         },
         {
-            "Convey": "Read a Post",
+            "Convey": "Read a post",
             "Zome": "posts",
             "FnName": "postRead",
             "Input": "QmTw1XpJFmVUCkiNjd63UrjRnAsziGBjLcu3YzsAFLDuux",
@@ -42,7 +42,7 @@
             "Benchmark": false
         },
         {
-            "Convey": "Read Posts from a sub",
+            "Convey": "Read posts from a sub",
             "Zome": "posts",
             "FnName": "fromSub",
             "Input": "test",
@@ -58,7 +58,7 @@
             "Benchmark": false
         },
         {
-            "Convey": "Vote on a Post",
+            "Convey": "Vote on a post",
             "Zome": "votes",
             "FnName": "voteCreate",
             "Input": {
@@ -80,7 +80,7 @@
             "Benchmark": false
         },
         {
-            "Convey": "Read a Vote",
+            "Convey": "Read a vote",
             "Zome": "votes",
             "FnName": "voteRead",
             "Input": "QmR6A6ZihLvuZ2SLXLCbyRubpPbwrEGc8PwTUEjLfLBSka",
@@ -99,7 +99,7 @@
             "Benchmark": false
         },
         {
-            "Convey": "Read Votes from a post",
+            "Convey": "Read votes from a post",
             "Zome": "votes",
             "FnName": "fromHash",
             "Input": "QmTw1XpJFmVUCkiNjd63UrjRnAsziGBjLcu3YzsAFLDuux",
@@ -115,7 +115,7 @@
             "Benchmark": false
         },
         {
-            "Convey": "Fail to vote on a Post",
+            "Convey": "Fail to vote on a post",
             "Zome": "votes",
             "FnName": "voteCreate",
             "Input": {
@@ -135,7 +135,7 @@
             "Benchmark": false
         },
         {
-            "Convey": "Comment on a Post",
+            "Convey": "Comment on a post",
             "Zome": "comments",
             "FnName": "commentCreate",
             "Input": {
@@ -174,7 +174,7 @@
             "Benchmark": false
         },
         {
-            "Convey": "Read comments from a Post",
+            "Convey": "Read comments from a post",
             "Zome": "comments",
             "FnName": "fromHash",
             "Input": "QmTw1XpJFmVUCkiNjd63UrjRnAsziGBjLcu3YzsAFLDuux",
