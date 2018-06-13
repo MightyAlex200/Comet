@@ -42,6 +42,22 @@
             "Benchmark": false
         },
         {
+            "Convey": "Read posts from a user",
+            "Zome": "posts",
+            "FnName": "fromUser",
+            "Input": "QmZHYavbZJcdghigwJnEhGuaK3CiBnNFJnSCgu5Dy6o4w7",
+            "Output": "[{\"Entry\":{\"content\":\"This is Comet, the distributed reddit-like application!\",\"title\":\"Hello, Holo!\"},\"EntryType\":\"post\",\"Hash\":\"QmTw1XpJFmVUCkiNjd63UrjRnAsziGBjLcu3YzsAFLDuux\",\"Source\":\"Qmc6yUrT2oAEKcTJ6AD1kaZGnNGYwPwVBzGxMReRAt5UFf\"}]",
+            "Err": null,
+            "ErrMsg": "",
+            "Regexp": "",
+            "Time": 0,
+            "Wait": 0,
+            "Exposure": "public",
+            "Raw": false,
+            "Repeat": 0,
+            "Benchmark": false
+        },
+        {
             "Convey": "Read posts from a sub",
             "Zome": "posts",
             "FnName": "fromSub",
