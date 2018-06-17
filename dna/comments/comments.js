@@ -31,8 +31,8 @@ function commentDelete(commentLinkHash) {
   return result;
 }
 
-function fromHash(hash) {
-  return JSON.stringify(getLinks(hash, "comment", { Load: true }));
+function fromHash(hash, statusMask) {
+  return JSON.stringify(getLinks(hash, "comment", { Load: true, StatusMask: statusMask || HC.Status.Live }));
 }
 
 

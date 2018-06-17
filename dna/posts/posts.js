@@ -70,12 +70,12 @@ function postDelete() {
   return result;
 }
 
-function fromSub(sub) {
-  return JSON.stringify(getLinks(anchor("sub", sub), "post", { Load: true }));
+function fromSub(sub, statusMask) {
+  return JSON.stringify(getLinks(anchor("sub", sub), "post", { Load: true, StatusMask: statusMask || HC.Status.Live }));
 }
 
-function fromUser(keyHash) {
-  return JSON.stringify(getLinks(keyHash, 'post', { Load: true }));
+function fromUser(keyHash, statusMask) {
+  return JSON.stringify(getLinks(keyHash, 'post', { Load: true, StatusMask: statusMask || HC.Status.Live }));
 }
 
 function crosspost(input) {

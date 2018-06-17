@@ -31,9 +31,9 @@ function voteDelete(voteLinkHash) {
   return result;
 }
 
-function fromHash(hash) {
+function fromHash(hash, statusMask) {
   var it = JSON.stringify(
-    getLinks(hash, "vote", { Load: true })
+    getLinks(hash, "vote", { Load: true, StatusMask: statusMask || HC.Status.Live })
   );
   return it;
 }
