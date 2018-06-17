@@ -42,11 +42,33 @@
             "Benchmark": false
         },
         {
+            "Convey": "Update a post",
+            "Zome": "posts",
+            "FnName": "postUpdate",
+            "Input": {
+                "replaces": "QmTw1XpJFmVUCkiNjd63UrjRnAsziGBjLcu3YzsAFLDuux",
+                "newEntry": {
+                    "title": "Saluton, Holo!",
+                    "content": "Ĉi tio estas Cometo, la plurkomputila redditsimila programaro!"
+                }
+            },
+            "Output": "QmfYiLsf3uK9b1XjqX7yo47NyG6D1j8f3fAX6RBptcZ7KY",
+            "Err": null,
+            "ErrMsg": "",
+            "Regexp": "",
+            "Time": 0,
+            "Wait": 0,
+            "Exposure": "public",
+            "Raw": false,
+            "Repeat": 0,
+            "Benchmark": false
+        },
+        {
             "Convey": "Read posts from a user",
             "Zome": "posts",
             "FnName": "fromUser",
             "Input": "QmZHYavbZJcdghigwJnEhGuaK3CiBnNFJnSCgu5Dy6o4w7",
-            "Output": "[{\"Entry\":{\"content\":\"This is Comet, the distributed reddit-like application!\",\"title\":\"Hello, Holo!\"},\"EntryType\":\"post\",\"Hash\":\"QmTw1XpJFmVUCkiNjd63UrjRnAsziGBjLcu3YzsAFLDuux\",\"Source\":\"Qmc6yUrT2oAEKcTJ6AD1kaZGnNGYwPwVBzGxMReRAt5UFf\"}]",
+            "Output": "[{\"Entry\":{\"content\":\"Ĉi tio estas Cometo, la plurkomputila redditsimila programaro!\",\"title\":\"Saluton, Holo!\"},\"EntryType\":\"post\",\"Hash\":\"QmTw1XpJFmVUCkiNjd63UrjRnAsziGBjLcu3YzsAFLDuux\",\"Source\":\"Qmc6yUrT2oAEKcTJ6AD1kaZGnNGYwPwVBzGxMReRAt5UFf\"}]",
             "Err": null,
             "ErrMsg": "",
             "Regexp": "",
@@ -62,7 +84,7 @@
             "Zome": "posts",
             "FnName": "fromSub",
             "Input": "test",
-            "Output": "[{\"Entry\":{\"content\":\"This is Comet, the distributed reddit-like application!\",\"title\":\"Hello, Holo!\"},\"EntryType\":\"post\",\"Hash\":\"QmTw1XpJFmVUCkiNjd63UrjRnAsziGBjLcu3YzsAFLDuux\",\"Source\":\"Qmc6yUrT2oAEKcTJ6AD1kaZGnNGYwPwVBzGxMReRAt5UFf\"}]",
+            "Output": "[{\"Entry\":{\"content\":\"Ĉi tio estas Cometo, la plurkomputila redditsimila programaro!\",\"title\":\"Saluton, Holo!\"},\"EntryType\":\"post\",\"Hash\":\"QmTw1XpJFmVUCkiNjd63UrjRnAsziGBjLcu3YzsAFLDuux\",\"Source\":\"Qmc6yUrT2oAEKcTJ6AD1kaZGnNGYwPwVBzGxMReRAt5UFf\"}]",
             "Err": null,
             "ErrMsg": "",
             "Regexp": "",
@@ -82,7 +104,7 @@
                     "isPositive": true,
                     "fraction": 1
                 },
-                "targetHash": "QmTw1XpJFmVUCkiNjd63UrjRnAsziGBjLcu3YzsAFLDuux"
+                "targetHash": "QmfYiLsf3uK9b1XjqX7yo47NyG6D1j8f3fAX6RBptcZ7KY"
             },
             "Output": "QmR6A6ZihLvuZ2SLXLCbyRubpPbwrEGc8PwTUEjLfLBSka",
             "Err": null,
@@ -118,7 +140,7 @@
             "Convey": "Read votes from a post",
             "Zome": "votes",
             "FnName": "fromHash",
-            "Input": "QmTw1XpJFmVUCkiNjd63UrjRnAsziGBjLcu3YzsAFLDuux",
+            "Input": "QmfYiLsf3uK9b1XjqX7yo47NyG6D1j8f3fAX6RBptcZ7KY",
             "Output": "[{\"Entry\":{\"fraction\":1,\"isPositive\":true},\"EntryType\":\"vote\",\"Hash\":\"QmR6A6ZihLvuZ2SLXLCbyRubpPbwrEGc8PwTUEjLfLBSka\",\"Source\":\"Qmc6yUrT2oAEKcTJ6AD1kaZGnNGYwPwVBzGxMReRAt5UFf\"}]",
             "Err": null,
             "ErrMsg": "",
@@ -139,7 +161,7 @@
                     "isPositive": false,
                     "fraction": 0.5
                 },
-                "targetHash": "QmTw1XpJFmVUCkiNjd63UrjRnAsziGBjLcu3YzsAFLDuux"
+                "targetHash": "QmfYiLsf3uK9b1XjqX7yo47NyG6D1j8f3fAX6RBptcZ7KY"
             },
             "ErrMsg": "Validation Failed",
             "Regexp": "",
@@ -158,7 +180,7 @@
                 "commentEntry": {
                     "content": "Thank you Kanye, very cool!"
                 },
-                "targetHash": "QmTw1XpJFmVUCkiNjd63UrjRnAsziGBjLcu3YzsAFLDuux"
+                "targetHash": "QmfYiLsf3uK9b1XjqX7yo47NyG6D1j8f3fAX6RBptcZ7KY"
             },
             "Output": "Qmf6ohf5KsGzjZtCqn6q9ru177a1MzV5Y6HFCAC56gpdyE",
             "Err": null,
@@ -193,7 +215,7 @@
             "Convey": "Read comments from a post",
             "Zome": "comments",
             "FnName": "fromHash",
-            "Input": "QmTw1XpJFmVUCkiNjd63UrjRnAsziGBjLcu3YzsAFLDuux",
+            "Input": "QmfYiLsf3uK9b1XjqX7yo47NyG6D1j8f3fAX6RBptcZ7KY",
             "Output": "[{\"Entry\":{\"content\":\"Thank you Kanye, very cool!\"},\"EntryType\":\"comment\",\"Hash\":\"Qmf6ohf5KsGzjZtCqn6q9ru177a1MzV5Y6HFCAC56gpdyE\",\"Source\":\"Qmc6yUrT2oAEKcTJ6AD1kaZGnNGYwPwVBzGxMReRAt5UFf\"}]",
             "Err": null,
             "ErrMsg": "",
