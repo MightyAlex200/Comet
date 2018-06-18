@@ -24,6 +24,15 @@ function anchorExists(anchorType, anchorText) {
   });
 }
 
+// Helper timemachine functions
+
+function markUpdated(newEntry, oldEntry) {
+  return call('timemachine', 'markUpdated', {
+    newEntry: newEntry,
+    oldEntry: oldEntry
+  });
+}
+
 // Exposed functions
 
 function postCreate(input) {
@@ -62,6 +71,7 @@ function postUpdate(params) {
   var replaces = params.replaces;
   var newEntry = params.newEntry;
   var postHash = update("post", newEntry, replaces);
+  markUpdated(postHash, replaces);
   return postHash;
 }
 

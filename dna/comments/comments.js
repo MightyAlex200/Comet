@@ -8,6 +8,17 @@
 //  Exposed functions with custom logic https://developer.holochain.org/API_reference
 // -----------------------------------------------------------------
 
+// Helper timemachine functions
+
+function markUpdated(newEntry, oldEntry) {
+  return call('timemachine', 'markUpdated', {
+    newEntry: newEntry,
+    oldEntry: oldEntry
+  });
+}
+
+// Exposed functions
+
 function commentCreate(input) {
   var commentHash = commit("comment", input.commentEntry);
   var linkHash = commit("commentLink", { Links: [{ Base: input.targetHash, Link: commentHash, Tag: "comment" }] });
@@ -23,6 +34,7 @@ function commentUpdate(params) {
   var replaces = params.replaces;
   var newEntry = params.newEntry;
   var commentHash = update("commentLink", newEntry, replaces);
+  markUpdated(commentHash, replaces);
   return commentHash;
 }
 

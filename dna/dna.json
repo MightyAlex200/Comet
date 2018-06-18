@@ -231,6 +231,31 @@
                     "Exposure": "public"
                 }
             ]
+        },
+        {
+            "Name": "timemachine",
+            "Description": "see entries of the past",
+            "RibosomeType": "js",
+            "CodeFile": "timemachine.js",
+            "Config": null,
+            "Entries": [
+                {
+                    "Name": "updated",
+                    "DataFormat": "links"
+                }
+            ],
+            "Functions": [
+                {
+                    "Name": "markUpdated",
+                    "CallingType": "json",
+                    "Exposure": "public"
+                },
+                {
+                    "Name": "getOldVersions",
+                    "CallingType": "string",
+                    "Exposure": "public"
+                }
+            ]
         }
     ]
 }
