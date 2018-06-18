@@ -39,7 +39,7 @@ function voteUpdate(params) {
 }
 
 function voteDelete(voteLinkHash) {
-  var result = remove(voteLinkHash);
+  var result = remove(voteLinkHash, "deleted");
   return result;
 }
 

@@ -75,8 +75,8 @@ function postUpdate(params) {
   return postHash;
 }
 
-function postDelete() {
-  var result = remove(postHash);
+function postDelete(postHash) {
+  var result = remove(postHash, "deleted");
   return result;
 }
 

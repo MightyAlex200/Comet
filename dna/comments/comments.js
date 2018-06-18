@@ -39,7 +39,7 @@ function commentUpdate(params) {
 }
 
 function commentDelete(commentLinkHash) {
-  var result = remove(commentLinkHash);
+  var result = remove(commentLinkHash, "deleted");
   return result;
 }
 
