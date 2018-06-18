@@ -139,7 +139,7 @@ function validateMod(entryName, entry, header, replaces, pkg, sources) {
       // be sure to consider many edge cases for validating
       // do not just flip this to true without considering what that means
       // the action will ONLY be successfull if this returns true, so watch out!
-      return true;
+      return get(replaces, { GetMask: HC.GetMask.Sources })[0] == sources[0];
     default:
       // invalid entry name
       return false;
@@ -165,7 +165,7 @@ function validateDel(entryName, hash, pkg, sources) {
       // be sure to consider many edge cases for validating
       // do not just flip this to true without considering what that means
       // the action will ONLY be successfull if this returns true, so watch out!
-      return true;
+      return get(hash, { GetMask: HC.GetMask.Sources })[0] == sources[0];
     default:
       // invalid entry name
       return false;
