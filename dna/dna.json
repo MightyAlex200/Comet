@@ -200,37 +200,37 @@
             "RibosomeType": "js",
             "CodeFile": "anchors.js",
             "Config": {
-              "ErrorHandling": "throwErrors"
+                "ErrorHandling": "throwErrors"
             },
             "Entries": [
-              {
-                "Name": "anchor",
-                "DataFormat": "json",
-                "SchemaFile": "anchor.json",
-                "Sharing": "public"
-              },
-              {
-                "Name": "anchor_link",
-                "DataFormat": "links"
-              }
+                {
+                    "Name": "anchor",
+                    "DataFormat": "json",
+                    "SchemaFile": "anchor.json",
+                    "Sharing": "public"
+                },
+                {
+                    "Name": "anchor_link",
+                    "DataFormat": "links"
+                }
             ],
             "Functions": [
-              {
-                "Name": "anchor",
-                "CallingType": "json",
-                "Exposure": "public"
-              },
-              {
-                "Name": "exists",
-                "CallingType": "json",
-                "Exposure": "public"
-              },
-              {
-                "Name": "anchors",
-                "CallingType": "string",
-                "Exposure": "public"
-              }
+                {
+                    "Name": "anchor",
+                    "CallingType": "json",
+                    "Exposure": "public"
+                },
+                {
+                    "Name": "exists",
+                    "CallingType": "json",
+                    "Exposure": "public"
+                },
+                {
+                    "Name": "anchors",
+                    "CallingType": "string",
+                    "Exposure": "public"
+                }
             ]
-          }
+        }
     ]
 }
