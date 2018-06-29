@@ -24,15 +24,6 @@ function anchorExists(anchorType, anchorText) {
   });
 }
 
-// Helper timemachine functions
-
-function markUpdated(newEntry, oldEntry) {
-  return call('timemachine', 'markUpdated', {
-    newEntry: newEntry,
-    oldEntry: oldEntry
-  });
-}
-
 // Exposed functions
 
 function postCreate(input) {
@@ -62,16 +53,10 @@ function postCreate(input) {
   return postHash;
 }
 
-function postRead(postHash) {
-  var post = get(postHash);
-  return post;
-}
-
 function postUpdate(params) {
   var replaces = params.replaces;
   var newEntry = params.newEntry;
   var postHash = update("post", newEntry, replaces);
-  markUpdated(postHash, replaces);
   return postHash;
 }
 
@@ -82,35 +67,6 @@ function postDelete(postHash) {
 
 function fromSub(sub, statusMask) {
   return JSON.stringify(getLinks(anchor("sub", sub), "post", { Load: true, StatusMask: statusMask || HC.Status.Live }));
-}
-
-function fromUser(keyHash, statusMask) {
-  return JSON.stringify(getLinks(keyHash, 'post', { Load: true, StatusMask: statusMask || HC.Status.Live }));
-}
-
-function crosspost(input) {
-  for(var i = 0; i < input.to.length; i++) {
-    var sub = input.to[i];
-    var anchorHash = anchor("sub", sub);
-    var subLinkHash = commit("subLink", {
-      Links: [
-        {
-          Base: anchorHash,
-          Link: input.from,
-          Tag: 'post'
-        }
-      ]
-    });
-    var userLinkHash = commit("userLink", {
-      Links: [
-        {
-          Base: App.Agent.Hash,
-          Link: input.from,
-          Tag: 'post'
-        }
-      ]
-    });
-  }
 }
 
 
