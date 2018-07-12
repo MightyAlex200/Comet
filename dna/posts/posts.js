@@ -49,16 +49,16 @@ function postCreate(input) {
         }
       ]
     });
-    var userLinkHash = commit("userLink", {
-      Links: [
-        {
-          Base: App.Agent.Hash,
-          Link: postHash,
-          Tag: 'post'
-        }
-      ]
-    });
   }
+  var userLinkHash = commit("userLink", {
+    Links: [
+      {
+        Base: App.Agent.Hash,
+        Link: postHash,
+        Tag: 'post'
+      }
+    ]
+  });
   return postHash;
 }
 
