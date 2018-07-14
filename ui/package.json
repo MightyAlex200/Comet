@@ -8,18 +8,26 @@
   },
   "scripts": {
     "clean": "rm -rf build/*",
-    "build": "babel src -d build && browserify build/index.js -t [ babelify --presets [ \"babel-preset-env\" ] ] > build/bundle.js"
+    "build": "babel src -d build && browserify build/index.js -t [ babelify --presets [ \"@babel/preset-env\" ] ] > build/bundle.js"
   },
   "author": "",
   "license": "GPL-3.0",
   "dependencies": {
+    "@babel/cli": "^7.0.0-beta.53",
+    "@babel/core": "^7.0.0-beta.53",
+    "@babel/preset-env": "^7.0.0-beta.53",
     "@cycle/dom": "^20.4.0",
     "@cycle/http": "^14.9.0",
+    "@cycle/isolate": "^3.3.0",
     "@cycle/run": "^4.4.0",
     "babel-cli": "^6.26.0",
-    "babel-preset-env": "^1.7.0",
-    "babelify": "^8.0.0",
+    "babelify": "^9.0.0",
     "browserify": "^16.2.2",
     "xstream": "^11.7.0"
+  },
+  "babel": {
+    "plugins": [
+      "@babel/plugin-proposal-object-rest-spread"
+    ]
   }
 }
