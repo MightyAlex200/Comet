@@ -1,6 +1,10 @@
 //@ts-check
 import xs from 'xstream';
-import { h1 } from '@cycle/dom';
+import { div, h2, p } from '@cycle/dom';
+
+function renderPost(post) {
+    return div(".post", [h2(post.title), p(post.content)]);
+}
 
 export default function PostView(sources) {
 
@@ -18,8 +22,9 @@ export default function PostView(sources) {
     const dom$ = sources.props.map(({ hash }) => sources.HTTP.select(`post${hash}`)
         .flatten()
         .map(res => res.text)
+        .map(JSON.parse)
         .map(post =>
-            h1(post === null ? "null" : post)
+            renderPost(post)
         )
         .startWith(null)
     ).flatten();
