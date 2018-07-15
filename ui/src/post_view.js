@@ -7,7 +7,7 @@ export default function PostView(sources) {
         DOM: sources.HTTP.select('posts')
             .flatten()
             .map(res => res.text)
-            .map(post => 
+            .map(post =>
                 h1(post === null ? "null" : post)
             )
             .startWith(null),

@@ -10,7 +10,7 @@ import CommentView from './comment_view';
 function main(sources) {
     const viewHash = "QmacEfcQbuxDDaatxdknpZzgxWbQ9VpU24o2EJ1UhdhLQg";
     // const postView = isolate(PostView)({props: xs.of({hash: "QmTw1XpJFmVUCkiNjd63UrjRnAsziGBjLcu3YzsAFLDuux"}), ...sources});
-    const commentView = isolate(CommentView, viewHash)({props: xs.of({hash: viewHash}), ...sources});
+    const commentView = isolate(CommentView, viewHash)({ props: xs.of({ hash: viewHash }), ...sources });
 
     return commentView;
 }

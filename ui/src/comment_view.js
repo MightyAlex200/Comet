@@ -4,7 +4,7 @@ import { div } from "@cycle/dom";
 import isolate from '@cycle/isolate';
 
 export default function CommentView(sources) {
-    const commentReadHTTP$ = sources.props.map(({hash}) => 
+    const commentReadHTTP$ = sources.props.map(({ hash }) =>
         ({
             url: '/fn/comments/commentRead',
             method: 'POST',
@@ -13,12 +13,12 @@ export default function CommentView(sources) {
         })
     );
 
-    const fromHashHTTP$ = sources.props.map(({hash}) =>
+    const fromHashHTTP$ = sources.props.map(({ hash }) =>
         ({
             url: '/fn/comments/fromHash',
             method: 'POST',
             category: `fromHash${hash}`,
-            send: hash
+            send: hash,
         })
     );
 
@@ -28,30 +28,30 @@ export default function CommentView(sources) {
     // This is a workaround
     // TODO: Create a better, more elegant solution (open up issue in cycle about full http isolation?)
 
-    const commentReadDOM$ = sources.props.map(({hash}) => sources.HTTP.select(`commentRead${hash}`)
+    const commentReadDOM$ = sources.props.map(({ hash }) => sources.HTTP.select(`commentRead${hash}`)
         .flatten()
         .map(res => res.text)
         .map(JSON.parse)
-        .map(({content}) => content)
+        .map(({ content }) => content)
         .startWith("Loading comment")
         .map(text => div(".commentContent", text))
     ).flatten();
-    
-    const fromHashSinksArray$ = sources.props.map(({hash}) => sources.HTTP.select(`fromHash${hash}`)
+
+    const fromHashSinksArray$ = sources.props.map(({ hash }) => sources.HTTP.select(`fromHash${hash}`)
         .flatten()
         .map(res => res.text)
         .map(JSON.parse)
         .map(subCommentArray => subCommentArray.map(subComment => subComment.Hash))
-        .map(hashArray => hashArray.map(hash => isolate(CommentView, hash)({...sources, props: xs.of({hash})})))
+        .map(hashArray => hashArray.map(hash => isolate(CommentView, hash)({ ...sources, props: xs.of({ hash }) })))
         .startWith([])
     ).flatten();
-    
+
     const fromHashDOM$ = fromHashSinksArray$
         .map(sinksArray => sinksArray.map(sinks => sinks.DOM))
         .map(dom$Array => xs.combine(...dom$Array))
         .flatten()
-        .map(domArray => div(".subComments", {props: {style: "position: relative; left: 24px"}}, domArray));
-    
+        .map(domArray => div(".subComments", { props: { style: "position: relative; left: 24px" } }, domArray));
+
     const subCommentHTTP$ = fromHashSinksArray$
         .map(sinksArray => sinksArray.map(sinks => sinks.HTTP))
         .map(http$Array => xs.merge(...http$Array))
@@ -66,6 +66,6 @@ export default function CommentView(sources) {
         DOM: dom$,
         HTTP: http$,
     };
-    
+
     return sinks;
 }
