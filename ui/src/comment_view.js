@@ -10,6 +10,7 @@ export default function CommentView(sources) {
             method: 'POST',
             category: `commentRead${hash}`,
             send: `"${hash}"`,
+            ok(res) { if (res) { let text = JSON.parse(res.text); if (text) { return !!text.content } else { return false } } else { return false; }; },
         })
     );
 
@@ -30,6 +31,7 @@ export default function CommentView(sources) {
 
     const commentReadDOM$ = sources.props.map(({ hash }) => sources.HTTP.select(`commentRead${hash}`)
         .flatten()
+        .replaceError(() => xs.of({text: '{"content": "Error loading comment"}'}))
         .map(res => res.text)
         .map(JSON.parse)
         .map(({ content }) => content)
@@ -39,6 +41,7 @@ export default function CommentView(sources) {
 
     const fromHashSinksArray$ = sources.props.map(({ hash }) => sources.HTTP.select(`fromHash${hash}`)
         .flatten()
+        .replaceError(() => xs.of({text: '[]'}))
         .map(res => res.text)
         .map(JSON.parse)
         .map(subCommentArray => subCommentArray.map(subComment => subComment.Hash))
