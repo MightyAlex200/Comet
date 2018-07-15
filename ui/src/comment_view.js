@@ -2,6 +2,7 @@
 import xs from 'xstream';
 import { div } from "@cycle/dom";
 import isolate from '@cycle/isolate';
+import CommentsView from './comments_view';
 
 export default function CommentView(sources) {
     const commentReadHTTP$ = sources.props.map(({ hash }) => ({
@@ -11,15 +12,6 @@ export default function CommentView(sources) {
         send: `"${hash}"`,
         ok(res) { if (res) { let text = JSON.parse(res.text); if (text) { return !!text.content } else { return false } } else { return false; }; },
     }));
-
-    const fromHashHTTP$ = sources.props.map(({ hash }) => ({
-        url: '/fn/comments/fromHash',
-        method: 'POST',
-        category: `fromHash${hash}`,
-        send: hash,
-    }));
-
-    const commentHTTP$ = xs.merge(commentReadHTTP$, fromHashHTTP$);
 
     // @cycle/http's httpDriver does not actually provide isolation even with a scope
     // This is a workaround
@@ -35,31 +27,18 @@ export default function CommentView(sources) {
         .map(text => div(".commentContent", text))
     ).flatten();
 
-    const fromHashSinksArray$ = sources.props.map(({ hash }) => sources.HTTP.select(`fromHash${hash}`)
-        .flatten()
-        .replaceError(() => xs.of({ text: '[]' }))
-        .map(res => res.text)
-        .map(JSON.parse)
-        .map(subCommentArray => subCommentArray.map(subComment => subComment.Hash))
-        .map(hashArray => hashArray.map(hash => isolate(CommentView, hash)({ ...sources, props: xs.of({ hash }) })))
-        .startWith([])
-    ).flatten();
+    const subComment$ = sources.props.map((props) =>
+        isolate(CommentsView, props.hash)({...sources, props: xs.of(props)})
+    );
 
-    const fromHashDOM$ = fromHashSinksArray$
-        .map(sinksArray => sinksArray.map(sinks => sinks.DOM))
-        .map(dom$Array => xs.combine(...dom$Array))
-        .flatten()
-        .map(domArray => div(".subComments", { props: { style: "position: relative; left: 24px" } }, domArray));
+    const subCommentDOM$ = subComment$.map(subComment => subComment.DOM).flatten();
 
-    const subCommentHTTP$ = fromHashSinksArray$
-        .map(sinksArray => sinksArray.map(sinks => sinks.HTTP))
-        .map(http$Array => xs.merge(...http$Array))
-        .flatten();
+    const subCommentHTTP$ = subComment$.map(subComment => subComment.HTTP).flatten();
 
-    const dom$ = xs.combine(commentReadDOM$, fromHashDOM$)
+    const dom$ = xs.combine(commentReadDOM$, subCommentDOM$)
         .map(children => div(".comment", {}, children));
 
-    const http$ = xs.merge(commentHTTP$, subCommentHTTP$);
+    const http$ = xs.merge(commentReadHTTP$, subCommentHTTP$);
 
     const sinks = {
         DOM: dom$,
