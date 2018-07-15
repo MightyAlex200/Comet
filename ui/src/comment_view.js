@@ -4,24 +4,20 @@ import { div } from "@cycle/dom";
 import isolate from '@cycle/isolate';
 
 export default function CommentView(sources) {
-    const commentReadHTTP$ = sources.props.map(({ hash }) =>
-        ({
-            url: '/fn/comments/commentRead',
-            method: 'POST',
-            category: `commentRead${hash}`,
-            send: `"${hash}"`,
-            ok(res) { if (res) { let text = JSON.parse(res.text); if (text) { return !!text.content } else { return false } } else { return false; }; },
-        })
-    );
+    const commentReadHTTP$ = sources.props.map(({ hash }) => ({
+        url: '/fn/comments/commentRead',
+        method: 'POST',
+        category: `commentRead${hash}`,
+        send: `"${hash}"`,
+        ok(res) { if (res) { let text = JSON.parse(res.text); if (text) { return !!text.content } else { return false } } else { return false; }; },
+    }));
 
-    const fromHashHTTP$ = sources.props.map(({ hash }) =>
-        ({
-            url: '/fn/comments/fromHash',
-            method: 'POST',
-            category: `fromHash${hash}`,
-            send: hash,
-        })
-    );
+    const fromHashHTTP$ = sources.props.map(({ hash }) => ({
+        url: '/fn/comments/fromHash',
+        method: 'POST',
+        category: `fromHash${hash}`,
+        send: hash,
+    }));
 
     const commentHTTP$ = xs.merge(commentReadHTTP$, fromHashHTTP$);
 
@@ -31,7 +27,7 @@ export default function CommentView(sources) {
 
     const commentReadDOM$ = sources.props.map(({ hash }) => sources.HTTP.select(`commentRead${hash}`)
         .flatten()
-        .replaceError(() => xs.of({text: '{"content": "Error loading comment"}'}))
+        .replaceError(() => xs.of({ text: '{"content": "Error loading comment"}' }))
         .map(res => res.text)
         .map(JSON.parse)
         .map(({ content }) => content)
@@ -41,7 +37,7 @@ export default function CommentView(sources) {
 
     const fromHashSinksArray$ = sources.props.map(({ hash }) => sources.HTTP.select(`fromHash${hash}`)
         .flatten()
-        .replaceError(() => xs.of({text: '[]'}))
+        .replaceError(() => xs.of({ text: '[]' }))
         .map(res => res.text)
         .map(JSON.parse)
         .map(subCommentArray => subCommentArray.map(subComment => subComment.Hash))
