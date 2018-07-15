@@ -45,6 +45,7 @@ Comet is a reddit-like Holochain application.
         - [ ] View posts on user
         - [ ] Create posts on sub/user
         - [ ] Save posts
+        - [ ] NSFW censoring
     - Comments
         - [ ] View comments on post
         - [ ] Save comments
