@@ -13,6 +13,7 @@ export default function PostView(sources) {
         method: 'POST',
         category: `post${hash}`,
         send: `"${hash}"`,
+        ok(res) { if (res) { let text = JSON.parse(res.text); if (text) { return !!(text.title && text.content) } else { return false } } else { return false; }; },
     }));
 
     // @cycle/http's httpDriver does not actually provide isolation even with a scope
@@ -21,6 +22,7 @@ export default function PostView(sources) {
 
     const dom$ = sources.props.map(({ hash }) => sources.HTTP.select(`post${hash}`)
         .flatten()
+        .replaceError(() => xs.of({text: '{"title": "Error", "content": "Could not load post"}'}))
         .map(res => res.text)
         .map(JSON.parse)
         .map(post =>
