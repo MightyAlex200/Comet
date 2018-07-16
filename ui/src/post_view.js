@@ -1,14 +1,15 @@
 //@ts-check
 import xs from 'xstream';
 import { div, h2, p } from '@cycle/dom';
+import isolate from '@cycle/isolate';
+import CommentsView from './comments_view';
 
 function renderPost(post) {
     return div(".post", [h2(post.title), p(post.content)]);
 }
 
 export default function PostView(sources) {
-
-    const http$ = sources.props.map(({ hash }) => ({
+    const postHTTP$ = sources.props.map(({ hash }) => ({
         url: '/fn/posts/postRead',
         method: 'POST',
         category: `post${hash}`,
@@ -20,9 +21,9 @@ export default function PostView(sources) {
     // This is a workaround
     // TODO: Create a better, more elegant solution (open up issue in cycle about full http isolation?)
 
-    const dom$ = sources.props.map(({ hash }) => sources.HTTP.select(`post${hash}`)
+    const postDOM$ = sources.props.map(({ hash }) => sources.HTTP.select(`post${hash}`)
         .flatten()
-        .replaceError(() => xs.of({text: '{"title": "Error", "content": "Could not load post"}'}))
+        .replaceError(() => xs.of({ text: '{"title": "Error", "content": "Could not load post"}' }))
         .map(res => res.text)
         .map(JSON.parse)
         .map(post =>
@@ -30,6 +31,19 @@ export default function PostView(sources) {
         )
         .startWith(null)
     ).flatten();
+
+    const commentsSinks$ = sources.props.map((props) =>
+        isolate(CommentsView, props.hash)({ ...sources, props: xs.of(props) })
+    );
+
+    const commentsDOM$ = commentsSinks$.map(sinks => sinks.DOM).flatten();
+
+    const commentsHTTP$ = commentsSinks$.map(sinks => sinks.HTTP).flatten();
+
+    const dom$ = xs.combine(postDOM$, commentsDOM$)
+        .map(doms => div(".post", doms));
+
+    const http$ = xs.merge(postHTTP$, commentsHTTP$);
 
     return {
         DOM: dom$,
