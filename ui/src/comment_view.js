@@ -28,7 +28,7 @@ export default function CommentView(sources) {
     ).flatten();
 
     const subComment$ = sources.props.map((props) =>
-        isolate(CommentsView, props.hash)({...sources, props: xs.of(props)})
+        isolate(CommentsView, props.hash)({ ...sources, props: xs.of(props) })
     );
 
     const subCommentDOM$ = subComment$.map(subComment => subComment.DOM).flatten();

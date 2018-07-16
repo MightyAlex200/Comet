@@ -8,7 +8,7 @@ export default function CommentsView(sources) {
     // @cycle/http's httpDriver does not actually provide isolation even with a scope
     // This is a workaround
     // TODO: Create a better, more elegant solution (open up issue in cycle about full http isolation?)
-    
+
     const fromHashHTTP$ = sources.props.map(({ hash }) => ({
         url: '/fn/comments/fromHash',
         method: 'POST',
