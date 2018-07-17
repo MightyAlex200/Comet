@@ -5,7 +5,7 @@ import isolate from '@cycle/isolate';
 import CommentsView from './comments_view';
 
 function renderPost(post) {
-    return div(".post", [h2(post.title), p(post.content)]);
+    return div('.post', [h2(post.title), p(post.content)]);
 }
 
 export default function PostView(sources) {
@@ -41,7 +41,7 @@ export default function PostView(sources) {
     const commentsHTTP$ = commentsSinks$.map(sinks => sinks.HTTP).flatten();
 
     const dom$ = xs.combine(postDOM$, commentsDOM$)
-        .map(doms => div(".post.card", doms));
+        .map(doms => div('.post.card', doms));
 
     const http$ = xs.merge(postHTTP$, commentsHTTP$);
 

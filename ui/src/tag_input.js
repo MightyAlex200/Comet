@@ -30,7 +30,7 @@ export default function TagInput(sources) {
                 return makeUnique(tags.concat(event.target.value.slice(0, -1)))
             } else {
                 if(event.type == 'click') {
-                    return tags.filter(tag => tag != event.target.getAttribute("tag"))
+                    return tags.filter(tag => tag != event.target.getAttribute('tag'))
                 } else {
                     return tags.slice(0, -1);
                 }

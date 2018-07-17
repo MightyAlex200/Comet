@@ -1,6 +1,6 @@
 //@ts-check
 import xs from 'xstream';
-import { div } from "@cycle/dom";
+import { div } from '@cycle/dom';
 import isolate from '@cycle/isolate';
 import CommentsView from './comments_view';
 
@@ -23,8 +23,8 @@ export default function CommentView(sources) {
         .map(res => res.text)
         .map(JSON.parse)
         .map(({ content }) => content)
-        .startWith("Loading comment")
-        .map(text => div(".comment-content", text))
+        .startWith('Loading comment')
+        .map(text => div('.comment-content', text))
     ).flatten();
 
     const subComment$ = sources.hash.map(hash =>
@@ -36,7 +36,7 @@ export default function CommentView(sources) {
     const subCommentHTTP$ = subComment$.map(subComment => subComment.HTTP).flatten();
 
     const dom$ = xs.combine(commentReadDOM$, subCommentDOM$)
-        .map(children => div(".comment", {}, children));
+        .map(children => div('.comment', {}, children));
 
     const http$ = xs.merge(commentReadHTTP$, subCommentHTTP$);
 
