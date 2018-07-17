@@ -9,6 +9,7 @@ import CommentView from './comment_view';
 import CommentsView from './comments_view';
 import TagInput from './tag_input';
 import PostsView from './posts_view';
+import SubView from './sub_view';
 
 function main(sources) {
     const postHash = 'QmTw1XpJFmVUCkiNjd63UrjRnAsziGBjLcu3YzsAFLDuux';
@@ -17,9 +18,10 @@ function main(sources) {
     // const commentView = isolate(CommentView, commentHash)({ hash: xs.of(commentHash), ...sources });
     // const commentsView = isolate(CommentsView, postHash)({hash: xs.of(postHash), ...sources});
     // const tagInput = isolate(TagInput)(sources);
-    const postsView = isolate(PostsView)({ hashes: xs.of([postHash]), ...sources });
+    // const postsView = isolate(PostsView)({ hashes: xs.of([postHash]), ...sources });
+    const subView = isolate(SubView)({ sub: xs.of('test'), ...sources})
 
-    return postsView;
+    return subView;
     // return {
     //     ...postView,
     //     DOM: postView.DOM.map(dom => div('.container', dom)),
