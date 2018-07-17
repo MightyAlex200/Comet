@@ -24,7 +24,7 @@ export default function CommentView(sources) {
         .map(JSON.parse)
         .map(({ content }) => content)
         .startWith("Loading comment")
-        .map(text => div(".commentContent", text))
+        .map(text => div(".comment-content", text))
     ).flatten();
 
     const subComment$ = sources.props.map((props) =>

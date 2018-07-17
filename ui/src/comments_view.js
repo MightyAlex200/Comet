@@ -32,7 +32,7 @@ export default function CommentsView(sources) {
         .map(dom$Array => xs.combine(...dom$Array))
         .flatten()
         .startWith([])
-        .map(domArray => div(".subComments", { props: { style: "padding-left: 24px" } }, domArray));
+        .map(domArray => div(".sub-comments", { props: { style: "padding-left: 24px" } }, domArray));
 
     const subCommentsHTTP$Array$ = subCommentsSinksArray$.map(sinksArray => sinksArray.map(sinks => sinks.HTTP));
 

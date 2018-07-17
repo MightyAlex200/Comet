@@ -7,21 +7,21 @@ import makeUnique from './make_unique';
 const UNFAVORABLE_TAG = 'Unfavorable sub name. Should be lowercase, trimmed';
 
 function fromTags(tags) {
-    return div('.tagInput.form-control', { style: { display: 'flex', 'align-items': 'center' } }, [
+    return div('.tag-input.form-control', { style: { display: 'flex', 'align-items': 'center' } }, [
         ...(tags.map(tag => a(`.tag.badge${isGoodSubName(tag) ? '.badge-info' : '.badge-danger'}`, 
             { style: { 'min-width': '1em', 'min-height': '1.5em' }, attrs: { href: '#', title: isGoodSubName(tag) ? tag : UNFAVORABLE_TAG, tag } }, tag+'\n'))),
-        input('.tagInputInput', { style: { border: 'none', outline: 'none', flex: 1 } }),
+        input('.tag-input-input', { style: { border: 'none', outline: 'none', flex: 1 } }),
     ]);
 }
 
 export default function TagInput(sources) {
-    const removeLastTag$ = sources.DOM.select('.tagInputInput').events('keydown')
+    const removeLastTag$ = sources.DOM.select('.tag-input-input').events('keydown')
         .filter(event => event.key == 'Backspace')
         .filter(event => event.target.value == '');
     
     const removeTag$ = sources.DOM.select('.tag').events('click');
 
-    const comma$ = sources.DOM.select('.tagInputInput').events('input')
+    const comma$ = sources.DOM.select('.tag-input-input').events('input')
         .filter(event => event.inputType == 'insertText' && event.data == ',');
 
     const tags$ = xs.merge(comma$, removeLastTag$, removeTag$)
