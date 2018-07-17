@@ -5,7 +5,7 @@ import isolate from '@cycle/isolate';
 import CommentsView from './comments_view';
 
 export default function CommentView(sources) {
-    const commentReadHTTP$ = sources.props.map(({ hash }) => ({
+    const commentReadHTTP$ = sources.hash.map(hash => ({
         url: '/fn/comments/commentRead',
         method: 'POST',
         category: `commentRead${hash}`,
@@ -17,7 +17,7 @@ export default function CommentView(sources) {
     // This is a workaround
     // TODO: Create a better, more elegant solution (open up issue in cycle about full http isolation?)
 
-    const commentReadDOM$ = sources.props.map(({ hash }) => sources.HTTP.select(`commentRead${hash}`)
+    const commentReadDOM$ = sources.hash.map(hash => sources.HTTP.select(`commentRead${hash}`)
         .flatten()
         .replaceError(() => xs.of({ text: '{"content": "Error loading comment"}' }))
         .map(res => res.text)
@@ -27,8 +27,8 @@ export default function CommentView(sources) {
         .map(text => div(".comment-content", text))
     ).flatten();
 
-    const subComment$ = sources.props.map((props) =>
-        isolate(CommentsView, props.hash)({ ...sources, props: xs.of(props) })
+    const subComment$ = sources.hash.map(hash =>
+        isolate(CommentsView, hash)({ ...sources, hash: xs.of(hash) })
     );
 
     const subCommentDOM$ = subComment$.map(subComment => subComment.DOM).flatten();

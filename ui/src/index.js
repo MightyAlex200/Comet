@@ -13,9 +13,9 @@ import PostsView from './posts_view';
 function main(sources) {
     const postHash = "QmTw1XpJFmVUCkiNjd63UrjRnAsziGBjLcu3YzsAFLDuux";
     const commentHash = "QmacEfcQbuxDDaatxdknpZzgxWbQ9VpU24o2EJ1UhdhLQg";
-    // const postView = isolate(PostView)({ props: xs.of({ hash: postHash }), ...sources });
-    // const commentView = isolate(CommentView, commentHash)({ props: xs.of({ hash: commentHash }), ...sources });
-    // const commentsView = isolate(CommentsView, postHash)({props: xs.of({hash: postHash}), ...sources});
+    // const postView = isolate(PostView)({ hash: xs.of(postHash), ...sources });
+    // const commentView = isolate(CommentView, commentHash)({ hash: xs.of(commentHash), ...sources });
+    // const commentsView = isolate(CommentsView, postHash)({hash: xs.of(postHash), ...sources});
     // const tagInput = isolate(TagInput)(sources);
     const postsView = isolate(PostsView)({ hashes: xs.of([postHash]), ...sources });
 

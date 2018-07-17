@@ -9,7 +9,7 @@ function renderPost(post) {
 }
 
 export default function PostView(sources) {
-    const postHTTP$ = sources.props.map(({ hash }) => ({
+    const postHTTP$ = sources.hash.map(hash => ({
         url: '/fn/posts/postRead',
         method: 'POST',
         category: `post${hash}`,
@@ -21,7 +21,7 @@ export default function PostView(sources) {
     // This is a workaround
     // TODO: Create a better, more elegant solution (open up issue in cycle about full http isolation?)
 
-    const postDOM$ = sources.props.map(({ hash }) => sources.HTTP.select(`post${hash}`)
+    const postDOM$ = sources.hash.map(hash => sources.HTTP.select(`post${hash}`)
         .flatten()
         .replaceError(() => xs.of({ text: '{"title": "Error", "content": "Could not load post"}' }))
         .map(res => res.text)
@@ -32,8 +32,8 @@ export default function PostView(sources) {
         .startWith(null)
     ).flatten();
 
-    const commentsSinks$ = sources.props.map((props) =>
-        isolate(CommentsView, props.hash)({ ...sources, props: xs.of(props) })
+    const commentsSinks$ = sources.hash.map((hash) =>
+        isolate(CommentsView, hash)({ ...sources, hash: xs.of(hash) })
     );
 
     const commentsDOM$ = commentsSinks$.map(sinks => sinks.DOM).flatten();

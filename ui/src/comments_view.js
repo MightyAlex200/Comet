@@ -9,20 +9,20 @@ export default function CommentsView(sources) {
     // This is a workaround
     // TODO: Create a better, more elegant solution (open up issue in cycle about full http isolation?)
 
-    const fromHashHTTP$ = sources.props.map(({ hash }) => ({
+    const fromHashHTTP$ = sources.hash.map(hash => ({
         url: '/fn/comments/fromHash',
         method: 'POST',
         category: `fromHash${hash}`,
         send: hash,
     }));
 
-    const subCommentsSinksArray$ = sources.props.map(({ hash }) => sources.HTTP.select(`fromHash${hash}`)
+    const subCommentsSinksArray$ = sources.hash.map(hash => sources.HTTP.select(`fromHash${hash}`)
         .flatten()
         .replaceError(() => xs.of({ text: '[]' }))
         .map(res => res.text)
         .map(JSON.parse)
         .map(subCommentArray => subCommentArray.map(subComment => subComment.Hash))
-        .map(hashArray => hashArray.map(hash => isolate(CommentView, hash)({ ...sources, props: xs.of({ hash }) })))
+        .map(hashArray => hashArray.map(hash => isolate(CommentView, hash)({ ...sources, hash: xs.of(hash) })))
         .startWith([])
     ).flatten();
 

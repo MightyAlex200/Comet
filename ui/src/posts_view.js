@@ -7,7 +7,7 @@ import { div } from '@cycle/dom';
 // TODO: Make less verbose
 //   Sub-TODO: create PostSummary which expands into a PostView
 export default function PostsView(sources) {
-    const postViews$ = sources.hashes.map(hashes => hashes.map(hash => isolate(PostView, hash)({ ...sources, props: xs.of({ hash }) })));
+    const postViews$ = sources.hashes.map(hashes => hashes.map(hash => isolate(PostView, hash)({ ...sources, hash: xs.of(hash) })));
 
     const postViewsDOM$ = postViews$
         .map(postViews => postViews.map(postView => postView.DOM))
