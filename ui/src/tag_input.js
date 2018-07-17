@@ -8,8 +8,8 @@ const UNFAVORABLE_TAG = 'Unfavorable sub name. Should be lowercase, trimmed';
 
 function fromTags(tags) {
     return div('.tagInput.form-control', { style: { display: 'flex', 'align-items': 'center' } }, [
-        ...(tags.map(tag => a(`#tag${tag}.tag.badge${isGoodSubName(tag) ? '.badge-info' : '.badge-danger'}`, 
-            { style: { 'min-width': '1em', 'min-height': '1.5em' }, attrs: { href: '#', title: isGoodSubName(tag) ? tag : UNFAVORABLE_TAG } }, tag+'\n'))),
+        ...(tags.map(tag => a(`.tag.badge${isGoodSubName(tag) ? '.badge-info' : '.badge-danger'}`, 
+            { style: { 'min-width': '1em', 'min-height': '1.5em' }, attrs: { href: '#', title: isGoodSubName(tag) ? tag : UNFAVORABLE_TAG, tag } }, tag+'\n'))),
         input('.tagInputInput', { style: { border: 'none', outline: 'none', flex: 1 } }),
     ]);
 }
@@ -30,7 +30,7 @@ export default function TagInput(sources) {
                 return makeUnique(tags.concat(event.target.value.slice(0, -1)))
             } else {
                 if(event.type == 'click') {
-                    return tags.filter(tag => tag != event.target.id.substring(3))
+                    return tags.filter(tag => tag != event.target.getAttribute("tag"))
                 } else {
                     return tags.slice(0, -1);
                 }
