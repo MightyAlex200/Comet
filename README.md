@@ -3,6 +3,8 @@ Comet is a reddit-like Holochain application.
 
 ## Features
 
+- [ ] Polls
+    - Bridge to other poll holochain?
 - [ ] Migration plan
     - Important to do before any official release!
 - [ ] Testing
