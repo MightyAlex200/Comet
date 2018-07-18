@@ -11,6 +11,11 @@
       "$id": "/properties/fraction",
       "type": "number",
       "default": 0
+    },
+    "timesUpdated": {
+      "$id": "/properties/timesUpdated",
+      "type": "integer",
+      "default": 0
     }
   },
   "required": [

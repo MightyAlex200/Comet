@@ -17,12 +17,10 @@ Comet is a reddit-like Holochain application.
         - [ ] Changing a comment
         - [ ] Deleting a comment
         - [x] `fromHash`
-    - [ ] Votes
-        - [x] Creating a vote
-        - [x] Can vote only once
-        - [x] Reading a vote
-        - [ ] Changing a vote
-        - [ ] Deleting a vote
+    - [x] Votes
+        - [x] Voting
+        - [x] Revoting
+        - [x] Going back to original vote
         - [x] `fromHash`
 - [x] Posts
 - [x] Subs ([Bought from Subway™](https://youtu.be/oQYwFND7rHE))

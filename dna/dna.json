@@ -168,28 +168,18 @@
             ],
             "Functions": [
                 {
-                    "Name": "voteCreate",
-                    "CallingType": "json",
-                    "Exposure": "public"
-                },
-                {
-                    "Name": "voteRead",
-                    "CallingType": "json",
-                    "Exposure": "public"
-                },
-                {
-                    "Name": "voteUpdate",
-                    "CallingType": "json",
-                    "Exposure": "public"
-                },
-                {
-                    "Name": "voteDelete",
+                    "Name": "vote",
                     "CallingType": "json",
                     "Exposure": "public"
                 },
                 {
                     "Name": "fromHash",
                     "CallingType": "string",
+                    "Exposure": "public"
+                },
+                {
+                    "Name": "myVote",
+                    "CallingType": "json",
                     "Exposure": "public"
                 }
             ]
