@@ -114,7 +114,7 @@
         {
             "Convey": "Vote on a post",
             "Zome": "votes",
-            "FnName": "voteCreate",
+            "FnName": "vote",
             "Input": {
                 "voteEntry": {
                     "isPositive": true,
@@ -134,14 +134,39 @@
             "Benchmark": false
         },
         {
-            "Convey": "Read a vote",
+            "Convey": "Revote a post",
             "Zome": "votes",
-            "FnName": "voteRead",
-            "Input": "QmR6A6ZihLvuZ2SLXLCbyRubpPbwrEGc8PwTUEjLfLBSka",
-            "Output": {
-                "isPositive": true,
-                "fraction": 1
+            "FnName": "vote",
+            "Input": {
+                "voteEntry": {
+                    "isPositive": false,
+                    "fraction": 1
+                },
+                "targetHash": "QmfYiLsf3uK9b1XjqX7yo47NyG6D1j8f3fAX6RBptcZ7KY"
             },
+            "Output": "QmRjaQwmyCwGyYWK81MmWr4bpzFi3YJ9axy9y9QuKJUmtR",
+            "Err": null,
+            "ErrMsg": "",
+            "Regexp": "",
+            "Time": 0,
+            "Wait": 0,
+            "Exposure": "public",
+            "Raw": false,
+            "Repeat": 0,
+            "Benchmark": false
+        },
+        {
+            "Convey": "Re-revote a post",
+            "Zome": "votes",
+            "FnName": "vote",
+            "Input": {
+                "voteEntry": {
+                    "isPositive": true,
+                    "fraction": 1
+                },
+                "targetHash": "QmfYiLsf3uK9b1XjqX7yo47NyG6D1j8f3fAX6RBptcZ7KY"
+            },
+            "Output": "QmZkaXLkVWdpcynzsuQ2MiteNnJ7CqzazyiKq14tecUpPY",
             "Err": null,
             "ErrMsg": "",
             "Regexp": "",
@@ -157,29 +182,9 @@
             "Zome": "votes",
             "FnName": "fromHash",
             "Input": "QmfYiLsf3uK9b1XjqX7yo47NyG6D1j8f3fAX6RBptcZ7KY",
-            "Output": "[{\"Entry\":{\"fraction\":1,\"isPositive\":true},\"EntryType\":\"vote\",\"Hash\":\"QmR6A6ZihLvuZ2SLXLCbyRubpPbwrEGc8PwTUEjLfLBSka\",\"Source\":\"Qmc6yUrT2oAEKcTJ6AD1kaZGnNGYwPwVBzGxMReRAt5UFf\"}]",
+            "Output": "[{\"Entry\":{\"fraction\":1,\"isPositive\":true,\"timesUpdated\":1},\"EntryType\":\"vote\",\"Hash\":\"QmR6A6ZihLvuZ2SLXLCbyRubpPbwrEGc8PwTUEjLfLBSka\",\"Source\":\"Qmc6yUrT2oAEKcTJ6AD1kaZGnNGYwPwVBzGxMReRAt5UFf\"}]",
             "Err": null,
             "ErrMsg": "",
-            "Regexp": "",
-            "Time": 0,
-            "Wait": 0,
-            "Exposure": "public",
-            "Raw": false,
-            "Repeat": 0,
-            "Benchmark": false
-        },
-        {
-            "Convey": "Fail to vote on a post",
-            "Zome": "votes",
-            "FnName": "voteCreate",
-            "Input": {
-                "voteEntry": {
-                    "isPositive": false,
-                    "fraction": 0.5
-                },
-                "targetHash": "QmfYiLsf3uK9b1XjqX7yo47NyG6D1j8f3fAX6RBptcZ7KY"
-            },
-            "ErrMsg": "Validation Failed",
             "Regexp": "",
             "Time": 0,
             "Wait": 0,

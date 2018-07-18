@@ -19,28 +19,35 @@ function markUpdated(newEntry, oldEntry) {
 
 // Exposed functions
 
-function voteCreate(input) {
-  var voteHash = commit("vote", input.voteEntry);
-  var linkHash = commit("voteLink", { Links: [{ Base: input.targetHash, Link: voteHash, Tag: "vote" }] });
-  return voteHash;
-}
-
-function voteRead(voteHash) {
-  var vote = get(voteHash);
-  return vote;
-}
-
-function voteUpdate(params) {
-  var replaces = params.replaces;
-  var newEntry = params.newEntry;
-  var voteHash = update("voteLink", newEntry, replaces);
-  markUpdated(voteHash, replaces);
-  return voteHash;
-}
-
-function voteDelete(voteLinkHash) {
-  var result = remove(voteLinkHash);
-  return result;
+function vote(input) {
+  var voteLink = myVote(input.targetHash);
+  if(voteLink) {
+    // if voted on it before, update vote entry\
+    var newVote;
+    var voteEntry = input.voteEntry;
+    function startsWith(str, search) {
+      return str.toString().substr(0, search.length) == search;
+    }
+    while(true) {
+      try {
+        newVote = update("vote", voteEntry, makeHash("vote", voteLink.Entry));
+        markUpdated(newVote, makeHash("vote", voteLink.Entry));
+        break;
+      } catch(e) {
+        if(startsWith(e, '{"errorMessage":"Error executing mod: Modification Loop"')) {
+          voteEntry.timesUpdated = (voteEntry.timesUpdated || 0) + 1
+        } else {
+          throw e;
+        }
+      }
+    }
+    return newVote;
+  } else {
+    // if not voted on it before, just create a vote & link it
+    var newVote = commit("vote", input.voteEntry);
+    var newVoteLink = commit("voteLink", { Links: [{ Base: input.targetHash, Link: newVote, Tag: "vote" }] });
+    return newVote;
+  }
 }
 
 function fromHash(hash, statusMask) {
@@ -50,6 +57,18 @@ function fromHash(hash, statusMask) {
   return it;
 }
 
+function myVote(hash) {
+  var links = getLinks(hash, "vote", { Load: true });
+
+  for(var i = 0; i < links.length; i++) {
+    var link = links[i];
+    if(link.Source == App.Key.Hash) {
+      return link;
+    }
+  }
+
+  return null;
+}
 
 // -----------------------------------------------------------------
 //  The Genesis Function https://developer.holochain.org/genesis
@@ -82,7 +101,7 @@ function validateCommit(entryName, entry, header, pkg, sources) {
       // be sure to consider many edge cases for validating
       // do not just flip this to true without considering what that means
       // the action will ONLY be successfull if this returns true, so watch out!
-      return entry.fraction > 0 && entry.fraction <= 1;
+      return entry.fraction >= 0 && entry.fraction <= 1;
     case "voteLink":
       // be sure to consider many edge cases for validating
       // do not just flip this to true without considering what that means
@@ -145,12 +164,18 @@ function validateMod(entryName, entry, header, replaces, pkg, sources) {
       // be sure to consider many edge cases for validating
       // do not just flip this to true without considering what that means
       // the action will ONLY be successfull if this returns true, so watch out!
-      return false;
+
+      // Prevents modification loops (entry a updated to b, b updated to a)
+      if(makeHash("vote", get(makeHash("vote", entry))) == makeHash("vote", get(replaces))) {
+        throw "Modification Loop";
+      }
+
+      return (get(replaces, { GetMask: HC.GetMask.Sources })[0] == sources[0]);
     case "voteLink":
       // be sure to consider many edge cases for validating
       // do not just flip this to true without considering what that means
       // the action will ONLY be successfull if this returns true, so watch out!
-      return get(replaces, { GetMask: HC.GetMask.Sources })[0] == sources[0];
+      return false;
     default:
       // invalid entry name
       return false;
@@ -176,7 +201,7 @@ function validateDel(entryName, hash, pkg, sources) {
       // be sure to consider many edge cases for validating
       // do not just flip this to true without considering what that means
       // the action will ONLY be successfull if this returns true, so watch out!
-      return get(hash, { GetMask: HC.GetMask.Sources })[0] == sources[0];
+      return false;
     default:
       // invalid entry name
       return false;
