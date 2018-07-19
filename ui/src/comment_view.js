@@ -1,8 +1,9 @@
 //@ts-check
 import xs from 'xstream';
-import { div } from '@cycle/dom';
+import { div, small } from '@cycle/dom';
 import isolate from '@cycle/isolate';
 import CommentsView from './comments_view';
+import VoteView from './vote_view';
 
 export default function CommentView(sources) {
     const commentReadHTTP$ = sources.hash.map(hash => ({
@@ -35,10 +36,31 @@ export default function CommentView(sources) {
 
     const subCommentHTTP$ = subComment$.map(subComment => subComment.HTTP).flatten();
 
-    const dom$ = xs.combine(commentReadDOM$, subCommentDOM$)
-        .map(children => div('.comment', {}, children));
+    const voteSink$ = sources.hash.map(hash => isolate(VoteView, `vote${hash}`)({...sources, hash: xs.of(hash)}));
 
-    const http$ = xs.merge(commentReadHTTP$, subCommentHTTP$);
+    const voteHTTP$ = voteSink$.map(voteSinks => voteSinks.HTTP).flatten();
+
+    const voteDOM$ = voteSink$.map(voteSinks => voteSinks.DOM).flatten().startWith(null);
+
+    const dom$ = xs.combine(sources.hash, voteDOM$, commentReadDOM$, subCommentDOM$)
+        .map(([hash, voteDOM,...children]) => div('.comment-container', { style: { display: 'flex' } }, [
+            div('.comment-left', { style: { display: 'flex', 'flex-direction': 'column', 'align-items': 'center' } }, [
+                div(`.comment-vote-${hash}.collapse.show`, voteDOM),
+                div('.comment-side-bar', {
+                    style: { 'background-color': 'cornflowerblue', margin: '4px', width: '4px', flex: 1, cursor: 'pointer' },
+                    attrs: { 'data-toggle': 'collapse', 'data-target': `.comment-children-${hash},.comment-vote-${hash}` },
+                }),
+            ]),
+            div('.comment-right', { style: { flex: 1 } }, [
+                small('.comment-header', { 
+                    attrs: { 'data-toggle': 'collapse', 'data-target': `.comment-children-${hash},.comment-vote-${hash}` },
+                    style: { cursor: 'pointer' },
+                }, '[+] Comment'),
+                div(`.comment-children-${hash}.collapse.show`, children),
+            ]),
+        ]));
+
+    const http$ = xs.merge(commentReadHTTP$, subCommentHTTP$, voteHTTP$);
 
     const sinks = {
         DOM: dom$,
