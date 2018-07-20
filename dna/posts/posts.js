@@ -243,6 +243,10 @@ function validateLink(entryName, baseHash, links, pkg, sources) {
       // the action will ONLY be successfull if this returns true, so watch out!
       return false;
     case "subLink":
+      var baseEntry = get(links[0].Base);
+      if(baseEntry.anchorType != "sub" || baseEntry.anchorText != Math.abs(parseInt(baseEntry.anchorText)).toString()) {
+        return false;
+      }
     case "userLink":
       var linkEntryType = get(links[0].Link, { GetMask: HC.GetMask.EntryType });
       return linkEntryType == "post";
