@@ -65,37 +65,21 @@ export default function VoteView(sources) {
         .startWith(0)
         .map(vote => vote * 100)
         .map(votePercentage =>
-            div('.vote-view', { style: { margin: '6px' }}, [
+            div('.vote-view', [
                 div('.upvote-holder', [
-                    span('.upvote-button.material-icons', {
-                        style: {
-                            cursor: 'pointer',
-                            position: 'absolute'
-                        }
-                    }, 'arrow_upward'),
+                    span('.upvote-button.material-icons', 'arrow_upward'),
                     span('.upvote-representation.material-icons', { 
                         style: {
-                            cursor: 'pointer',
-                            'clip-path': `polygon(0 ${100 - votePercentage}%, 100% ${100 - votePercentage}%, 100% 100%, 0 100%)` ,
-                            'pointer-events': 'none',
-                            color: 'orange',
+                            'clip-path': `polygon(0 ${100 - votePercentage}%, 100% ${100 - votePercentage}%, 100% 100%, 0 100%)`
                         } 
                     }, 'arrow_upward'),
                 ]),
                 div('.downvote-holder', [
-                    span('.downvote-button.material-icons', {
-                        style: {
-                            cursor: 'pointer',
-                            position: 'absolute',
-                        }
-                    }, 'arrow_downward'),
+                    span('.downvote-button.material-icons', 'arrow_downward'),
                     span('.downvote-representation.material-icons', { 
                         style: {
-                            cursor: 'pointer',
-                            'clip-path': `polygon(0 0, 100% 0, 100% ${-votePercentage}%, 0 ${-votePercentage}%)`,
-                            'pointer-events': 'none',
-                            color: 'blueviolet',
-                        } 
+                            'clip-path': `polygon(0 0, 100% 0, 100% ${-votePercentage}%, 0 ${-votePercentage}%)`
+                        }
                     }, 'arrow_downward'),
                 ]),
             ])

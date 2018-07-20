@@ -7,10 +7,10 @@ import makeUnique from './make_unique';
 const UNFAVORABLE_TAG = 'Unfavorable sub name. Should be lowercase, trimmed';
 
 function fromTags(tags) {
-    return div('.tag-input.form-control', { style: { display: 'flex', 'align-items': 'center' } }, [
+    return div('.tag-input.form-control', [
         ...(tags.map(tag => a(`.tag.badge${isGoodSubName(tag) ? '.badge-info' : '.badge-danger'}`, 
-            { style: { 'min-width': '1em', 'min-height': '1.5em' }, attrs: { href: '#', title: isGoodSubName(tag) ? tag : UNFAVORABLE_TAG, tag } }, tag+'\n'))),
-        input('.tag-input-input', { style: { border: 'none', outline: 'none', flex: 1 } }),
+            { attrs: { href: '#', title: isGoodSubName(tag) ? tag : UNFAVORABLE_TAG, tag } }, tag+'\n'))),
+        input('.tag-input-input'),
     ]);
 }
 

@@ -50,11 +50,7 @@ export default function PostView(sources) {
     const dom$ = xs.combine(voteDOM$, postDOM$, commentsDOM$)
         .map(([voteDOM, postDOM, commentsDOM]) => div('.post.card', [
             div('.card-body', [
-                div('.post-vote-container', {
-                    style: {
-                        display: 'flex',
-                    }
-                }, [
+                div('.post-vote-container', [
                     voteDOM,
                     postDOM
                 ]),

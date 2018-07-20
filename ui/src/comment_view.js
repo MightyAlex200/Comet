@@ -43,18 +43,16 @@ export default function CommentView(sources) {
     const voteDOM$ = voteSink$.map(voteSinks => voteSinks.DOM).flatten().startWith(null);
 
     const dom$ = xs.combine(sources.hash, voteDOM$, commentReadDOM$, subCommentDOM$)
-        .map(([hash, voteDOM,...children]) => div('.comment-container', { style: { display: 'flex' } }, [
-            div('.comment-left', { style: { display: 'flex', 'flex-direction': 'column', 'align-items': 'center' } }, [
+        .map(([hash, voteDOM,...children]) => div('.comment-container', [
+            div('.comment-left', [
                 div(`.comment-vote-${hash}.collapse.show`, voteDOM),
                 div('.comment-side-bar', {
-                    style: { 'background-color': 'cornflowerblue', margin: '4px 16px', width: '4px', flex: 1, cursor: 'pointer' },
                     attrs: { 'data-toggle': 'collapse', 'data-target': `.comment-children-${hash},.comment-vote-${hash}` },
                 }),
             ]),
-            div('.comment-right', { style: { flex: 1 } }, [
+            div('.comment-right', [
                 small('.comment-header', { 
-                    attrs: { 'data-toggle': 'collapse', 'data-target': `.comment-children-${hash},.comment-vote-${hash}` },
-                    style: { cursor: 'pointer' },
+                    attrs: { 'data-toggle': 'collapse', 'data-target': `.comment-children-${hash},.comment-vote-${hash}` }
                 }, '[+] Comment'),
                 div(`.comment-children-${hash}.collapse.show`, children),
             ]),
