@@ -9,7 +9,7 @@
                     "title": "Hello, Holo!",
                     "content": "This is Comet, the distributed reddit-like application!"
                 },
-                "subs": ["test", "introductions", "holochain"]
+                "subs": ["3562527", "2537325", "6432432"]
             },
             "Output": "QmTw1XpJFmVUCkiNjd63UrjRnAsziGBjLcu3YzsAFLDuux",
             "Err": null,
@@ -99,7 +99,7 @@
             "Convey": "Read posts from a sub",
             "Zome": "posts",
             "FnName": "fromSub",
-            "Input": "test",
+            "Input": "3562527",
             "Output": "[{\"Entry\":{\"content\":\"Ĉi tio estas Cometo, la plurkomputila redditsimila programaro!\",\"title\":\"Saluton, Holo!\"},\"EntryType\":\"post\",\"Hash\":\"QmTw1XpJFmVUCkiNjd63UrjRnAsziGBjLcu3YzsAFLDuux\",\"Source\":\"Qmc6yUrT2oAEKcTJ6AD1kaZGnNGYwPwVBzGxMReRAt5UFf\"}]",
             "Err": null,
             "ErrMsg": "",
