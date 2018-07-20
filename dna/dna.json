@@ -45,13 +45,6 @@
                     "Schema": "",
                     "SchemaFile": "",
                     "Sharing": "public"
-                },
-                {
-                    "Name": "crosspost",
-                    "DataFormat": "links",
-                    "Schema": "",
-                    "SchemaFile": "",
-                    "Sharing": "public"
                 }
             ],
             "Functions": [

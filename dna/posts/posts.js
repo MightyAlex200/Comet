@@ -148,7 +148,6 @@ function validateCommit(entryName, entry, header, pkg, sources) {
       return true;
     case "subLink":
     case "userLink":
-    case "crosspost":
       return true;
     default:
       // invalid entry name
@@ -174,7 +173,6 @@ function validatePut(entryName, entry, header, pkg, sources) {
       return true;
     case "subLink":
     case "userLink":
-    case "crosspost":
       return true;
     default:
       // invalid entry name
@@ -201,7 +199,6 @@ function validateMod(entryName, entry, header, replaces, pkg, sources) {
       return get(replaces, { GetMask: HC.GetMask.Sources })[0] == sources[0];
     case "subLink":
     case "userLink":
-    case "crosspost":
       return false;
     default:
       // invalid entry name
@@ -222,7 +219,6 @@ function validateDel(entryName, hash, pkg, sources) {
     case "post":
     case "subLink":
     case "userLink":
-    case "crosspost":
       return get(hash, { GetMask: HC.GetMask.Sources })[0] == sources[0];
     default:
       // invalid entry name
@@ -248,7 +244,6 @@ function validateLink(entryName, baseHash, links, pkg, sources) {
       return false;
     case "subLink":
     case "userLink":
-    case "crosspost":
       var linkEntryType = get(links[0].Link, { GetMask: HC.GetMask.EntryType });
       return linkEntryType == "post";
     default:
