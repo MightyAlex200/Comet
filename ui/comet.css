@@ -54,6 +54,7 @@
 
 .vote-view {
     margin: 6px;
+    text-align: center;
 }
 
 .upvote-button, .downvote-button {
