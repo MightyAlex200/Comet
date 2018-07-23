@@ -20,7 +20,6 @@
     "@cycle/http": "^14.9.0",
     "@cycle/isolate": "^3.3.0",
     "@cycle/run": "^4.4.0",
-    "babel-cli": "^6.26.0",
     "babelify": "^9.0.0",
     "bootstrap": "^4.1.2",
     "browserify": "^16.2.2",
