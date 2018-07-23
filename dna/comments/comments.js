@@ -17,10 +17,18 @@ function markUpdated(newEntry, oldEntry) {
   });
 }
 
+function makeUnique(entry) {
+  var newEntry = entry;
+  newEntry.agentHash = App.Agent.Hash;
+  newEntry.timestamp = Date.now();
+  return newEntry;
+}
+
 // Exposed functions
 
 function commentCreate(input) {
-  var commentHash = commit("comment", input.commentEntry);
+  var commentEntry = makeUnique(input.commentEntry);
+  var commentHash = commit("comment", commentEntry);
   var linkHash = commit("commentLink", { Links: [{ Base: input.targetHash, Link: commentHash, Tag: "comment" }] });
   return commentHash;
 }
@@ -32,7 +40,7 @@ function commentRead(commentHash) {
 
 function commentUpdate(params) {
   var replaces = params.replaces;
-  var newEntry = params.newEntry;
+  var newEntry = makeUnique(params.newEntry);
   var commentHash = update("commentLink", newEntry, replaces);
   markUpdated(commentHash, replaces);
   return commentHash;

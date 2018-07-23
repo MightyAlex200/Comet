@@ -12,14 +12,21 @@
       "type": "number",
       "default": 0
     },
-    "timesUpdated": {
-      "$id": "/properties/timesUpdated",
-      "type": "integer",
-      "default": 0
+    "agentHash": {
+      "$id": "/properties/agentHash",
+      "type": "string",
+      "default": ""
+    },
+    "timestamp": {
+      "$id": "/properties/timestamp",
+      "type": "number",
+      "default": ""
     }
   },
   "required": [
     "isPositive",
-    "fraction"
+    "fraction",
+    "agentHash",
+    "timestamp"
   ]
 }

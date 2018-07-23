@@ -33,10 +33,18 @@ function markUpdated(newEntry, oldEntry) {
   });
 }
 
+function makeUnique(entry) {
+  var newEntry = entry;
+  newEntry.agentHash = App.Agent.Hash;
+  newEntry.timestamp = Date.now();
+  return newEntry;
+}
+
 // Exposed functions
 
 function postCreate(input) {
-  var postHash = commit("post", input.postEntry);
+  var postEntry = makeUnique(input.postEntry);
+  var postHash = commit("post", postEntry);
   for(var i = 0; i < input.subs.length; i++) {
     var sub = input.subs[i];
     var anchorHash = anchor("sub", sub || '');
@@ -69,7 +77,7 @@ function postRead(postHash) {
 
 function postUpdate(params) {
   var replaces = params.replaces;
-  var newEntry = params.newEntry;
+  var newEntry = makeUnique(params.newEntry);
   var postHash = update("post", newEntry, replaces);
   markUpdated(postHash, replaces);
   return postHash;

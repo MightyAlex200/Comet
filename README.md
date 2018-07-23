@@ -7,26 +7,27 @@ Comet is a reddit-like Holochain application.
     - Bridge to other poll holochain?
 - [ ] Migration plan
     - Important to do before any official release!
-- [ ] Testing
-    - [ ] Posts
-        - [x] Creating a post
-        - [x] Reading a post
-        - [x] Changing a post
-        - [ ] Deleting a post
-        - [x] `fromSub`
-        - [x] `fromUser`
-        - [x] `crosspost`
-    - [ ] Comments
-        - [x] Creating a comment
-        - [x] Reading a comment
-        - [ ] Changing a comment
-        - [ ] Deleting a comment
-        - [x] `fromHash`
-    - [x] Votes
-        - [x] Voting
-        - [x] Revoting
-        - [x] Going back to original vote
-        - [x] `fromHash`
+- [ ] ~~Testing~~
+    - [ ] ~~Posts~~
+        - [x] ~~Creating a post~~
+        - [x] ~~Reading a post~~
+        - [x] ~~Changing a post~~
+        - [ ] ~~Deleting a post~~
+        - [x] ~~`fromSub`~~
+        - [x] ~~`fromUser`~~
+        - [x] ~~`crosspost`~~
+    - [ ] ~~Comments~~
+        - [x] ~~Creating a comment~~
+        - [x] ~~Reading a comment~~
+        - [ ] ~~Changing a comment~~
+        - [ ] ~~Deleting a comment~~
+        - [x] ~~`fromHash`~~
+    - [x] ~~Votes~~
+        - [x] ~~Voting~~
+        - [x] ~~Revoting~~
+        - [x] ~~Going back to original vote~~
+        - [x] ~~`fromHash`~~~~
+    - I'm giving up on testing until it's possible to do it without somehow dereferencing a null pointer (wait for beta)
 - [x] Posts
 - [x] Subs ([Bought from Subway™](https://youtu.be/oQYwFND7rHE))
 - [x] Comments

@@ -11,10 +11,22 @@
       "$id": "/properties/content",
       "type": "string",
       "default": ""
+    },
+    "agentHash": {
+      "$id": "/properties/agentHash",
+      "type": "string",
+      "default": ""
+    },
+    "timestamp": {
+      "$id": "/properties/timestamp",
+      "type": "number",
+      "default": ""
     }
   },
   "required": [
     "title",
-    "content"
+    "content",
+    "agentHash",
+    "timestamp"
   ]
 }
