@@ -22,7 +22,7 @@ function markUpdated(newEntry, oldEntry) {
 function vote(input) {
   var voteLink = myVote(input.targetHash);
   var voteEntry = input.voteEntry;
-  voteEntry.agentHash = App.Agent.Hash;
+  voteEntry.keyHash = App.Key.Hash;
   voteEntry.timestamp = Date.now();
   if(voteLink) {
     // if voted on it before, update vote entry
@@ -88,7 +88,7 @@ function validateCommit(entryName, entry, header, pkg, sources) {
       // be sure to consider many edge cases for validating
       // do not just flip this to true without considering what that means
       // the action will ONLY be successfull if this returns true, so watch out!
-      return entry.fraction >= 0 && entry.fraction <= 1;
+      return entry.fraction >= 0 && entry.fraction <= 1 && entry.keyHash == sources[0];
     case "voteLink":
       // be sure to consider many edge cases for validating
       // do not just flip this to true without considering what that means

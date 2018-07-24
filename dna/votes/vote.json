@@ -12,8 +12,8 @@
       "type": "number",
       "default": 0
     },
-    "agentHash": {
-      "$id": "/properties/agentHash",
+    "keyHash": {
+      "$id": "/properties/keyHash",
       "type": "string",
       "default": ""
     },
@@ -26,7 +26,7 @@
   "required": [
     "isPositive",
     "fraction",
-    "agentHash",
+    "keyHash",
     "timestamp"
   ]
 }

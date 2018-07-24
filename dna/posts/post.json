@@ -12,8 +12,8 @@
       "type": "string",
       "default": ""
     },
-    "agentHash": {
-      "$id": "/properties/agentHash",
+    "keyHash": {
+      "$id": "/properties/keyHash",
       "type": "string",
       "default": ""
     },
@@ -26,7 +26,7 @@
   "required": [
     "title",
     "content",
-    "agentHash",
+    "keyHash",
     "timestamp"
   ]
 }

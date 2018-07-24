@@ -35,7 +35,7 @@ function markUpdated(newEntry, oldEntry) {
 
 function makeUnique(entry) {
   var newEntry = entry;
-  newEntry.agentHash = App.Agent.Hash;
+  newEntry.keyHash = App.Key.Hash;
   newEntry.timestamp = Date.now();
   return newEntry;
 }
@@ -153,7 +153,7 @@ function validateCommit(entryName, entry, header, pkg, sources) {
       // be sure to consider many edge cases for validating
       // do not just flip this to true without considering what that means
       // the action will ONLY be successfull if this returns true, so watch out!
-      return true;
+      return entry.keyHash == sources[0];
     case "subLink":
     case "userLink":
       return true;
