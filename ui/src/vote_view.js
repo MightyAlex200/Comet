@@ -61,7 +61,7 @@ export default function VoteView(sources) {
 
     const voteCounter$ = xs.combine(sources.hash, sources.karmaMap)
         .map(([hash, karmaMap]) => 
-            isolate(VoteCounter, `voteCounter${hash}`)({ ...sources, hash: xs.of(hash), karmaMap: xs.of(karmaMap) })
+            VoteCounter({ ...sources, hash: xs.of(hash), karmaMap: xs.of(karmaMap) })
         );
 
     const voteCounterHTTP$ = voteCounter$.map(voteCounter => voteCounter.HTTP).flatten();
@@ -73,7 +73,19 @@ export default function VoteView(sources) {
 
     const vote$ = xs.merge(upvote$, downvote$, myVote$);
 
-    const http$ = xs.merge(myVoteHTTP$, voteHTTP$, voteCounterHTTP$);
+    const recalculateHTTP$ = sources.hash.map(hash => 
+        sources.HTTP
+            .select(`vote${hash}`)
+            .flatten()
+            .mapTo({
+                url: '/fn/votes/fromHash',
+                method: 'POST',
+                category: `fromHash${hash}`,
+                send: hash,
+            })
+    ).flatten();
+
+    const http$ = xs.merge(myVoteHTTP$, voteHTTP$, voteCounterHTTP$, recalculateHTTP$);
 
     const dom$ = xs.combine(
         vote$.startWith(0).map(vote => vote * 100),
