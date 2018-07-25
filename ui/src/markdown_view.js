@@ -5,9 +5,9 @@ import toVNode from 'snabbdom/tovnode';
 const md = MarkdownIt();
 
 function toNode(str) {
-    const template = document.createElement('template');
-    template.innerHTML = str;
-    return template.content.firstChild;
+    const div = document.createElement('div');
+    div.innerHTML = str;
+    return div;
 }
 
 export default function MarkdownView(sources) {
