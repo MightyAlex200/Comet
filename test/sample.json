@@ -23,6 +23,28 @@
             "Benchmark": false
         },
         {
+            "Convey": "Crosspost a post",
+            "Zome": "posts",
+            "FnName": "postCreate",
+            "Input": {
+                "postEntry": {
+                    "title": "Hello, Holo!",
+                    "content": "This is Comet, the distributed reddit-like application!"
+                },
+                "subs": ["crossposted"]
+            },
+            "Output": "QmTw1XpJFmVUCkiNjd63UrjRnAsziGBjLcu3YzsAFLDuux",
+            "Err": null,
+            "ErrMsg": "",
+            "Regexp": "",
+            "Time": 0,
+            "Wait": 0,
+            "Exposure": "public",
+            "Raw": false,
+            "Repeat": 0,
+            "Benchmark": false
+        },
+        {
             "Convey": "Read a post",
             "Zome": "posts",
             "FnName": "postRead",

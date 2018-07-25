@@ -17,10 +17,18 @@ function markUpdated(newEntry, oldEntry) {
   });
 }
 
+function makeUnique(entry) {
+  var newEntry = entry;
+  newEntry.keyHash = App.Key.Hash;
+  newEntry.timestamp = Date.now();
+  return newEntry;
+}
+
 // Exposed functions
 
 function commentCreate(input) {
-  var commentHash = commit("comment", input.commentEntry);
+  var commentEntry = makeUnique(input.commentEntry);
+  var commentHash = commit("comment", commentEntry);
   var linkHash = commit("commentLink", { Links: [{ Base: input.targetHash, Link: commentHash, Tag: "comment" }] });
   return commentHash;
 }
@@ -32,14 +40,14 @@ function commentRead(commentHash) {
 
 function commentUpdate(params) {
   var replaces = params.replaces;
-  var newEntry = params.newEntry;
+  var newEntry = makeUnique(params.newEntry);
   var commentHash = update("commentLink", newEntry, replaces);
   markUpdated(commentHash, replaces);
   return commentHash;
 }
 
 function commentDelete(commentLinkHash) {
-  var result = remove(commentLinkHash);
+  var result = remove(commentLinkHash, "deleted");
   return result;
 }
 
@@ -79,7 +87,7 @@ function validateCommit(entryName, entry, header, pkg, sources) {
       // be sure to consider many edge cases for validating
       // do not just flip this to true without considering what that means
       // the action will ONLY be successfull if this returns true, so watch out!
-      return true;
+      return entry.keyHash == sources[0];
     case "commentLink":
       // be sure to consider many edge cases for validating
       // do not just flip this to true without considering what that means

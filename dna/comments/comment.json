@@ -6,9 +6,21 @@
       "$id": "/properties/content",
       "type": "string",
       "default": ""
+    },
+    "keyHash": {
+      "$id": "/properties/keyHash",
+      "type": "string",
+      "default": ""
+    },
+    "timestamp": {
+      "$id": "/properties/timestamp",
+      "type": "number",
+      "default": ""
     }
   },
   "required": [
-    "content"
+    "content",
+    "keyHash",
+    "timestamp"
   ]
 }

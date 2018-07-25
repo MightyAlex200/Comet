@@ -21,30 +21,17 @@ function markUpdated(newEntry, oldEntry) {
 
 function vote(input) {
   var voteLink = myVote(input.targetHash);
+  var voteEntry = input.voteEntry;
+  voteEntry.keyHash = App.Key.Hash;
+  voteEntry.timestamp = Date.now();
   if(voteLink) {
-    // if voted on it before, update vote entry\
-    var newVote;
-    var voteEntry = input.voteEntry;
-    function startsWith(str, search) {
-      return str.toString().substr(0, search.length) == search;
-    }
-    while(true) {
-      try {
-        newVote = update("vote", voteEntry, makeHash("vote", voteLink.Entry));
-        markUpdated(newVote, makeHash("vote", voteLink.Entry));
-        break;
-      } catch(e) {
-        if(startsWith(e, '{"errorMessage":"Error executing mod: Modification Loop"')) {
-          voteEntry.timesUpdated = (voteEntry.timesUpdated || 0) + 1
-        } else {
-          throw e;
-        }
-      }
-    }
+    // if voted on it before, update vote entry
+    var newVote = update("vote", voteEntry, makeHash("vote", voteLink.Entry));
+    markUpdated(newVote, makeHash("vote", voteLink.Entry));
     return newVote;
   } else {
     // if not voted on it before, just create a vote & link it
-    var newVote = commit("vote", input.voteEntry);
+    var newVote = commit("vote", voteEntry);
     var newVoteLink = commit("voteLink", { Links: [{ Base: input.targetHash, Link: newVote, Tag: "vote" }] });
     return newVote;
   }
@@ -101,7 +88,7 @@ function validateCommit(entryName, entry, header, pkg, sources) {
       // be sure to consider many edge cases for validating
       // do not just flip this to true without considering what that means
       // the action will ONLY be successfull if this returns true, so watch out!
-      return entry.fraction >= 0 && entry.fraction <= 1;
+      return entry.fraction >= 0 && entry.fraction <= 1 && entry.keyHash == sources[0];
     case "voteLink":
       // be sure to consider many edge cases for validating
       // do not just flip this to true without considering what that means

@@ -12,14 +12,21 @@
       "type": "number",
       "default": 0
     },
-    "timesUpdated": {
-      "$id": "/properties/timesUpdated",
-      "type": "integer",
-      "default": 0
+    "keyHash": {
+      "$id": "/properties/keyHash",
+      "type": "string",
+      "default": ""
+    },
+    "timestamp": {
+      "$id": "/properties/timestamp",
+      "type": "number",
+      "default": ""
     }
   },
   "required": [
     "isPositive",
-    "fraction"
+    "fraction",
+    "keyHash",
+    "timestamp"
   ]
 }
