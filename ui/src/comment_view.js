@@ -5,6 +5,7 @@ import isolate from '@cycle/isolate';
 import CommentsView from './comments_view';
 import VoteView from './vote_view';
 import MarkdownView from './markdown_view';
+import CommentComposeView from './comment_compose_view';
 
 export default function CommentView(sources) {
     const commentReadHTTP$ = sources.hash.map(hash => ({
@@ -46,7 +47,13 @@ export default function CommentView(sources) {
 
     const voteDOM$ = voteSink$.map(voteSinks => voteSinks.DOM).flatten().startWith(null);
 
-    const dom$ = xs.combine(sources.hash, voteDOM$, commentReadDOM$, subCommentDOM$)
+    const replyComposeView = CommentComposeView(sources);
+
+    const replyComposeDOM$ = replyComposeView.DOM;
+
+    const replyComposeHTTP$ = replyComposeView.HTTP;
+
+    const dom$ = xs.combine(sources.hash, voteDOM$, commentReadDOM$, replyComposeDOM$, subCommentDOM$)
         .map(([hash, voteDOM,...children]) => div('.comment-container', [
             div('.comment-left', [
                 div(`.comment-vote-${hash}.collapse.show`, voteDOM),
@@ -62,7 +69,7 @@ export default function CommentView(sources) {
             ]),
         ]));
 
-    const http$ = xs.merge(commentReadHTTP$, subCommentHTTP$, voteHTTP$);
+    const http$ = xs.merge(commentReadHTTP$, subCommentHTTP$, voteHTTP$, replyComposeHTTP$);
 
     const sinks = {
         DOM: dom$,

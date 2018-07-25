@@ -5,6 +5,7 @@ import isolate from '@cycle/isolate';
 import CommentsView from './comments_view';
 import VoteView from './vote_view';
 import MarkdownView from './markdown_view';
+import CommentComposeView from './comment_compose_view';
 
 export default function PostView(sources) {
     const postHTTP$ = sources.hash.map(hash => ({
@@ -49,19 +50,26 @@ export default function PostView(sources) {
 
     const commentsHTTP$ = commentsSinks$.map(sinks => sinks.HTTP).flatten();
 
-    const dom$ = xs.combine(voteDOM$, postDOM$, commentsDOM$)
-        .map(([voteDOM, postDOM, commentsDOM]) => div('.post.card', [
+    const replyComposeView = CommentComposeView(sources);
+
+    const replyComposeDOM$ = replyComposeView.DOM;
+
+    const replyComposeHTTP$ = replyComposeView.HTTP;
+    
+    const dom$ = xs.combine(voteDOM$, postDOM$, commentsDOM$, replyComposeDOM$)
+        .map(([voteDOM, postDOM, commentsDOM, replyComposeDOM]) => div('.post.card', [
             div('.card-body', [
                 div('.post-vote-container', [
                     voteDOM,
                     postDOM
-                ]),
+                ]),,
+                replyComposeDOM,
                 hr(),
                 commentsDOM,
             ])
         ]));
 
-    const http$ = xs.merge(postHTTP$, commentsHTTP$, voteHTTP$);
+    const http$ = xs.merge(postHTTP$, commentsHTTP$, voteHTTP$, replyComposeHTTP$);
 
     return {
         DOM: dom$,

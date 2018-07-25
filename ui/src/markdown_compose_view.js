@@ -26,6 +26,7 @@ export default function MarkdownComposeView(sources) {
 
     const sinks = {
         DOM: dom$,
+        text: inputText$,
     };
 
     return sinks; 
