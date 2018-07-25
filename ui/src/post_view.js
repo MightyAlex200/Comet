@@ -4,10 +4,7 @@ import { div, h2, p, hr } from '@cycle/dom';
 import isolate from '@cycle/isolate';
 import CommentsView from './comments_view';
 import VoteView from './vote_view';
-
-function renderPost(post) {
-    return div('.post', [h2(post.title), p(post.content)]);
-}
+import MarkdownView from './markdown_view';
 
 export default function PostView(sources) {
     const postHTTP$ = sources.hash.map(hash => ({
@@ -28,16 +25,21 @@ export default function PostView(sources) {
     // This is a workaround
     // TODO: Create a better, more elegant solution (open up issue in cycle about full http isolation?)
 
-    const postDOM$ = sources.hash.map(hash => sources.HTTP.select(`post${hash}`)
+    const postObject$ = sources.hash.map(hash => sources.HTTP.select(`post${hash}`)
         .flatten()
         .replaceError(() => xs.of({ text: '{"title": "Error", "content": "Could not load post"}' }))
         .map(res => res.text)
         .map(JSON.parse)
-        .map(post =>
-            renderPost(post)
-        )
-        .startWith(null)
     ).flatten();
+
+    const postTitle$ = postObject$.map(postObject => postObject.title);
+
+    const postContent$ = postObject$.map(postObject => postObject.content);
+
+    const markdownView = MarkdownView({ text: postContent$ });
+
+    const postDOM$ = xs.combine(postTitle$, markdownView.DOM)
+        .map(([title, contentDOM]) => div('.post', [h2(title), contentDOM]));
 
     const commentsSinks$ = sources.hash.map((hash) =>
         isolate(CommentsView, hash)({ ...sources, hash: xs.of(hash) })

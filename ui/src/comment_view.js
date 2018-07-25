@@ -4,6 +4,7 @@ import { div, small } from '@cycle/dom';
 import isolate from '@cycle/isolate';
 import CommentsView from './comments_view';
 import VoteView from './vote_view';
+import MarkdownView from './markdown_view';
 
 export default function CommentView(sources) {
     const commentReadHTTP$ = sources.hash.map(hash => ({
@@ -14,19 +15,22 @@ export default function CommentView(sources) {
         ok(res) { if (res) { let text = JSON.parse(res.text); if (text) { return !!text.content } else { return false } } else { return false; }; },
     }));
 
-    // @cycle/http's httpDriver does not actually provide isolation even with a scope
-    // This is a workaround
-    // TODO: Create a better, more elegant solution (open up issue in cycle about full http isolation?)
-
-    const commentReadDOM$ = sources.hash.map(hash => sources.HTTP.select(`commentRead${hash}`)
+    const commentText$ = sources.hash.map(hash => sources.HTTP.select(`commentRead${hash}`)
         .flatten()
         .replaceError(() => xs.of({ text: '{"content": "Error loading comment"}' }))
         .map(res => res.text)
         .map(JSON.parse)
         .map(({ content }) => content)
         .startWith('Loading comment')
-        .map(text => div('.comment-content', text))
     ).flatten();
+
+    const markdownView = MarkdownView({ text: commentText$ });
+
+    // @cycle/http's httpDriver does not actually provide isolation even with a scope
+    // This is a workaround
+    // TODO: Create a better, more elegant solution (open up issue in cycle about full http isolation?)
+
+    const commentReadDOM$ = markdownView.DOM;
 
     const subComment$ = sources.hash.map(hash =>
         isolate(CommentsView, hash)({ ...sources, hash: xs.of(hash) })
