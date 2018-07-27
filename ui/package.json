@@ -17,6 +17,7 @@
     "@babel/core": "^7.0.0-beta.53",
     "@babel/preset-env": "^7.0.0-beta.53",
     "@cycle/dom": "^20.4.0",
+    "@cycle/history": "^6.10.0",
     "@cycle/http": "^14.9.0",
     "@cycle/isolate": "^3.3.0",
     "@cycle/run": "^4.4.0",
