@@ -45,10 +45,10 @@ function makeUnique(entry) {
 function postCreate(input) {
   var postEntry = makeUnique(input.postEntry);
   var postHash = commit("post", postEntry);
-  for(var i = 0; i < input.subs.length; i++) {
-    var sub = input.subs[i];
-    var anchorHash = anchor("sub", sub || '');
-    var subLinkHash = commit("subLink", {
+  for(var i = 0; i < input.tags.length; i++) {
+    var tag = input.tags[i];
+    var anchorHash = anchor("tag", tag || '');
+    var tagLinkHash = commit("tagLink", {
       Links: [
         {
           Base: anchorHash,
@@ -88,8 +88,17 @@ function postDelete(postHash) {
   return result;
 }
 
-function fromSub(sub, statusMask) {
-  return JSON.stringify(getLinks(anchor("sub", sub), "post", { Load: true, StatusMask: statusMask || HC.Status.Live }));
+function fromTag(tag, statusMask) {
+  return JSON.stringify(getLinks(anchor("tag", tag), "post", { Load: true, StatusMask: statusMask || HC.Status.Live }));
+}
+
+function fromTags(tags) {
+  var posts = [];
+  for(var i = 0; i < tags.length; i++) {
+    var tag = tags[i] + ""; // `+ ""` does a cast to string
+    posts = posts.concat(getLinks(anchor("tag", tag), "post", { Load: true }));
+  }
+  return JSON.stringify(posts);
 }
 
 function fromUser(keyHash, statusMask) {
@@ -98,9 +107,9 @@ function fromUser(keyHash, statusMask) {
 
 function crosspost(input) {
   for(var i = 0; i < input.to.length; i++) {
-    var sub = input.to[i];
-    var anchorHash = anchor("sub", sub);
-    var subLinkHash = commit("subLink", {
+    var tag = input.to[i];
+    var anchorHash = anchor("tag", tag);
+    var tagLinkHash = commit("tagLink", {
       Links: [
         {
           Base: anchorHash,
@@ -154,7 +163,7 @@ function validateCommit(entryName, entry, header, pkg, sources) {
       // do not just flip this to true without considering what that means
       // the action will ONLY be successfull if this returns true, so watch out!
       return entry.keyHash == sources[0];
-    case "subLink":
+    case "tagLink":
     case "userLink":
       return true;
     default:
@@ -179,7 +188,7 @@ function validatePut(entryName, entry, header, pkg, sources) {
       // do not just flip this to true without considering what that means
       // the action will ONLY be successfull if this returns true, so watch out!
       return true;
-    case "subLink":
+    case "tagLink":
     case "userLink":
       return true;
     default:
@@ -205,7 +214,7 @@ function validateMod(entryName, entry, header, replaces, pkg, sources) {
       // do not just flip this to true without considering what that means
       // the action will ONLY be successfull if this returns true, so watch out!
       return get(replaces, { GetMask: HC.GetMask.Sources })[0] == sources[0];
-    case "subLink":
+    case "tagLink":
     case "userLink":
       return false;
     default:
@@ -225,7 +234,7 @@ function validateMod(entryName, entry, header, replaces, pkg, sources) {
 function validateDel(entryName, hash, pkg, sources) {
   switch (entryName) {
     case "post":
-    case "subLink":
+    case "tagLink":
     case "userLink":
       return get(hash, { GetMask: HC.GetMask.Sources })[0] == sources[0];
     default:
@@ -250,9 +259,9 @@ function validateLink(entryName, baseHash, links, pkg, sources) {
       // do not just flip this to true without considering what that means
       // the action will ONLY be successfull if this returns true, so watch out!
       return false;
-    case "subLink":
+    case "tagLink":
       var baseEntry = get(links[0].Base);
-      if(baseEntry.anchorType != "sub" || baseEntry.anchorText != Math.abs(parseInt(baseEntry.anchorText)).toString()) {
+      if(baseEntry.anchorType != "tag" || baseEntry.anchorText != Math.abs(parseInt(baseEntry.anchorText)).toString()) {
         return false;
       }
     case "userLink":

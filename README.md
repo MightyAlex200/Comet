@@ -13,7 +13,7 @@ Comet is a reddit-like Holochain application.
         - [x] ~~Reading a post~~
         - [x] ~~Changing a post~~
         - [ ] ~~Deleting a post~~
-        - [x] ~~`fromSub`~~
+        - [x] ~~`fromTag`~~
         - [x] ~~`fromUser`~~
         - [x] ~~`crosspost`~~
     - [ ] ~~Comments~~
@@ -29,7 +29,7 @@ Comet is a reddit-like Holochain application.
         - [x] ~~`fromHash`~~~~
     - I'm giving up on testing until it's possible to do it without somehow dereferencing a null pointer (wait for beta)
 - [x] Posts
-- [x] Subs ([Bought from Subway™](https://youtu.be/oQYwFND7rHE))
+- [x] Tags
 - [x] Comments
 - [x] Voting
 - [ ] Comments (in the code)
@@ -40,14 +40,14 @@ Comet is a reddit-like Holochain application.
         - [ ] TimeMachine
     - [ ] Frontend
 - [ ] UI
-    - Subs
-        - [ ] View subs
-        - [ ] Create subs
-        - [ ] Rename subs
+    - Tags
+        - [ ] View tags
+        - [ ] Create tags
+        - [ ] Rename tags
     - Posts
-        - [ ] View posts on sub
+        - [ ] View posts with tag
         - [ ] View posts on user
-        - [ ] Create posts on sub/user
+        - [ ] Create posts on tag/user
         - [ ] Save posts
     - Comments
         - [ ] View comments on post
