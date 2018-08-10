@@ -3,7 +3,7 @@ import xs from 'xstream';
 import { run } from '@cycle/run';
 import { makeDOMDriver, div } from '@cycle/dom';
 import { makeHTTPDriver } from '@cycle/http';
-import { makeHistoryDriver } from '@cycle/history';
+import { makeHistoryDriver, captureClicks } from '@cycle/history';
 import isolate from '@cycle/isolate';
 import PostView from './post_view';
 import CommentView from './comment_view';
@@ -44,7 +44,7 @@ function main(sources) {
 const drivers = {
     DOM: makeDOMDriver('#app'),
     HTTP: makeHTTPDriver(),
-    history: makeHistoryDriver(),
+    history: captureClicks(makeHistoryDriver()),
 };
 
 run(main, drivers);
