@@ -2,6 +2,7 @@
 import SubView from './sub_view';
 import xs from 'xstream';
 import PostView from './post_view';
+import PostComposeView from './post_compose_view';
 
 function instanceToComponent(instance, sources) {
     let component;
@@ -28,6 +29,9 @@ function instanceToComponent(instance, sources) {
         case '/sub':
             component = SubView;
             componentSources.sub = xs.of(urlArgs.sub);
+        case '/composePost':
+            component = PostComposeView;
+            break;
         default:
             throw 'Invalid path'; // 404
     }
