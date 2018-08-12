@@ -1,7 +1,7 @@
 {
     "version": "0.1.0",
     "summary": "Comet web application",
-    "repository": "https://github.com/user/project.git",
+    "repository": "https://github.com/mightyalex200/comet.git",
     "license": "GPL3",
     "source-directories": [
         "src"
