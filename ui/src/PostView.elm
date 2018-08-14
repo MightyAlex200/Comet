@@ -22,11 +22,7 @@ type Msg
 
 init : ( Model, Cmd Msg )
 init =
-    ( Model Post.empty "" "", Cmd.none )
-
-errorPost : Post
-errorPost =
-    Post "Error loading post" "There was an error loading this post"
+    ( Model Post.Unloaded "" "", Cmd.none )
 
 -- Update
 
@@ -46,7 +42,7 @@ update msg model =
                         Ok res ->
                             RecievePost res
                         Err _ ->
-                            NoOp
+                            RecieveError    
                 body =
                     Http.jsonBody (Json.Encode.string hash)
                 request =
@@ -54,13 +50,20 @@ update msg model =
             in
                 ( { model | hash = hash }, Http.send process request )
         RecieveError ->
-            ( { model | post = errorPost }, Cmd.none )
+            ( { model | post = Post.Error "Error loading post" }, Cmd.none )
 
 -- View
 
 view : Model -> Html Msg
 view model =
     Html.div []
-    [ Html.h1 [] [ Html.text model.post.title ]
-    , Html.p [] [ Html.text model.post.content ]
-    ]
+    (case model.post of
+        Post.Loaded entry ->
+            [ Html.h1 [] [ Html.text entry.title ]
+            , Html.p [] [ Html.text entry.content ]
+            ]
+        Post.Unloaded ->
+            []
+        Post.Error error ->
+            [ Html.text error ]
+    )

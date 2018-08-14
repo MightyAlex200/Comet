@@ -2,15 +2,22 @@ module Post exposing (..)
 
 import Json.Decode as Decode exposing (Decoder)
 
-type alias Post =
+type alias PostEntry =
     { title : String
     , content : String
     }
 
-empty : Post
-empty =
-    Post "" ""
+type Post
+    = Loaded PostEntry
+    | Unloaded
+    | Error String
 
 decoder : Decoder Post
 decoder =
-    Decode.map2 Post (Decode.field "title" Decode.string) (Decode.field "content" Decode.string)
+    let
+        entryDecoder =
+            Decode.map2 PostEntry
+                (Decode.field "title" Decode.string)
+                (Decode.field "content" Decode.string)
+    in
+        Decode.map Loaded (entryDecoder)
