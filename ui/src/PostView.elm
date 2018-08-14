@@ -2,6 +2,7 @@ module PostView exposing (..)
 
 import Post exposing (Post)
 import Html exposing (Html)
+import MarkdownOptions
 import Json.Encode
 import Http
 
@@ -64,7 +65,7 @@ view model =
     (case model.post of
         Post.Loaded entry ->
             [ Html.h1 [] [ Html.text entry.title ]
-            , Html.p [] [ Html.text entry.content ]
+            , MarkdownOptions.safeRender [] entry.content
             ]
         Post.Unloaded ->
             []
