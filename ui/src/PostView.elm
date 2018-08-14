@@ -10,24 +10,22 @@ import Http
 
 type alias Model =
     { post : Post
-    , replyInput : String
     , hash : String
     }
 
 type Msg
     = NoOp
-    | UpdateInput String
     | RecievePost Post
     | RequestPost String
-    | RecieveError -- TODO: Capture error
+    | RecieveError
 
 init : ( Model, Cmd Msg )
 init =
-    ( Model Post.Unloaded "" "", Cmd.none )
+    ( Model Post.Unloaded "", Cmd.none )
 
 fromHash : String -> ( Model, Cmd Msg )
 fromHash hash =
-    update (RequestPost hash) (Model Post.Unloaded "" hash)
+    update (RequestPost hash) (Model Post.Unloaded hash)
 
 -- Update
 
@@ -36,8 +34,6 @@ update msg model =
     case msg of
         NoOp ->
             ( model, Cmd.none )
-        UpdateInput input ->
-            ( { model | replyInput = input }, Cmd.none )
         RecievePost post ->
             ( { model | post = post }, Cmd.none )
         RequestPost hash ->
