@@ -24,6 +24,10 @@ init : ( Model, Cmd Msg )
 init =
     ( Model Post.Unloaded "" "", Cmd.none )
 
+fromHash : String -> ( Model, Cmd Msg )
+fromHash hash =
+    update (RequestPost hash) (Model Post.Unloaded "" hash)
+
 -- Update
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -46,7 +50,7 @@ update msg model =
                 body =
                     Http.jsonBody (Json.Encode.string hash)
                 request =
-                    Http.post "/fn/post/postRead" body Post.decoder
+                    Http.post "/fn/posts/postRead" body Post.decoder
             in
                 ( { model | hash = hash }, Http.send process request )
         RecieveError ->
