@@ -137,7 +137,7 @@ update msg model =
                 request =
                     Http.post "/fn/comments/fromHash" body (Json.Decode.list Comment.decoder)
             in
-                ( model, Http.send process request )
+                ( { model | targetHash = Just hash }, Http.send process request )
         RecieveError ->
             ( { model | targetHash = Nothing }, Cmd.none )
 
