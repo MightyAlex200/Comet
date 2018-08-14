@@ -1,33 +1,53 @@
-import Html exposing (..)
-import Html.Events as Events
+module Main exposing (..)
 
-main =
-    Html.beginnerProgram { model = model, update = update, view = view }
+import Html exposing (Html)
+import PostView
 
 -- Model
 
-type Msg = Increment | Decrement
+type alias Model =
+    { page : Page
+    }
 
-type alias Model = Int
+type Page
+    = PostView PostView.Model
+    --| TagView TagView.Model
+    --| UserView UserView.Model
+    | EmptyPage
 
-model : Model
-model = 0
+type Msg
+    = PostViewMsg PostView.Msg
+    --| TagViewMsg TagView.Msg
+    --| UserViewMsg UserView.Msg
+    | NoOp
+
+init : ( Model, Cmd Msg )
+init =
+    ( Model EmptyPage, Cmd.none )
 
 -- Update
 
-update : Msg -> Model -> Model
+update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        Increment ->
-            model + 1
-        Decrement ->
-            model - 1
+        PostViewMsg msg ->
+            case model.page of
+                PostView postView ->
+                    let
+                        ( newPostView, cmd ) =
+                            PostView.update msg postView
+                    in
+                        ( { model | page = PostView newPostView }, Cmd.map PostViewMsg cmd )
+                _ -> ( model, Cmd.none )
+        NoOp ->
+            ( model, Cmd.none )
 
 -- View
+
 view : Model -> Html Msg
 view model =
-    div []
-    [ button [ Events.onClick Increment ] [ text "+" ]
-    , p [] [ text (toString model) ]
-    , button [ Events.onClick Decrement ] [ text "-" ]
-    ]
+    case model.page of
+        EmptyPage ->
+            Html.div [] []
+        PostView postView ->
+            Html.map PostViewMsg (PostView.view postView)
