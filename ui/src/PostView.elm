@@ -1,8 +1,10 @@
 module PostView exposing (..)
 
+import Tuple exposing (first, second)
 import Post exposing (Post)
 import Html exposing (Html)
 import MarkdownOptions
+import CommentsView
 import Json.Encode
 import Http
 
@@ -10,6 +12,7 @@ import Http
 
 type alias Model =
     { post : Post
+    , comments : CommentsView.Model
     , hash : String
     }
 
@@ -18,14 +21,15 @@ type Msg
     | RecievePost Post
     | RequestPost String
     | RecieveError
+    | CommentsViewMsg CommentsView.Msg
 
 init : ( Model, Cmd Msg )
 init =
-    ( Model Post.Unloaded "", Cmd.none )
+    ( Model Post.Unloaded (first CommentsView.init) "", Cmd.none )
 
 fromHash : String -> ( Model, Cmd Msg )
 fromHash hash =
-    update (RequestPost hash) (Model Post.Unloaded hash)
+    update (RequestPost hash) (Model Post.Unloaded (first CommentsView.init) hash)
 
 -- Update
 
@@ -35,7 +39,15 @@ update msg model =
         NoOp ->
             ( model, Cmd.none )
         RecievePost post ->
-            ( { model | post = post }, Cmd.none )
+            let
+                correctType tuple =
+                    ( first tuple
+                    , Cmd.map CommentsViewMsg (second tuple)
+                    )
+                ( comments, cmd ) =
+                    correctType (CommentsView.fromHash model.hash)
+            in
+                ( { model | post = post, comments = comments }, cmd )
         RequestPost hash ->
             let
                 process result =
@@ -52,6 +64,16 @@ update msg model =
                 ( { model | hash = hash }, Http.send process request )
         RecieveError ->
             ( { model | post = Post.Error "Error loading post" }, Cmd.none )
+        CommentsViewMsg msg ->
+            let
+                correctType tuple =
+                    ( first tuple
+                    , Cmd.map CommentsViewMsg (second tuple)
+                    )
+                ( updatedComments, cmd ) =
+                    correctType (CommentsView.update msg model.comments)
+            in
+                ( { model | comments = updatedComments }, cmd )
 
 -- View
 

@@ -17,18 +17,25 @@ import Http
 -- Model
 
 type alias SingleView =
-    { comment : Comment
+    { replies : Replies
+    , hash : Maybe String
+    , comment : Comment
     }
+
+type Replies
+    = Replies Model
+    | Unloaded
 
 type SingleMsg
     = NoSingleOp
     | RecieveComment Comment
     | RequestComment String
     | RecieveSingleError
+    | RepliesMsg Msg
 
 singleInit : ( SingleView, Cmd SingleMsg )
 singleInit =
-    ( SingleView Comment.Unloaded, Cmd.none )
+    ( SingleView Unloaded Nothing Comment.Unloaded, Cmd.none )
 
 -- Update
 
@@ -38,7 +45,17 @@ singleUpdate msg model =
         NoSingleOp ->
             ( model, Cmd.none )
         RecieveComment comment ->
-            ( { model | comment = comment }, Cmd.none )
+            let
+                correctType tuple =
+                    -- from ( Model, Cmd Msg ) to ( Replies, Cmd SingleMsg )
+                    ( Replies (first tuple)
+                    , Cmd.map RepliesMsg (second tuple)
+                    )
+                ( replies, cmd ) =
+                    withDefault ( Unloaded, Cmd.none )
+                    (Maybe.map (fromHash >> correctType) model.hash)
+            in
+                ( { model | comment = comment, replies = replies }, cmd )
         RequestComment hash ->
             let
                 process result =
@@ -52,9 +69,19 @@ singleUpdate msg model =
                 request =
                     Http.post "/fn/comments/commentRead" body Comment.decoder
             in
-                ( model, Http.send process request )
+                ( { model | hash = Just hash }, Http.send process request )
         RecieveSingleError ->
             ( { model | comment = Comment.Error "Error loading comment" }, Cmd.none )
+        RepliesMsg msg ->
+            case model.replies of
+                Replies commentsView ->
+                    let
+                        ( newModel, cmd ) =
+                            update msg commentsView
+                    in
+                        ( { model | replies = Replies newModel }, Cmd.map RepliesMsg cmd )
+                Unloaded ->
+                    ( model, Cmd.none )
 
 -- View
 
@@ -62,10 +89,18 @@ viewSingle : SingleView -> Html SingleMsg
 viewSingle model =
     Html.div []
     (case model.comment of
-        Comment.Loaded entry -> 
-            [ MarkdownOptions.safeRender [] entry.content
-            -- TODO: CommentsView
-            ]
+        Comment.Loaded entry ->
+            let
+                renderedReplies =
+                    case model.replies of
+                        Replies replies ->
+                            Html.map RepliesMsg (view replies)
+                        Unloaded ->
+                            Html.text "Loading Comments"
+            in
+                [ MarkdownOptions.safeRender [] entry.content
+                , renderedReplies
+                ]
         Comment.Unloaded ->
             []
         Comment.Error error ->
@@ -91,6 +126,10 @@ type Msg
 init : ( Model, Cmd Msg )
 init =
     ( Model [] Nothing, Cmd.none )
+
+fromHash : String -> ( Model, Cmd Msg )
+fromHash hash =
+    update (RequestComments hash) (first init)
 
 -- Update
 
@@ -129,7 +168,7 @@ update msg model =
                 process result =
                     case result of
                         Ok res ->
-                            RecieveComments (List.map SingleView res)
+                            RecieveComments (List.map (SingleView Unloaded Nothing) res)
                         Err _ ->
                             RecieveError
                 body =
@@ -145,5 +184,11 @@ update msg model =
 
 view : Model -> Html Msg
 view model =
-    Html.div []
-    []
+    let
+        messages =
+            List.map
+                (\comment -> Html.map (SingleMsg comment) (viewSingle comment))
+                model.comments
+    in
+        Html.div []
+        messages
