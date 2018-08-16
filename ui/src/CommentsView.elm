@@ -6,7 +6,7 @@ import Maybe exposing (withDefault)
 import Html exposing (Html)
 import MarkdownOptions
 import Json.Encode
-import Json.Decode
+import Links
 import Http
 
 -- Putting the comment view and the comments view in their own modules would
@@ -119,7 +119,7 @@ type alias Model =
 type Msg
     = NoOp
     | SingleMsg SingleView SingleMsg
-    | RecieveComments (List SingleView)
+    | RecieveComments (List ( SingleView, Cmd SingleMsg ))
     | RequestComments String
     | RecieveError
 
@@ -138,8 +138,14 @@ update msg model =
     case msg of
         NoOp ->
             ( model, Cmd.none )
-        RecieveComments comments ->
-            ( { model | comments = comments }, Cmd.none )
+        RecieveComments tuples ->
+            let
+                comments =
+                    List.map first tuples
+                commands =
+                    List.map (\( comment, msg ) -> Cmd.map (SingleMsg comment) msg) tuples
+            in
+                ( { model | comments = comments }, Cmd.batch commands )
         SingleMsg view msg ->
             let
                 processComment comment tuple =
@@ -147,7 +153,7 @@ update msg model =
                         Just cmd ->
                             ( Just cmd, comment :: (second tuple) )
                         Nothing ->
-                            if comment == view
+                            if comment.hash == view.hash
                             then
                                 let
                                     updated = singleUpdate msg comment
@@ -157,7 +163,7 @@ update msg model =
                                     )
                             else
                                 ( Nothing, comment :: (second tuple) )
-                (cmd, updatedComments) =
+                ( cmd, updatedComments ) =
                     List.foldr processComment ( Nothing, [] ) model.comments
             in
                 ( { model | comments = updatedComments }
@@ -165,16 +171,18 @@ update msg model =
                 )
         RequestComments hash ->
             let
+                linkToCommentView link =
+                    singleUpdate (RequestComment link.hash) (first singleInit)
                 process result =
                     case result of
                         Ok res ->
-                            RecieveComments (List.map (SingleView Unloaded Nothing) res)
+                            RecieveComments (List.map linkToCommentView res)
                         Err _ ->
                             RecieveError
                 body =
-                    Http.jsonBody (Json.Encode.string hash)
+                    Http.stringBody "" hash
                 request =
-                    Http.post "/fn/comments/fromHash" body (Json.Decode.list Comment.decoder)
+                    Http.post "/fn/comments/fromHash" body (Links.decoder Comment.decoder)
             in
                 ( { model | targetHash = Just hash }, Http.send process request )
         RecieveError ->

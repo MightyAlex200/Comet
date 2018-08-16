@@ -84,6 +84,7 @@ view model =
         Post.Loaded entry ->
             [ Html.h1 [] [ Html.text entry.title ]
             , MarkdownOptions.safeRender [] entry.content
+            , Html.map CommentsViewMsg (CommentsView.view model.comments)
             ]
         Post.Unloaded ->
             []

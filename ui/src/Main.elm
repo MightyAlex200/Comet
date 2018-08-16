@@ -1,7 +1,17 @@
 module Main exposing (..)
 
 import Html exposing (Html)
+import TestPostView
 import PostView
+
+main : Program Never Model Msg
+main =
+    Html.program
+        { init = init
+        , view = view
+        , update = update
+        , subscriptions = \_ -> Sub.none
+        }
 
 -- Model
 
@@ -11,19 +21,27 @@ type alias Model =
 
 type Page
     = PostView PostView.Model
+    | TestPostView TestPostView.Model
     --| TagView TagView.Model
     --| UserView UserView.Model
     | EmptyPage
 
 type Msg
     = PostViewMsg PostView.Msg
+    | TestPostViewMsg TestPostView.Msg
     --| TagViewMsg TagView.Msg
     --| UserViewMsg UserView.Msg
     | NoOp
 
 init : ( Model, Cmd Msg )
 init =
-    ( Model EmptyPage, Cmd.none )
+    let
+        correctType tuple =
+            ( Model (TestPostView (Tuple.first tuple))
+            , Cmd.map TestPostViewMsg (Tuple.second tuple)
+            )
+    in
+        correctType TestPostView.init
 
 -- Update
 
@@ -39,6 +57,24 @@ update msg model =
                     in
                         ( { model | page = PostView newPostView }, Cmd.map PostViewMsg cmd )
                 _ -> ( model, Cmd.none )
+        TestPostViewMsg msg ->
+            case model.page of
+                TestPostView testView ->
+                    case msg of
+                        TestPostView.SubmitInput ->
+                            let
+                                ( newPostView, cmd ) =
+                                    PostView.fromHash testView.input
+                            in
+                                ( { model | page = PostView newPostView }, Cmd.map PostViewMsg cmd )
+                        _ ->
+                            let
+                                ( newTestView, cmd ) =
+                                    TestPostView.update msg testView
+                            in
+                                ( { model | page = TestPostView newTestView }, Cmd.map TestPostViewMsg cmd )
+                _ ->
+                    ( model, Cmd.none )
         NoOp ->
             ( model, Cmd.none )
 
@@ -51,3 +87,5 @@ view model =
             Html.div [] []
         PostView postView ->
             Html.map PostViewMsg (PostView.view postView)
+        TestPostView testView ->
+            Html.map TestPostViewMsg (TestPostView.view testView)
