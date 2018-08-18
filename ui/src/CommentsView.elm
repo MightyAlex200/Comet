@@ -3,6 +3,7 @@ module CommentsView exposing (..)
 import Comment exposing (Comment)
 import Tuple exposing (first, second)
 import Maybe exposing (withDefault)
+import Html.Attributes as Attributes
 import Html exposing (Html)
 import MarkdownOptions
 import Json.Encode
@@ -87,7 +88,7 @@ singleUpdate msg model =
 
 viewSingle : SingleView -> Html SingleMsg
 viewSingle model =
-    Html.div []
+    Html.div [ Attributes.class "comment" ]
     (case model.comment of
         Comment.Loaded entry ->
             let
@@ -98,8 +99,12 @@ viewSingle model =
                         Unloaded ->
                             Html.text "Loading Comments"
             in
-                [ MarkdownOptions.safeRender [] entry.content
-                , renderedReplies
+                [ Html.div [ Attributes.class "comment-left" ]
+                    [ Html.div [ Attributes.class "comment-side-bar" ] [] ]
+                , Html.div [ Attributes.class "comment-right" ]
+                    [ MarkdownOptions.safeRender [] entry.content
+                    , renderedReplies
+                    ]
                 ]
         Comment.Unloaded ->
             []
@@ -198,5 +203,5 @@ view model =
                 (\comment -> Html.map (SingleMsg comment) (viewSingle comment))
                 model.comments
     in
-        Html.div []
+        Html.div [ Attributes.class "comments" ]
         messages

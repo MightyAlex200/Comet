@@ -1,0 +1,27 @@
+body {
+    margin: 0px;
+}
+
+/* Comments */
+
+.comment-side-bar {
+    background-color: cornflowerblue;
+    margin: 4px 16px;
+    width: 4px;
+    flex: 1;
+    cursor: pointer;
+}
+
+.comment-right {
+    flex: 1;
+}
+
+.comment-left {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.comment {
+    display: flex;
+}

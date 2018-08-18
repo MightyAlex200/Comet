@@ -1,6 +1,7 @@
 module PostView exposing (..)
 
 import Tuple exposing (first, second)
+import Html.Attributes as Attributes
 import Post exposing (Post)
 import Html exposing (Html)
 import MarkdownOptions
@@ -79,11 +80,11 @@ update msg model =
 
 view : Model -> Html Msg
 view model =
-    Html.div []
+    Html.div [ Attributes.class "post" ]
     (case model.post of
         Post.Loaded entry ->
-            [ Html.h1 [] [ Html.text entry.title ]
-            , MarkdownOptions.safeRender [] entry.content
+            [ Html.h1 [ Attributes.class "post-title" ] [ Html.text entry.title ]
+            , MarkdownOptions.safeRender [ Attributes.class "post-content" ] entry.content
             , Html.map CommentsViewMsg (CommentsView.view model.comments)
             ]
         Post.Unloaded ->

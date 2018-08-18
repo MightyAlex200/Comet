@@ -1,2 +1,2 @@
 default:
-	elm make src/Main.elm --output index.html
+	elm make src/Main.elm --output index.js
