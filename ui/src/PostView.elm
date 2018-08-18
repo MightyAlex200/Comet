@@ -2,6 +2,7 @@ module PostView exposing (..)
 
 import Tuple exposing (first, second)
 import Html.Attributes as Attributes
+import Loadable exposing (Loadable)
 import Post exposing (Post)
 import Html exposing (Html)
 import MarkdownOptions
@@ -12,7 +13,7 @@ import Http
 -- Model
 
 type alias Model =
-    { post : Post
+    { post : Loadable Post
     , comments : CommentsView.Model
     , hash : String
     }
@@ -24,13 +25,14 @@ type Msg
     | ReceiveError
     | CommentsViewMsg CommentsView.Msg
 
-init : ( Model, Cmd Msg )
-init =
-    ( Model Post.Unloaded (first CommentsView.init) "", Cmd.none )
 
 fromHash : String -> ( Model, Cmd Msg )
 fromHash hash =
-    update (RequestPost hash) (Model Post.Unloaded (first CommentsView.init) hash)
+    let
+        uninitialized =
+            Model Loadable.Unloaded (first (CommentsView.fromHash hash)) ""
+    in
+        update (RequestPost hash) uninitialized
 
 -- Update
 
@@ -48,7 +50,7 @@ update msg model =
                 ( comments, cmd ) =
                     correctType (CommentsView.fromHash model.hash)
             in
-                ( { model | post = post, comments = comments }, cmd )
+                ( { model | post = Loadable.Loaded post, comments = comments }, cmd )
         RequestPost hash ->
             let
                 process result =
@@ -64,7 +66,7 @@ update msg model =
             in
                 ( { model | hash = hash }, Http.send process request )
         ReceiveError ->
-            ( { model | post = Post.Error "Error loading post" }, Cmd.none )
+            ( model, Cmd.none )
         CommentsViewMsg msg ->
             let
                 correctType tuple =
@@ -82,13 +84,11 @@ view : Model -> Html Msg
 view model =
     Html.div [ Attributes.class "post" ]
     (case model.post of
-        Post.Loaded entry ->
+        Loadable.Loaded entry ->
             [ Html.h1 [ Attributes.class "post-title" ] [ Html.text entry.title ]
             , MarkdownOptions.safeRender [ Attributes.class "post-content" ] entry.content
             , Html.map CommentsViewMsg (CommentsView.view model.comments)
             ]
-        Post.Unloaded ->
+        Loadable.Unloaded ->
             []
-        Post.Error error ->
-            [ Html.text error ]
     )

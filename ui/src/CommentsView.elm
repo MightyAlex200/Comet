@@ -4,6 +4,7 @@ import Comment exposing (Comment)
 import Tuple exposing (first, second)
 import Maybe exposing (withDefault)
 import Html.Attributes as Attributes
+import Loadable exposing (Loadable)
 import Html exposing (Html)
 import MarkdownOptions
 import Json.Encode
@@ -19,8 +20,8 @@ import Http
 
 type alias SingleView =
     { replies : Replies
-    , hash : Maybe String
-    , comment : Comment
+    , hash : String
+    , comment : Loadable Comment
     }
 
 type Replies
@@ -34,9 +35,13 @@ type SingleMsg
     | ReceiveSingleError
     | RepliesMsg Msg
 
-singleInit : ( SingleView, Cmd SingleMsg )
-singleInit =
-    ( SingleView Unloaded Nothing Comment.Unloaded, Cmd.none )
+singleFromHash : String -> ( SingleView, Cmd SingleMsg )
+singleFromHash hash =
+    let
+        uninitialized =
+            SingleView Unloaded "" Loadable.Unloaded
+    in
+        singleUpdate (RequestComment hash) uninitialized
 
 -- Update
 
@@ -53,10 +58,9 @@ singleUpdate msg model =
                     , Cmd.map RepliesMsg (second tuple)
                     )
                 ( replies, cmd ) =
-                    withDefault ( Unloaded, Cmd.none )
-                    (Maybe.map (fromHash >> correctType) model.hash)
+                    (fromHash >> correctType) model.hash
             in
-                ( { model | comment = comment, replies = replies }, cmd )
+                ( { model | comment = Loadable.Loaded comment, replies = replies }, cmd )
         RequestComment hash ->
             let
                 process result =
@@ -70,9 +74,9 @@ singleUpdate msg model =
                 request =
                     Http.post "/fn/comments/commentRead" body Comment.decoder
             in
-                ( { model | hash = Just hash }, Http.send process request )
+                ( { model | hash = hash }, Http.send process request )
         ReceiveSingleError ->
-            ( { model | comment = Comment.Error "Error loading comment" }, Cmd.none )
+            ( model, Cmd.none )
         RepliesMsg msg ->
             case model.replies of
                 Replies commentsView ->
@@ -90,7 +94,7 @@ viewSingle : SingleView -> Html SingleMsg
 viewSingle model =
     Html.div [ Attributes.class "comment" ]
     (case model.comment of
-        Comment.Loaded entry ->
+        Loadable.Loaded entry ->
             let
                 renderedReplies =
                     case model.replies of
@@ -106,10 +110,8 @@ viewSingle model =
                     , renderedReplies
                     ]
                 ]
-        Comment.Unloaded ->
+        Loadable.Unloaded ->
             []
-        Comment.Error error ->
-            [ Html.text error ]
     )
 
 -- Comments View (plural)
@@ -118,7 +120,7 @@ viewSingle model =
 
 type alias Model =
     { comments : List SingleView
-    , targetHash : Maybe String
+    , targetHash : String
     }
 
 type Msg
@@ -128,13 +130,13 @@ type Msg
     | RequestComments String
     | ReceiveError
 
-init : ( Model, Cmd Msg )
-init =
-    ( Model [] Nothing, Cmd.none )
-
 fromHash : String -> ( Model, Cmd Msg )
 fromHash hash =
-    update (RequestComments hash) (first init)
+    let
+        uninitialized =
+            Model [] ""
+    in
+        update (RequestComments hash) uninitialized
 
 -- Update
 
@@ -177,7 +179,7 @@ update msg model =
         RequestComments hash ->
             let
                 linkToCommentView link =
-                    singleUpdate (RequestComment link.hash) (first singleInit)
+                    singleFromHash link.hash
                 process result =
                     case result of
                         Ok res ->
@@ -189,9 +191,9 @@ update msg model =
                 request =
                     Http.post "/fn/comments/fromHash" body (Links.decoder Comment.decoder)
             in
-                ( { model | targetHash = Just hash }, Http.send process request )
+                ( { model | targetHash = hash }, Http.send process request )
         ReceiveError ->
-            ( { model | targetHash = Nothing }, Cmd.none )
+            ( model, Cmd.none )
 
 -- View
 
