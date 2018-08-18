@@ -29,9 +29,9 @@ type Replies
 
 type SingleMsg
     = NoSingleOp
-    | RecieveComment Comment
+    | ReceiveComment Comment
     | RequestComment String
-    | RecieveSingleError
+    | ReceiveSingleError
     | RepliesMsg Msg
 
 singleInit : ( SingleView, Cmd SingleMsg )
@@ -45,7 +45,7 @@ singleUpdate msg model =
     case msg of
         NoSingleOp ->
             ( model, Cmd.none )
-        RecieveComment comment ->
+        ReceiveComment comment ->
             let
                 correctType tuple =
                     -- from ( Model, Cmd Msg ) to ( Replies, Cmd SingleMsg )
@@ -62,16 +62,16 @@ singleUpdate msg model =
                 process result =
                     case result of
                         Ok res ->
-                            RecieveComment res
+                            ReceiveComment res
                         Err _ ->
-                            RecieveSingleError
+                            ReceiveSingleError
                 body =
                     Http.jsonBody (Json.Encode.string hash)
                 request =
                     Http.post "/fn/comments/commentRead" body Comment.decoder
             in
                 ( { model | hash = Just hash }, Http.send process request )
-        RecieveSingleError ->
+        ReceiveSingleError ->
             ( { model | comment = Comment.Error "Error loading comment" }, Cmd.none )
         RepliesMsg msg ->
             case model.replies of
@@ -124,9 +124,9 @@ type alias Model =
 type Msg
     = NoOp
     | SingleMsg SingleView SingleMsg
-    | RecieveComments (List ( SingleView, Cmd SingleMsg ))
+    | ReceiveComments (List ( SingleView, Cmd SingleMsg ))
     | RequestComments String
-    | RecieveError
+    | ReceiveError
 
 init : ( Model, Cmd Msg )
 init =
@@ -143,7 +143,7 @@ update msg model =
     case msg of
         NoOp ->
             ( model, Cmd.none )
-        RecieveComments tuples ->
+        ReceiveComments tuples ->
             let
                 comments =
                     List.map first tuples
@@ -181,16 +181,16 @@ update msg model =
                 process result =
                     case result of
                         Ok res ->
-                            RecieveComments (List.map linkToCommentView res)
+                            ReceiveComments (List.map linkToCommentView res)
                         Err _ ->
-                            RecieveError
+                            ReceiveError
                 body =
                     Http.stringBody "" hash
                 request =
                     Http.post "/fn/comments/fromHash" body (Links.decoder Comment.decoder)
             in
                 ( { model | targetHash = Just hash }, Http.send process request )
-        RecieveError ->
+        ReceiveError ->
             ( { model | targetHash = Nothing }, Cmd.none )
 
 -- View

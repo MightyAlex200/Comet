@@ -19,9 +19,9 @@ type alias Model =
 
 type Msg
     = NoOp
-    | RecievePost Post
+    | ReceivePost Post
     | RequestPost String
-    | RecieveError
+    | ReceiveError
     | CommentsViewMsg CommentsView.Msg
 
 init : ( Model, Cmd Msg )
@@ -39,7 +39,7 @@ update msg model =
     case msg of
         NoOp ->
             ( model, Cmd.none )
-        RecievePost post ->
+        ReceivePost post ->
             let
                 correctType tuple =
                     ( first tuple
@@ -54,16 +54,16 @@ update msg model =
                 process result =
                     case result of
                         Ok res ->
-                            RecievePost res
+                            ReceivePost res
                         Err _ ->
-                            RecieveError    
+                            ReceiveError    
                 body =
                     Http.jsonBody (Json.Encode.string hash)
                 request =
                     Http.post "/fn/posts/postRead" body Post.decoder
             in
                 ( { model | hash = hash }, Http.send process request )
-        RecieveError ->
+        ReceiveError ->
             ( { model | post = Post.Error "Error loading post" }, Cmd.none )
         CommentsViewMsg msg ->
             let
