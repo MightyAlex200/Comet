@@ -1,5 +1,6 @@
 module Main exposing (..)
 
+import SimpleKarmaMap exposing (simpleKarmaMap)
 import Html exposing (Html)
 import TestPostView
 import PostView
@@ -64,7 +65,7 @@ update msg model =
                         TestPostView.SubmitInput ->
                             let
                                 ( newPostView, cmd ) =
-                                    PostView.fromHash testView.input
+                                    PostView.fromHash simpleKarmaMap testView.input
                             in
                                 ( { model | page = PostView newPostView }, Cmd.map PostViewMsg cmd )
                         _ ->

@@ -18,7 +18,7 @@ import Http
 
 -- Model
 
-type alias SingleView =
+type alias SingleView = -- TODO: VoteView
     { replies : Replies
     , hash : String
     , comment : Loadable Comment

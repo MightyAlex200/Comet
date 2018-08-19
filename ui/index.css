@@ -25,3 +25,9 @@ body {
 .comment {
     display: flex;
 }
+
+/* Posts */
+
+.post-vote-container {
+    display: flex;
+}
