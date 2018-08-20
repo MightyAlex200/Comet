@@ -33,7 +33,7 @@
                     "Sharing": "public"
                 },
                 {
-                    "Name": "subLink",
+                    "Name": "tagLink",
                     "DataFormat": "links",
                     "Schema": "",
                     "SchemaFile": "",
@@ -74,8 +74,13 @@
                     "Exposure": "public"
                 },
                 {
-                    "Name": "fromSub",
+                    "Name": "fromTag",
                     "CallingType": "string",
+                    "Exposure": "public"
+                },
+                {
+                    "Name": "fromTags",
+                    "CallingType": "json",
                     "Exposure": "public"
                 },
                 {
