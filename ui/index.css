@@ -44,6 +44,10 @@ body {
     transform: translateX(-50%);
 }
 
+.vote-button-representation,.vote-button-background {
+    pointer-events: none;
+}
+
 .vote-button-container {
     position: relative;
 }
@@ -58,4 +62,9 @@ body {
 
 .vote-button-background {
     z-index: -1;
+}
+
+.vote-sections {
+    position: absolute;
+    width: 100%;
 }

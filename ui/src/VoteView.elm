@@ -8,7 +8,6 @@ module VoteView exposing
     , view
     )
 
-import ClickEvent exposing (ClickEvent)
 import Html.Attributes as Attributes
 import Links exposing (Links, Link)
 import Json.Encode as Encode
@@ -20,6 +19,11 @@ import Html exposing (Html)
 import Http
 
 -- Model
+
+-- How many sections the vote buttons are split up into
+voteSectionCount : Int
+voteSectionCount =
+    10
 
 type alias Model =
     { targetHash : String
@@ -136,28 +140,6 @@ update msg model =
 
 -- View
 
-voteFunc : Bool -> ClickEvent -> Msg
-voteFunc isPositive clickEvent =
-    let
-        multiplier =
-            if isPositive then
-                1
-            else
-                -1
-        adjust clientY =
-            if isPositive then
-                (24 - clientY) / 24
-            else
-                (clientY - 48) / 24
-        value =
-            (adjust clickEvent.clientY) * multiplier
-        roundedValue =
-            (toFloat (round (value * 10.0))) / 10.0
-        vote =
-            valueToVote roundedValue
-    in
-        SendVote vote
-
 getClip : Bool -> Float -> String
 getClip fromTop value =
     let
@@ -181,6 +163,36 @@ getClip fromTop value =
     in
         "polygon(" ++ points ++ ")"
 
+voteSections : Bool -> Html Msg
+voteSections isPositive =
+    Html.div
+    [ Attributes.class "vote-sections" ]
+    ((List.range 0 voteSectionCount)
+        |> List.map
+            (\offset ->
+                let
+                    value =
+                        if isPositive then
+                            toFloat (voteSectionCount - offset) / toFloat voteSectionCount
+                        else
+                            toFloat offset / toFloat voteSectionCount
+                in
+                    Html.div
+                    [ Attributes.class "vote-section"
+                    , Attributes.style
+                        [ ( "top", toString ((toFloat offset) * 24 / (toFloat voteSectionCount)) )
+                        , ( "height", toString (24 / (toFloat voteSectionCount)) )
+                        ]
+                    , Events.onClick
+                        (value
+                            |> Vote isPositive
+                            |> SendVote
+                        )
+                    ]
+                    []
+            )
+    )
+
 voteButton : Bool -> Float -> Html Msg
 voteButton isPositive value =
     let
@@ -196,10 +208,10 @@ voteButton isPositive value =
                 "downvote-representation"
     in
         Html.div 
-            [ Events.on "click" (Decode.map (voteFunc isPositive) ClickEvent.decoder)
-            , Attributes.class "vote-button-container"
+            [ Attributes.class "vote-button-container"
             ]
-            [ Html.div 
+            [ voteSections isPositive
+            , Html.div 
                 [ Attributes.class "vote-button-representation"
                 , Attributes.class class
                 , Attributes.style
