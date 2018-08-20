@@ -5,7 +5,9 @@ import Tuple exposing (first, second)
 import Maybe exposing (withDefault)
 import Html.Attributes as Attributes
 import Loadable exposing (Loadable)
+import Html.Events as Events
 import Html exposing (Html)
+import MarkdownCompose
 import MarkdownOptions
 import Json.Encode
 import VoteView
@@ -25,6 +27,8 @@ type alias SingleView = -- TODO: VoteView
     , comment : Loadable Comment
     , voteView : VoteView.Model
     , karmaMap : String -> Float
+    , replyComposeView : MarkdownCompose.Model
+    , showReplyCompose : Bool
     }
 
 type Replies
@@ -38,6 +42,8 @@ type SingleMsg
     | ReceiveSingleError
     | RepliesMsg Msg
     | VoteViewMsg VoteView.Msg
+    | MarkdownComposeMsg MarkdownCompose.Msg
+    | ToggleShowReplyCompose
 
 singleFromHash : (String -> Float) -> String -> ( SingleView, Cmd SingleMsg )
 singleFromHash karmaMap hash =
@@ -49,6 +55,8 @@ singleFromHash karmaMap hash =
                 Loadable.Unloaded
                 (first (VoteView.fromHash karmaMap hash))
                 karmaMap
+                MarkdownCompose.init
+                False
     in
         singleUpdate (RequestComment hash) uninitialized
 
@@ -104,6 +112,24 @@ singleUpdate msg model =
                     VoteView.update msg model.voteView
             in
                 ( { model | voteView = updatedVoteView }, Cmd.map VoteViewMsg cmd )
+        MarkdownComposeMsg msg ->
+            case msg of
+                MarkdownCompose.SubmitInput ->
+                    let
+                        process result =
+                            RequestComment model.hash
+                    in
+                        ( { model | replyComposeView = MarkdownCompose.init, showReplyCompose = False }
+                        , Comment.createComment model.hash model.replyComposeView.input process
+                        )
+                _ ->
+                    let
+                        ( updatedComposeView, cmd ) =
+                            MarkdownCompose.update msg model.replyComposeView
+                    in
+                        ( { model | replyComposeView = updatedComposeView }, Cmd.map MarkdownComposeMsg cmd )
+        ToggleShowReplyCompose ->
+            ( { model | showReplyCompose = not model.showReplyCompose }, Cmd.none )
 
 -- View
 
@@ -126,6 +152,16 @@ viewSingle model =
                     ]
                 , Html.div [ Attributes.class "comment-right" ]
                     [ MarkdownOptions.safeRender [] entry.content
+                    , Html.button
+                        [ Attributes.class "btn"
+                        , Attributes.class "btn-link"
+                        , Events.onClick ToggleShowReplyCompose
+                        ]
+                        [ Html.text "Reply" ]
+                    , if model.showReplyCompose then
+                            Html.map MarkdownComposeMsg (MarkdownCompose.view model.replyComposeView)
+                        else
+                            Html.div [] []
                     , renderedReplies
                     ]
                 ]

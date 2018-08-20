@@ -2,6 +2,12 @@ body {
     margin: 0px;
 }
 
+/* Compose */
+
+.compose-submit {
+    margin-top: 8px;
+}
+
 /* Comments */
 
 .comment-side-bar {
