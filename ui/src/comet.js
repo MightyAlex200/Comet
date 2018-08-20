@@ -1,5 +1,5 @@
 //@ts-check
-import SubView from './sub_view';
+import TagView from './tag_view';
 import xs from 'xstream';
 import PostView from './post_view';
 import PostComposeView from './post_compose_view';
@@ -19,16 +19,16 @@ function instanceToComponent(instance, sources) {
 
     switch (instance.pathname) {
         case '/':
-            component = SubView;
-            componentSources.sub = xs.of('0');
+            component = TagView;
+            componentSources.tag = xs.of('0');
             break;
         case '/post':
             component = PostView;
             componentSources.hash = xs.of(urlArgs.hash);
             break;
-        case '/sub':
-            component = SubView;
-            componentSources.sub = xs.of(urlArgs.sub);
+        case '/tag':
+            component = TagView;
+            componentSources.tag = xs.of(urlArgs.tag);
         case '/composePost':
             component = PostComposeView;
             break;

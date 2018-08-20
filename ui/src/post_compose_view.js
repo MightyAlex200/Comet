@@ -3,7 +3,7 @@ import xs from 'xstream';
 import MarkdownComposeView from './markdown_compose_view';
 import { div, button, input } from '@cycle/dom';
 
-// TODO: subs
+// TODO: tags
 export default function PostComposeView(sources) {
     const titleInputDOM$ = xs.of(
         input('.title-input.form-control', { attrs: { placeholder: 'Title' } })
@@ -36,7 +36,7 @@ export default function PostComposeView(sources) {
             url: '/fn/posts/postCreate',
             method: 'POST',
             category: `postCreate`,
-            send: `{ "postEntry": { "title": "${title.replace(/"/g, '\\"')}", "content": "${markdownText.replace(/"/g, '\\"')}" }, "subs": [] }`,
+            send: `{ "postEntry": { "title": "${title.replace(/"/g, '\\"')}", "content": "${markdownText.replace(/"/g, '\\"')}" }, "tags": [] }`,
         }));
     
     const http$ = postHTTP$;

@@ -9,7 +9,7 @@
                     "title": "Hello, Holo!",
                     "content": "This is Comet, the distributed reddit-like application!"
                 },
-                "subs": ["3562527", "2537325", "6432432"]
+                "tags": ["3562527", "2537325", "6432432"]
             },
             "Output": "QmTw1XpJFmVUCkiNjd63UrjRnAsziGBjLcu3YzsAFLDuux",
             "Err": null,
@@ -31,7 +31,7 @@
                     "title": "Hello, Holo!",
                     "content": "This is Comet, the distributed reddit-like application!"
                 },
-                "subs": ["crossposted"]
+                "tags": ["crossposted"]
             },
             "Output": "QmTw1XpJFmVUCkiNjd63UrjRnAsziGBjLcu3YzsAFLDuux",
             "Err": null,
@@ -118,9 +118,9 @@
             "Benchmark": false
         },
         {
-            "Convey": "Read posts from a sub",
+            "Convey": "Read posts from a tag",
             "Zome": "posts",
-            "FnName": "fromSub",
+            "FnName": "fromTag",
             "Input": "3562527",
             "Output": "[{\"Entry\":{\"content\":\"Ĉi tio estas Cometo, la plurkomputila redditsimila programaro!\",\"title\":\"Saluton, Holo!\"},\"EntryType\":\"post\",\"Hash\":\"QmTw1XpJFmVUCkiNjd63UrjRnAsziGBjLcu3YzsAFLDuux\",\"Source\":\"Qmc6yUrT2oAEKcTJ6AD1kaZGnNGYwPwVBzGxMReRAt5UFf\"}]",
             "Err": null,

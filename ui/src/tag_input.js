@@ -1,15 +1,15 @@
 //@ts-check
 import xs from 'xstream';
 import { input, div, a } from '@cycle/dom';
-import isGoodSubName from './good_subname';
+import isGoodTagName from './good_tagname';
 import makeUnique from './make_unique';
 
-const UNFAVORABLE_TAG = 'Unfavorable sub name. Should be lowercase, trimmed';
+const UNFAVORABLE_TAG = 'Unfavorable tag name. Should be lowercase, trimmed';
 
 function fromTags(tags) {
     return div('.tag-input.form-control', [
-        ...(tags.map(tag => a(`.tag.badge${isGoodSubName(tag) ? '.badge-info' : '.badge-danger'}`, 
-            { attrs: { href: '#', title: isGoodSubName(tag) ? tag : UNFAVORABLE_TAG, tag } }, tag+'\n'))),
+        ...(tags.map(tag => a(`.tag.badge${isGoodTagName(tag) ? '.badge-info' : '.badge-danger'}`, 
+            { attrs: { href: '#', title: isGoodTagName(tag) ? tag : UNFAVORABLE_TAG, tag } }, tag+'\n'))),
         input('.tag-input-input'),
     ]);
 }

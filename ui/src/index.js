@@ -10,7 +10,7 @@ import CommentView from './comment_view';
 import CommentsView from './comments_view';
 import TagInput from './tag_input';
 import PostsView from './posts_view';
-import SubView from './sub_view';
+import TagView from './tag_view';
 import VoteView from './vote_view';
 import MarkdownComposeView from './markdown_compose_view';
 import PostComposeView from './post_compose_view';
@@ -25,7 +25,7 @@ function main(sources) {
     // const commentsView = isolate(CommentsView, postHash)({hash: xs.of(postHash), ...sources});
     // const tagInput = isolate(TagInput)(sources);
     // const postsView = isolate(PostsView)({ hashes: xs.of([postHash]), ...sources });
-    // const subView = isolate(SubView)({ sub: xs.of('3562527'), ...sources})
+    // const tagView = isolate(TagView)({ tag: xs.of('3562527'), ...sources})
     // const voteView = isolate(VoteView)({ hash: xs.of(postHash), ...sources });
     // const markdownComposeView = isolate(MarkdownComposeView)(sources);
     // const postComposeView = isolate(PostComposeView)(sources);
