@@ -31,3 +31,31 @@ body {
 .post-vote-container {
     display: flex;
 }
+
+/* Votes */
+
+.vote-view {
+    text-align: center;
+}
+
+.vote-button-representation {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+.vote-button-container {
+    position: relative;
+}
+
+.upvote-representation {
+    color: orange;
+}
+
+.downvote-representation {
+    color: blueviolet;
+}
+
+.vote-button-background {
+    z-index: -1;
+}
