@@ -8,6 +8,7 @@ import Loadable exposing (Loadable)
 import Html exposing (Html)
 import MarkdownOptions
 import Json.Encode
+import VoteView
 import Links
 import Http
 
@@ -22,6 +23,8 @@ type alias SingleView = -- TODO: VoteView
     { replies : Replies
     , hash : String
     , comment : Loadable Comment
+    , voteView : VoteView.Model
+    , karmaMap : String -> Float
     }
 
 type Replies
@@ -34,12 +37,18 @@ type SingleMsg
     | RequestComment String
     | ReceiveSingleError
     | RepliesMsg Msg
+    | VoteViewMsg VoteView.Msg
 
-singleFromHash : String -> ( SingleView, Cmd SingleMsg )
-singleFromHash hash =
+singleFromHash : (String -> Float) -> String -> ( SingleView, Cmd SingleMsg )
+singleFromHash karmaMap hash =
     let
         uninitialized =
-            SingleView Unloaded "" Loadable.Unloaded
+            SingleView 
+                Unloaded
+                ""
+                Loadable.Unloaded
+                (first (VoteView.fromHash karmaMap hash))
+                karmaMap
     in
         singleUpdate (RequestComment hash) uninitialized
 
@@ -52,15 +61,17 @@ singleUpdate msg model =
             ( model, Cmd.none )
         ReceiveComment comment ->
             let
-                correctType tuple =
-                    -- from ( Model, Cmd Msg ) to ( Replies, Cmd SingleMsg )
-                    ( Replies (first tuple)
-                    , Cmd.map RepliesMsg (second tuple)
-                    )
-                ( replies, cmd ) =
-                    (fromHash >> correctType) model.hash
+                ( replies, repliesCmd ) =
+                    fromHash model.karmaMap model.hash
+                ( voteView, voteCmd ) =
+                    VoteView.fromHash model.karmaMap model.hash
             in
-                ( { model | comment = Loadable.Loaded comment, replies = replies }, cmd )
+                ( { model | comment = Loadable.Loaded comment, replies = Replies replies }
+                , Cmd.batch
+                    [ Cmd.map RepliesMsg repliesCmd
+                    , Cmd.map VoteViewMsg voteCmd
+                    ]
+                )
         RequestComment hash ->
             let
                 process result =
@@ -87,6 +98,12 @@ singleUpdate msg model =
                         ( { model | replies = Replies newModel }, Cmd.map RepliesMsg cmd )
                 Unloaded ->
                     ( model, Cmd.none )
+        VoteViewMsg msg ->
+            let
+                ( updatedVoteView, cmd ) =
+                    VoteView.update msg model.voteView
+            in
+                ( { model | voteView = updatedVoteView }, Cmd.map VoteViewMsg cmd )
 
 -- View
 
@@ -104,7 +121,9 @@ viewSingle model =
                             Html.text "Loading Comments"
             in
                 [ Html.div [ Attributes.class "comment-left" ]
-                    [ Html.div [ Attributes.class "comment-side-bar" ] [] ]
+                    [ Html.map VoteViewMsg (VoteView.view model.voteView)
+                    , Html.div [ Attributes.class "comment-side-bar" ] []
+                    ]
                 , Html.div [ Attributes.class "comment-right" ]
                     [ MarkdownOptions.safeRender [] entry.content
                     , renderedReplies
@@ -121,6 +140,7 @@ viewSingle model =
 type alias Model =
     { comments : List SingleView
     , targetHash : String
+    , karmaMap : String -> Float
     }
 
 type Msg
@@ -130,11 +150,11 @@ type Msg
     | RequestComments String
     | ReceiveError
 
-fromHash : String -> ( Model, Cmd Msg )
-fromHash hash =
+fromHash : (String -> Float) -> String -> ( Model, Cmd Msg )
+fromHash karmaMap hash =
     let
         uninitialized =
-            Model [] ""
+            Model [] "" karmaMap
     in
         update (RequestComments hash) uninitialized
 
@@ -179,7 +199,7 @@ update msg model =
         RequestComments hash ->
             let
                 linkToCommentView link =
-                    singleFromHash link.hash
+                    singleFromHash model.karmaMap link.hash
                 process result =
                     case result of
                         Ok res ->

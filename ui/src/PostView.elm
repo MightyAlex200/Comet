@@ -36,7 +36,7 @@ fromHash karmaMap hash =
         uninitialized =
             Model
                 Loadable.Unloaded
-                (first (CommentsView.fromHash hash))
+                (first (CommentsView.fromHash karmaMap hash))
                 (first (VoteView.fromHash karmaMap hash))
                 ""
                 karmaMap
@@ -53,7 +53,7 @@ update msg model =
         ReceivePost post ->
             let
                 ( comments, commentCmd ) =
-                    CommentsView.fromHash model.hash
+                    CommentsView.fromHash model.karmaMap model.hash
                 ( voteView, voteCmd ) =
                     VoteView.fromHash model.karmaMap model.hash
                 cmds =
