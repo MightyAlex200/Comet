@@ -29,4 +29,4 @@ createComment hash content =
         request =
             Http.post "/fn/comments/commentCreate" body Decode.string
     in
-        flip Http.send request
+        (\x -> Http.send x request)

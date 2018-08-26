@@ -149,7 +149,7 @@ getClip fromTop value =
                     adjustedValue =
                         clamp 0 1 value
                     top =
-                        toString ((1 - adjustedValue) * 100)
+                        String.fromFloat ((1 - adjustedValue) * 100)
                 in
                     "0% " ++ top ++ "%, 100% " ++ top ++ "%, 100% 100%, 0% 100%"
             else
@@ -157,7 +157,7 @@ getClip fromTop value =
                     adjustedValue =
                         clamp 0 1 (negate value)
                     bottom =
-                        toString (adjustedValue * 100)
+                        String.fromFloat (adjustedValue * 100)
                 in
                     "0% 0%, 100% 0%, 100% " ++ bottom ++ "%, 0% " ++ bottom ++ "%"
     in
@@ -179,10 +179,8 @@ voteSections isPositive =
                 in
                     Html.div
                     [ Attributes.class "vote-section"
-                    , Attributes.style
-                        [ ( "top", toString ((toFloat offset) * 24 / (toFloat voteSectionCount)) )
-                        , ( "height", toString (24 / (toFloat voteSectionCount)) )
-                        ]
+                    , Attributes.style "top" (String.fromFloat ((toFloat offset) * 24 / (toFloat voteSectionCount)))
+                    , Attributes.style "height" (String.fromFloat (24 / (toFloat voteSectionCount)))
                     , Events.onClick
                         (value
                             |> Vote isPositive
@@ -214,9 +212,7 @@ voteButton isPositive value =
             , Html.div 
                 [ Attributes.class "vote-button-representation"
                 , Attributes.class class
-                , Attributes.style
-                    [ ( "clip-path", getClip isPositive value )
-                    ]
+                , Attributes.style "clip-path" (getClip isPositive value)
                 ]
                 [ icon
                     |> Icons.toHtml []
@@ -231,6 +227,6 @@ view : Model -> Html Msg
 view model = -- todo
     Html.div [ Attributes.class "vote-view" ]
     [ voteButton True model.value
-    , Html.text (toString model.score)
+    , Html.text (String.fromFloat model.score)
     , voteButton False model.value
     ]

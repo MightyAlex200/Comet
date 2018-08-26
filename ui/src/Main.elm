@@ -4,11 +4,13 @@ import SimpleKarmaMap exposing (simpleKarmaMap)
 import Html exposing (Html)
 import TestPostView
 import PostView
+import Browser
 
-main : Program Never Model Msg
+-- TODO: Update to using Browser.application
+main : Program () Model Msg
 main =
-    Html.program
-        { init = init
+    Browser.element
+        { init = \_ -> init
         , view = view
         , update = update
         , subscriptions = \_ -> Sub.none
@@ -49,19 +51,19 @@ init =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        PostViewMsg msg ->
+        PostViewMsg postMsg ->
             case model.page of
                 PostView postView ->
                     let
                         ( newPostView, cmd ) =
-                            PostView.update msg postView
+                            PostView.update postMsg postView
                     in
                         ( { model | page = PostView newPostView }, Cmd.map PostViewMsg cmd )
                 _ -> ( model, Cmd.none )
-        TestPostViewMsg msg ->
+        TestPostViewMsg testMsg ->
             case model.page of
                 TestPostView testView ->
-                    case msg of
+                    case testMsg of
                         TestPostView.SubmitInput ->
                             let
                                 ( newPostView, cmd ) =
@@ -71,7 +73,7 @@ update msg model =
                         _ ->
                             let
                                 ( newTestView, cmd ) =
-                                    TestPostView.update msg testView
+                                    TestPostView.update testMsg testView
                             in
                                 ( { model | page = TestPostView newTestView }, Cmd.map TestPostViewMsg cmd )
                 _ ->

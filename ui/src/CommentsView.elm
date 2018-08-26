@@ -96,24 +96,24 @@ singleUpdate msg model =
                 ( { model | hash = hash }, Http.send process request )
         ReceiveSingleError ->
             ( model, Cmd.none )
-        RepliesMsg msg ->
+        RepliesMsg replyMsg ->
             case model.replies of
                 Replies commentsView ->
                     let
                         ( newModel, cmd ) =
-                            update msg commentsView
+                            update replyMsg commentsView
                     in
                         ( { model | replies = Replies newModel }, Cmd.map RepliesMsg cmd )
                 Unloaded ->
                     ( model, Cmd.none )
-        VoteViewMsg msg ->
+        VoteViewMsg voteMsg ->
             let
                 ( updatedVoteView, cmd ) =
-                    VoteView.update msg model.voteView
+                    VoteView.update voteMsg model.voteView
             in
                 ( { model | voteView = updatedVoteView }, Cmd.map VoteViewMsg cmd )
-        MarkdownComposeMsg msg ->
-            case msg of
+        MarkdownComposeMsg composeMsg ->
+            case composeMsg of
                 MarkdownCompose.SubmitInput ->
                     let
                         process result =
@@ -125,7 +125,7 @@ singleUpdate msg model =
                 _ ->
                     let
                         ( updatedComposeView, cmd ) =
-                            MarkdownCompose.update msg model.replyComposeView
+                            MarkdownCompose.update composeMsg model.replyComposeView
                     in
                         ( { model | replyComposeView = updatedComposeView }, Cmd.map MarkdownComposeMsg cmd )
         ToggleShowReplyCompose ->
@@ -206,20 +206,20 @@ update msg model =
                 comments =
                     List.map first tuples
                 commands =
-                    List.map (\( comment, msg ) -> Cmd.map (SingleMsg comment) msg) tuples
+                    List.map (\( comment, commentMsg ) -> Cmd.map (SingleMsg comment) commentMsg) tuples
             in
                 ( { model | comments = comments }, Cmd.batch commands )
-        SingleMsg view msg ->
+        SingleMsg commentView commentMsg ->
             let
                 processComment comment tuple =
                     case first tuple of
-                        Just cmd ->
-                            ( Just cmd, comment :: (second tuple) )
+                        Just commentCmd ->
+                            ( Just commentCmd, comment :: (second tuple) )
                         Nothing ->
-                            if comment.hash == view.hash
+                            if comment.hash == commentView.hash
                             then
                                 let
-                                    updated = singleUpdate msg comment
+                                    updated = singleUpdate commentMsg comment
                                 in
                                     ( Just (Cmd.map (SingleMsg (first updated)) (second updated))
                                     , (first updated) :: (second tuple)

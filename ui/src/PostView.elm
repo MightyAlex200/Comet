@@ -94,24 +94,24 @@ update msg model =
                 ( { model | hash = hash }, Http.send process request )
         ReceiveError ->
             ( model, Cmd.none )
-        CommentsViewMsg msg ->
+        CommentsViewMsg commentsMsg ->
             let
                 correctType tuple =
                     ( first tuple
                     , Cmd.map CommentsViewMsg (second tuple)
                     )
                 ( updatedComments, cmd ) =
-                    correctType (CommentsView.update msg model.comments)
+                    correctType (CommentsView.update commentsMsg model.comments)
             in
                 ( { model | comments = updatedComments }, cmd )
-        VoteViewMsg msg ->
+        VoteViewMsg voteMsg ->
             let
                 ( updatedVoteView, cmd ) =
-                    VoteView.update msg model.voteView
+                    VoteView.update voteMsg model.voteView
             in
                 ( { model | voteView = updatedVoteView }, Cmd.map VoteViewMsg cmd )
-        MarkdownComposeMsg msg ->
-            case msg of
+        MarkdownComposeMsg composeMsg ->
+            case composeMsg of
                 MarkdownCompose.SubmitInput ->
                     let
                         process result =
@@ -123,7 +123,7 @@ update msg model =
                 _ ->
                     let
                         ( updatedComposeView, cmd ) =
-                            MarkdownCompose.update msg model.replyComposeView
+                            MarkdownCompose.update composeMsg model.replyComposeView
                     in
                         ( { model | replyComposeView = updatedComposeView }, Cmd.map MarkdownComposeMsg cmd  )
         ToggleShowReplyCompose ->
