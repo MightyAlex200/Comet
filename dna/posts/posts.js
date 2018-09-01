@@ -88,17 +88,119 @@ function postDelete(postHash) {
   return result;
 }
 
-function fromTag(tag, statusMask) {
-  return JSON.stringify(getLinks(anchor("tag", tag), "post", { Load: true, StatusMask: statusMask || HC.Status.Live }));
-}
-
-function fromTags(tags) {
-  var posts = [];
-  for(var i = 0; i < tags.length; i++) {
-    var tag = tags[i] + ""; // `+ ""` does a cast to string
-    posts = posts.concat(getLinks(anchor("tag", tag), "post", { Load: true }));
+function search(query) {
+  function objectEquate(a, b) {
+    return JSON.stringify(a) == JSON.stringify(b);
   }
-  return JSON.stringify(posts);
+
+  function has(arr, obj) {
+    for (var i = 0; i < arr.length; i++) {
+      if (objectEquate(arr[i], obj)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  // Actual search function that returns arrays
+  function searchInternal(query) {
+    var r = [];
+    switch (query.type) {
+      case "and":
+        var vals = [];
+        for (var i = 0; i < query.values.length; i++) {
+          vals.push(searchInternal(query.values[i]));
+        }
+
+        if (vals[0]) {
+          for (var i = 0; i < vals[0].length; i++) {
+            // if it isn't in all vals, break and don't add
+            var add = true;
+            for (var k = 1; k < vals.length; k++) {
+              if (!has(vals[k], vals[0][i])) {
+                // not in val[v]
+                add = false;
+                break;
+              }
+            }
+
+            if (add) {
+              r.push(vals[0][i]);
+            }
+          }
+        }
+        break;
+      case "or":
+        for (var i = 0; i < query.values.length; i++) {
+          r = r.concat(searchInternal(query.values[i]));
+        }
+        break;
+      case "xor":
+        // The generalization of the xor operation
+        // to multiple inputs is uniqueness
+        var vals = [];
+        for (var i = 0; i < query.values.length; i++) {
+          vals.push(searchInternal(query.values[i]));
+        }
+
+        for (var i = 0; i < vals.length; i++) {
+          for (var k = 0; k < vals[i].length; k++) {
+            var add = true;
+            for (var v = 0; v < vals.length; v++) {
+              if ((v != i) && has(vals[v], vals[i][k])) {
+                // Not unique
+                add = false;
+                break;
+              }
+            }
+            
+            if (add) {
+              r.push(vals[i][k]);
+            }
+          }
+        }
+        break;
+      case "not":
+        // The generalization of the not operation to multiple inputs
+        // is to subtract all inputs from first input
+        // So 5 ! 2 ! 3
+        // Would be 5 without 2 nor 3
+        var first = query.values[0];
+        if (first) {
+          var resultFirst = searchInternal(first);
+          
+          var remove = [];
+          for (var i = 1; i < query.values.length; i++) {
+            remove = remove.concat(searchInternal(query.values[i]));
+          }
+
+          for (var i = 0; i < resultFirst.length; i++) {
+            if (!has(remove, resultFirst[i])) {
+              r.push(resultFirst[i]);
+            }
+          }
+        }
+        break;
+      case "exactly":
+        var tag = query.values + ""; // cast to string
+        var anc = anchor("tag", tag);
+        r = getLinks(anc, "post", { Load: true });
+        break;
+    }
+
+    // Remove duplicates
+
+    var unduplicated = [];
+    for (var i = 0; i < r.length; i++) {
+      if (!has(unduplicated, r[i])) {
+        unduplicated.push(r[i]);
+      }
+    }
+
+    return unduplicated;
+  }
+
+  return searchInternal(query);
 }
 
 function fromUser(keyHash, statusMask) {

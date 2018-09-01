@@ -74,12 +74,7 @@
                     "Exposure": "public"
                 },
                 {
-                    "Name": "fromTag",
-                    "CallingType": "string",
-                    "Exposure": "public"
-                },
-                {
-                    "Name": "fromTags",
+                    "Name": "search",
                     "CallingType": "json",
                     "Exposure": "public"
                 },
