@@ -160,3 +160,11 @@ view model =
         Loadable.Unloaded ->
             []
     )
+
+documentTitle : Model -> String
+documentTitle model =
+    case model.post of
+        Loadable.Loaded { title } ->
+            "\"" ++ title ++ "\" on Comet"
+        _ ->
+            "Comet"

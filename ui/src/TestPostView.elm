@@ -1,5 +1,6 @@
 module TestPostView exposing (..)
 
+import Browser.Navigation as Navigation exposing (Key)
 import Html.Events as Events
 import Html exposing (Html)
 
@@ -7,6 +8,7 @@ import Html exposing (Html)
 
 type alias Model =
     { input : String
+    , key : Key
     }
 
 type Msg
@@ -14,9 +16,9 @@ type Msg
     | UpdateInput String
     | SubmitInput
 
-init : ( Model, Cmd Msg )
-init =
-    ( Model "", Cmd.none )
+init : Key -> ( Model, Cmd Msg )
+init key =
+    ( Model "" key, Cmd.none )
 
 -- Update
 
@@ -27,8 +29,8 @@ update msg model =
             ( model, Cmd.none )
         UpdateInput input ->
             ( { model | input = input }, Cmd.none )
-        SubmitInput -> -- To be handled others
-            ( model, Cmd.none )
+        SubmitInput ->
+            ( model, Navigation.pushUrl model.key ("/post/" ++ model.input) )
 
 -- View
 

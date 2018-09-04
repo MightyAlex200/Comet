@@ -13,7 +13,7 @@ import Links exposing (Links, Link)
 import Json.Encode as Encode
 import Json.Decode as Decode
 import Html.Events as Events
-import FeatherIcons as Icons
+-- import FeatherIcons as Icons
 import Vote exposing (Vote)
 import Html exposing (Html)
 import Http
@@ -194,11 +194,11 @@ voteSections isPositive =
 voteButton : Bool -> Float -> Html Msg
 voteButton isPositive value =
     let
-        icon =
-            if isPositive then
-                Icons.arrowUp
-            else
-                Icons.arrowDown
+        -- icon =
+        --     if isPositive then
+        --         Icons.arrowUp
+        --     else
+        --         Icons.arrowDown
         class =
             if isPositive then
                 "upvote-representation"
@@ -214,12 +214,12 @@ voteButton isPositive value =
                 , Attributes.class class
                 , Attributes.style "clip-path" (getClip isPositive value)
                 ]
-                [ icon
-                    |> Icons.toHtml []
+                [ --icon
+                  --  |> Icons.toHtml []
                 ]
             , Html.div [ Attributes.class "vote-button-background" ]
-                [ icon
-                    |> Icons.toHtml []
+                [ --icon
+                  --  |> Icons.toHtml []
                 ]
             ]
 
