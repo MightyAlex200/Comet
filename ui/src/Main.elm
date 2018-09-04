@@ -5,6 +5,7 @@ import Browser exposing (Document, UrlRequest)
 import Url.Parser as Url exposing (Parser, (</>))
 import Browser.Navigation exposing (Key)
 import Loadable exposing (Loadable)
+import KarmaMap exposing (KarmaMap)
 import Html exposing (Html)
 import Url exposing (Url)
 import TestPostView
@@ -29,7 +30,7 @@ type alias Flags =
 type alias Model =
     { page : Page
     , navKey : Key
-    , karmaMap : String -> Float
+    , karmaMap : KarmaMap
     }
 
 type Page

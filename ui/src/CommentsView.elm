@@ -5,6 +5,7 @@ import Tuple exposing (first, second)
 import Maybe exposing (withDefault)
 import Html.Attributes as Attributes
 import Loadable exposing (Loadable)
+import KarmaMap exposing (KarmaMap)
 import Html.Events as Events
 import Html exposing (Html)
 import MarkdownCompose
@@ -26,7 +27,7 @@ type alias SingleView = -- TODO: VoteView
     , hash : String
     , comment : Loadable Comment
     , voteView : VoteView.Model
-    , karmaMap : String -> Float
+    , karmaMap : KarmaMap
     , replyComposeView : MarkdownCompose.Model
     , showReplyCompose : Bool
     }
@@ -45,7 +46,7 @@ type SingleMsg
     | MarkdownComposeMsg MarkdownCompose.Msg
     | ToggleShowReplyCompose
 
-singleFromHash : (String -> Float) -> String -> ( SingleView, Cmd SingleMsg )
+singleFromHash : KarmaMap -> String -> ( SingleView, Cmd SingleMsg )
 singleFromHash karmaMap hash =
     let
         uninitialized =
@@ -176,7 +177,7 @@ viewSingle model =
 type alias Model =
     { comments : List SingleView
     , targetHash : String
-    , karmaMap : String -> Float
+    , karmaMap : KarmaMap
     }
 
 type Msg
@@ -186,7 +187,7 @@ type Msg
     | RequestComments String
     | ReceiveError
 
-fromHash : (String -> Float) -> String -> ( Model, Cmd Msg )
+fromHash : KarmaMap -> String -> ( Model, Cmd Msg )
 fromHash karmaMap hash =
     let
         uninitialized =

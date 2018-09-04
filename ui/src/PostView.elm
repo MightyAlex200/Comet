@@ -3,6 +3,7 @@ module PostView exposing (..)
 import Tuple exposing (first, second)
 import Html.Attributes as Attributes
 import Loadable exposing (Loadable)
+import KarmaMap exposing (KarmaMap)
 import Html.Events as Events
 import Post exposing (Post)
 import Html exposing (Html)
@@ -21,7 +22,7 @@ type alias Model =
     , comments : CommentsView.Model
     , voteView : VoteView.Model
     , hash : String
-    , karmaMap : String -> Float
+    , karmaMap : KarmaMap
     , replyComposeView : MarkdownCompose.Model
     , showReplyCompose : Bool
     }
@@ -37,7 +38,7 @@ type Msg
     | ToggleShowReplyCompose
     -- TODO: UpdateKarmaMap Msg
 
-fromHash : (String -> Float) -> String -> ( Model, Cmd Msg )
+fromHash : KarmaMap -> String -> ( Model, Cmd Msg )
 fromHash karmaMap hash =
     let
         uninitialized =

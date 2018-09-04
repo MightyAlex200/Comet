@@ -10,6 +10,7 @@ module VoteView exposing
 
 import Html.Attributes as Attributes
 import Links exposing (Links, Link)
+import KarmaMap exposing (KarmaMap)
 import Json.Encode as Encode
 import Json.Decode as Decode
 import Html.Events as Events
@@ -29,7 +30,7 @@ type alias Model =
     { targetHash : String
     , value : Float
     , score : Float
-    , karmaMap : String -> Float
+    , karmaMap : KarmaMap
     }
 
 type Msg
@@ -42,7 +43,7 @@ type Msg
     | ReceiveVotes (Links Vote)
     | ReceiveError
 
-fromHash : (String -> Float) -> String -> ( Model, Cmd Msg )
+fromHash : KarmaMap -> String -> ( Model, Cmd Msg )
 fromHash karmaMap hash =
     let
         uninitialized =
