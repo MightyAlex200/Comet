@@ -66,8 +66,6 @@ Comet is a reddit-like Holochain application.
     - Wait until Holochain refactor and WASM/Rust ribosome
 
 ## Getting it set up
-The DNA should work perfectly out of the box, but the frontend does require some set up. The only required application is [`npm`](https://www.npmjs.com/).
+The DNA should work perfectly out of the box, but the frontend does require some set up. The only required application is [`elm`](http://elm-lang.org/).
 
-First `cd` into `ui/` and install all of the packages by running `npm install`. Once you have the packages you can build everything by running `npm run build`. Once all of the files are built you can `cd` up a level and run it with `hcdev w`.
-
-You can clean the build artifacts by running `npm run clean` in `ui`.
+First `cd` into `ui/` and then build everything by running `make` (or the command in `makefile` if you're not comfortable running make on its own/don't have make). Once index.js is built you can `cd` up a level and run it with `hcdev w`.
