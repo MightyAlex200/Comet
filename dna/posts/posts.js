@@ -43,6 +43,7 @@ function makeUnique(entry) {
 // Exposed functions
 
 function postCreate(input) {
+  // TODO: defaultTags
   var postEntry = makeUnique(input.postEntry);
   var postHash = commit("post", postEntry);
   for(var i = 0; i < input.tags.length; i++) {
@@ -54,6 +55,15 @@ function postCreate(input) {
           Base: anchorHash,
           Link: postHash,
           Tag: 'post'
+        }
+      ]
+    });
+    var tagLinkHash = commit("postLink", {
+      Links: [
+        {
+          Base: postHash,
+          Link: anchorHash,
+          Tag: 'defaultTag'
         }
       ]
     });
@@ -268,6 +278,8 @@ function validateCommit(entryName, entry, header, pkg, sources) {
     case "tagLink":
     case "userLink":
       return true;
+    case "postLink":
+      return true;
     default:
       // invalid entry name
       return false;
@@ -292,6 +304,8 @@ function validatePut(entryName, entry, header, pkg, sources) {
       return true;
     case "tagLink":
     case "userLink":
+      return true;
+    case "postLink":
       return true;
     default:
       // invalid entry name
@@ -319,6 +333,8 @@ function validateMod(entryName, entry, header, replaces, pkg, sources) {
     case "tagLink":
     case "userLink":
       return false;
+    case "postLink":
+      return true;
     default:
       // invalid entry name
       return false;
@@ -339,6 +355,8 @@ function validateDel(entryName, hash, pkg, sources) {
     case "tagLink":
     case "userLink":
       return get(hash, { GetMask: HC.GetMask.Sources })[0] == sources[0];
+    case "postLink":
+      return true;
     default:
       // invalid entry name
       return false;
@@ -369,6 +387,13 @@ function validateLink(entryName, baseHash, links, pkg, sources) {
     case "userLink":
       var linkEntryType = get(links[0].Link, { GetMask: HC.GetMask.EntryType });
       return linkEntryType == "post";
+    case "postLink":
+      switch (links[0].Tag) {
+        case "defaultTag":
+          return sources[0] == get(links[0].Base, { GetMask: HC.GetMask.Sources });
+        default:
+          return false;
+      }
     default:
       // invalid entry name
       return false;

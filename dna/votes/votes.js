@@ -24,6 +24,20 @@ function vote(input) {
   var voteEntry = input.voteEntry;
   voteEntry.keyHash = App.Key.Hash;
   voteEntry.timestamp = Date.now();
+  if (!voteEntry.inTermsOf) {
+    var targetPost = get(input.targetHash);
+    if (targetPost) {
+      var defaultTagLinks = getLinks(input.targetHash, "defaultTag", { Load: true });
+      var defaultTags = [];
+      for (var i = 0; i < defaultTagLinks.length; i++) {
+        defaultTags[i] = parseInt(defaultTagLinks[i].Entry.anchorText);
+      }
+      voteEntry.inTermsOf = defaultTags;
+    } else {
+      // Not voting on anything
+      voteEntry.inTermsOf = [];
+    }
+  }
   if(voteLink) {
     // if voted on it before, update vote entry
     var newVote = update("vote", voteEntry, makeHash("vote", voteLink.Entry));

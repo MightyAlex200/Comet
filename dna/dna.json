@@ -33,6 +33,13 @@
                     "Sharing": "public"
                 },
                 {
+                    "Name": "postLink",
+                    "DataFormat": "links",
+                    "Schema": "",
+                    "SchemaFile": "",
+                    "Sharing": "public"
+                },
+                {
                     "Name": "tagLink",
                     "DataFormat": "links",
                     "Schema": "",
