@@ -43,7 +43,6 @@ function makeUnique(entry) {
 // Exposed functions
 
 function postCreate(input) {
-  // TODO: defaultTags
   var postEntry = makeUnique(input.postEntry);
   var postHash = commit("post", postEntry);
   for(var i = 0; i < input.tags.length; i++) {
@@ -59,6 +58,15 @@ function postCreate(input) {
       ]
     });
     var tagLinkHash = commit("postLink", {
+      Links: [
+        {
+          Base: postHash,
+          Link: anchorHash,
+          Tag: 'tag'
+        }
+      ]
+    });
+    var defaultTagLinkHash = commit("postLink", {
       Links: [
         {
           Base: postHash,
@@ -239,7 +247,40 @@ function crosspost(input) {
         }
       ]
     });
+    var tagLinkHash = commit("postLink", {
+      Links: [
+        {
+          Base: input.from,
+          Link: tag,
+          Tag: 'tag'
+        }
+      ]
+    });
   }
+}
+
+function tagArray(links) {
+  var r = [];
+  for (var i = 0; i < links.length; i++) {
+    r[i] = parseInt(links[i].Entry.anchorText);
+  }
+  return r;
+}
+
+function tags(postHash) {
+  return JSON.stringify(
+    tagArray(
+      getLinks(postHash, "tag", { Load: true })
+    )
+  );
+}
+
+function defaultTags(postHash) {
+  return JSON.stringify(
+    tagArray(
+      getLinks(postHash, "defaultTag", { Load: true })
+    )
+  );
 }
 
 
@@ -391,6 +432,8 @@ function validateLink(entryName, baseHash, links, pkg, sources) {
       switch (links[0].Tag) {
         case "defaultTag":
           return sources[0] == get(links[0].Base, { GetMask: HC.GetMask.Sources });
+        case "tag":
+          return true;
         default:
           return false;
       }
