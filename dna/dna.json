@@ -89,6 +89,16 @@
                     "Name": "fromUser",
                     "CallingType": "string",
                     "Exposure": "public"
+                },
+                {
+                    "Name": "tags",
+                    "CallingType": "string",
+                    "Exposure": "public"
+                },
+                {
+                    "Name": "defaultTags",
+                    "CallingType": "string",
+                    "Exposure": "public"
                 }
             ]
         },
