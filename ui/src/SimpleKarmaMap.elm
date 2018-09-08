@@ -3,5 +3,5 @@ module SimpleKarmaMap exposing (..)
 import KarmaMap exposing (KarmaMap)
 
 simpleKarmaMap : KarmaMap
-simpleKarmaMap _ =
+simpleKarmaMap _ _ =
     1

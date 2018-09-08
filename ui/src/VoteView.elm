@@ -1,12 +1,5 @@
 module VoteView exposing
-    ( Model
-    , Msg
-    , fromHash
-    , voteToValue
-    , valueToVote
-    , update
-    , view
-    )
+    (..)
 
 import Html.Attributes as Attributes
 import Links exposing (Links, Link)
@@ -44,6 +37,7 @@ type Msg
     | RequestVotes
     | ReceiveVotes (Links Vote)
     | ReceiveError
+    | ReceiveInTermsOf (List Tag)
 
 fromHash : KarmaMap -> String -> Maybe (List Tag) -> ( Model, Cmd Msg )
 fromHash karmaMap hash inTermsOf =
@@ -79,9 +73,9 @@ update msg model =
             let
                 body =
                     Encode.object
-                    [ ("targetHash", Encode.string model.targetHash)
-                    , ("voteEntry", Vote.encode vote)
-                    ]
+                        [ ("targetHash", Encode.string model.targetHash)
+                        , ("voteEntry", Vote.encode vote)
+                        ]
                 request =
                     Http.post "/fn/votes/vote" (Http.jsonBody body) (Decode.succeed Nothing)
                 handle _ =
@@ -115,7 +109,7 @@ update msg model =
                 sources =
                     List.map (\vote -> ( vote.source, voteToValue vote.entry )) votes
                 weighted =
-                    List.map (\( source, value ) -> ( model.karmaMap source, value )) sources
+                    List.map (\( source, value ) -> ( model.karmaMap model.inTermsOf source, value )) sources
                 multiplied =
                     List.map (\( weight, value ) -> weight * value) weighted
                 newScore =
@@ -140,6 +134,14 @@ update msg model =
             ( { model | value = voteToValue vote.entry }, Cmd.none )
         ReceiveError ->
             ( model, Cmd.none )
+        ReceiveInTermsOf inTermsOf ->
+            let
+                newModel =
+                    { model
+                    | inTermsOf = Just inTermsOf
+                    }
+            in
+                ( newModel, Cmd.none )
 
 -- View
 

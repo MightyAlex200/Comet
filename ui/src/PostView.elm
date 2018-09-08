@@ -4,6 +4,7 @@ import Tuple exposing (first, second)
 import Html.Attributes as Attributes
 import Loadable exposing (Loadable)
 import KarmaMap exposing (KarmaMap)
+import Json.Decode as Decode
 import Html.Events as Events
 import Post exposing (Post)
 import Html exposing (Html)
@@ -38,6 +39,7 @@ type Msg
     | VoteViewMsg VoteView.Msg
     | MarkdownComposeMsg MarkdownCompose.Msg
     | ToggleShowReplyCompose
+    | ReceiveInTermsOf (List Tag)
     -- TODO: UpdateKarmaMap Msg
 
 fromHash : KarmaMap -> String -> Maybe (List Tag) -> ( Model, Cmd Msg )
@@ -84,18 +86,37 @@ update msg model =
                 )
         RequestPost hash ->
             let
-                process result =
+                postProcess result =
                     case result of
                         Ok res ->
                             ReceivePost res
                         Err _ ->
                             ReceiveError    
-                body =
+                postBody =
                     Http.jsonBody (Json.Encode.string hash)
-                request =
-                    Http.post "/fn/posts/postRead" body Post.decoder
+                postRequest =
+                    Http.post "/fn/posts/postRead" postBody Post.decoder
+                postCmd =
+                    Http.send postProcess postRequest
+                inTermsOfProcess result =
+                    case result of
+                        Ok res ->
+                            ReceiveInTermsOf res
+                        Err _ ->
+                            NoOp
+                inTermsOfBody =
+                    Http.stringBody "" hash
+                inTermsOfRequest =
+                    Http.post "/fn/posts/defaultTags" inTermsOfBody (Decode.list Decode.int)
+                inTermsOfCmd =
+                    Http.send inTermsOfProcess inTermsOfRequest
+                cmds =
+                    Cmd.batch
+                        [ postCmd
+                        , inTermsOfCmd
+                        ]
             in
-                ( { model | hash = hash }, Http.send process request )
+                ( { model | hash = hash }, cmds )
         ReceiveError ->
             ( model, Cmd.none )
         CommentsViewMsg commentsMsg ->
@@ -132,6 +153,29 @@ update msg model =
                         ( { model | replyComposeView = updatedComposeView }, Cmd.map MarkdownComposeMsg cmd  )
         ToggleShowReplyCompose ->
             ( { model | showReplyCompose = not model.showReplyCompose }, Cmd.none )
+        ReceiveInTermsOf inTermsOf ->
+            case model.inTermsOf of
+                Just _ ->
+                    ( model, Cmd.none )
+                Nothing ->
+                    let
+                        ( newComments, commentCmd ) =
+                            CommentsView.update (CommentsView.ReceiveInTermsOf inTermsOf) model.comments
+                        ( newVoteView, voteCmd ) =
+                            VoteView.update (VoteView.ReceiveInTermsOf inTermsOf) model.voteView
+                        newModel =
+                            { model
+                            | inTermsOf = Just inTermsOf
+                            , comments = newComments
+                            , voteView = newVoteView
+                            }
+                        cmds =
+                            Cmd.batch
+                                [ Cmd.map CommentsViewMsg commentCmd
+                                , Cmd.map VoteViewMsg voteCmd
+                                ]
+                    in
+                        ( newModel, cmds )
 
 -- View
 

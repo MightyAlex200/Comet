@@ -47,12 +47,13 @@ type SingleMsg
     | VoteViewMsg VoteView.Msg
     | MarkdownComposeMsg MarkdownCompose.Msg
     | ToggleShowReplyCompose
+    | ReceiveSingleInTermsOf (List Tag)
 
 singleFromHash : KarmaMap -> String -> Maybe (List Tag) -> ( SingleView, Cmd SingleMsg )
 singleFromHash karmaMap hash inTermsOf =
     let
         uninitialized =
-            SingleView 
+            SingleView
                 Unloaded
                 ""
                 Loadable.Unloaded
@@ -134,6 +135,29 @@ singleUpdate msg model =
                         ( { model | replyComposeView = updatedComposeView }, Cmd.map MarkdownComposeMsg cmd )
         ToggleShowReplyCompose ->
             ( { model | showReplyCompose = not model.showReplyCompose }, Cmd.none )
+        ReceiveSingleInTermsOf inTermsOf ->
+            let
+                updatedReplies =
+                    case model.replies of
+                        Replies replies ->
+                            Just (update (ReceiveInTermsOf inTermsOf) replies)
+                        Unloaded ->
+                            Nothing
+                ( newReplies, cmds ) =
+                    case updatedReplies of
+                        Just ( r, c ) ->
+                            ( Replies r
+                            , Cmd.map RepliesMsg c
+                            )
+                        Nothing ->
+                            ( Unloaded, Cmd.none )
+                newModel =
+                    { model
+                    | inTermsOf = Just inTermsOf
+                    , replies = newReplies
+                    }
+            in
+                ( newModel, cmds )
 
 -- View
 
@@ -190,6 +214,7 @@ type Msg
     | ReceiveComments (List ( SingleView, Cmd SingleMsg ))
     | RequestComments String
     | ReceiveError
+    | ReceiveInTermsOf (List Tag)
 
 fromHash : KarmaMap -> String -> Maybe (List Tag) -> ( Model, Cmd Msg )
 fromHash karmaMap hash inTermsOf =
@@ -255,6 +280,25 @@ update msg model =
                 ( { model | targetHash = hash }, Http.send process request )
         ReceiveError ->
             ( model, Cmd.none )
+        ReceiveInTermsOf inTermsOf ->
+            let
+                newComments =
+                    model.comments
+                        |> List.map (singleUpdate (ReceiveSingleInTermsOf inTermsOf))
+                newCommentsModels =
+                    newComments
+                        |> List.map Tuple.first
+                newCommentsCmds =
+                    newComments
+                        |> List.map (\( m, c ) -> Cmd.map (SingleMsg m) c)
+                        |> Cmd.batch
+                newModel =
+                    { model
+                    | inTermsOf = Just inTermsOf
+                    , comments = newCommentsModels
+                    }
+            in
+                ( newModel, newCommentsCmds )
 
 -- View
 

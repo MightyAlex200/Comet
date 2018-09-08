@@ -1,4 +1,6 @@
 module KarmaMap exposing (KarmaMap)
 
+import Tags exposing (Tag)
+
 type alias KarmaMap =
-    String -> Float
+    Maybe (List Tag) -> String -> Float
