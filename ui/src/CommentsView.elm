@@ -8,6 +8,7 @@ import Loadable exposing (Loadable)
 import KarmaMap exposing (KarmaMap)
 import Html.Events as Events
 import Html exposing (Html)
+import Tags exposing (Tag)
 import MarkdownCompose
 import MarkdownOptions
 import Json.Encode
@@ -30,6 +31,7 @@ type alias SingleView = -- TODO: VoteView
     , karmaMap : KarmaMap
     , replyComposeView : MarkdownCompose.Model
     , showReplyCompose : Bool
+    , inTermsOf : Maybe (List Tag)
     }
 
 type Replies
@@ -46,18 +48,19 @@ type SingleMsg
     | MarkdownComposeMsg MarkdownCompose.Msg
     | ToggleShowReplyCompose
 
-singleFromHash : KarmaMap -> String -> ( SingleView, Cmd SingleMsg )
-singleFromHash karmaMap hash =
+singleFromHash : KarmaMap -> String -> Maybe (List Tag) -> ( SingleView, Cmd SingleMsg )
+singleFromHash karmaMap hash inTermsOf =
     let
         uninitialized =
             SingleView 
                 Unloaded
                 ""
                 Loadable.Unloaded
-                (first (VoteView.fromHash karmaMap hash))
+                (first (VoteView.fromHash karmaMap hash inTermsOf))
                 karmaMap
                 MarkdownCompose.init
                 False
+                inTermsOf
     in
         singleUpdate (RequestComment hash) uninitialized
 
@@ -71,9 +74,9 @@ singleUpdate msg model =
         ReceiveComment comment ->
             let
                 ( replies, repliesCmd ) =
-                    fromHash model.karmaMap model.hash
+                    fromHash model.karmaMap model.hash model.inTermsOf
                 ( voteView, voteCmd ) =
-                    VoteView.fromHash model.karmaMap model.hash
+                    VoteView.fromHash model.karmaMap model.hash model.inTermsOf
             in
                 ( { model | comment = Loadable.Loaded comment, replies = Replies replies }
                 , Cmd.batch
@@ -178,6 +181,7 @@ type alias Model =
     { comments : List SingleView
     , targetHash : String
     , karmaMap : KarmaMap
+    , inTermsOf : Maybe (List Tag)
     }
 
 type Msg
@@ -187,11 +191,11 @@ type Msg
     | RequestComments String
     | ReceiveError
 
-fromHash : KarmaMap -> String -> ( Model, Cmd Msg )
-fromHash karmaMap hash =
+fromHash : KarmaMap -> String -> Maybe (List Tag) -> ( Model, Cmd Msg )
+fromHash karmaMap hash inTermsOf =
     let
         uninitialized =
-            Model [] "" karmaMap
+            Model [] "" karmaMap inTermsOf
     in
         update (RequestComments hash) uninitialized
 
@@ -236,7 +240,7 @@ update msg model =
         RequestComments hash ->
             let
                 linkToCommentView link =
-                    singleFromHash model.karmaMap link.hash
+                    singleFromHash model.karmaMap link.hash model.inTermsOf
                 process result =
                     case result of
                         Ok res ->

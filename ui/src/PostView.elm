@@ -7,6 +7,7 @@ import KarmaMap exposing (KarmaMap)
 import Html.Events as Events
 import Post exposing (Post)
 import Html exposing (Html)
+import Tags exposing (Tag)
 import MarkdownOptions
 import MarkdownCompose
 import CommentsView
@@ -25,6 +26,7 @@ type alias Model =
     , karmaMap : KarmaMap
     , replyComposeView : MarkdownCompose.Model
     , showReplyCompose : Bool
+    , inTermsOf : Maybe (List Tag)
     }
 
 type Msg
@@ -38,18 +40,19 @@ type Msg
     | ToggleShowReplyCompose
     -- TODO: UpdateKarmaMap Msg
 
-fromHash : KarmaMap -> String -> ( Model, Cmd Msg )
-fromHash karmaMap hash =
+fromHash : KarmaMap -> String -> Maybe (List Tag) -> ( Model, Cmd Msg )
+fromHash karmaMap hash inTermsOf =
     let
         uninitialized =
             Model
                 Loadable.Unloaded
-                (first (CommentsView.fromHash karmaMap hash))
-                (first (VoteView.fromHash karmaMap hash))
+                (first (CommentsView.fromHash karmaMap hash inTermsOf))
+                (first (VoteView.fromHash karmaMap hash inTermsOf))
                 ""
                 karmaMap
                 MarkdownCompose.init
                 False
+                inTermsOf
     in
         update (RequestPost hash) uninitialized
 
@@ -63,9 +66,9 @@ update msg model =
         ReceivePost post ->
             let
                 ( comments, commentCmd ) =
-                    CommentsView.fromHash model.karmaMap model.hash
+                    CommentsView.fromHash model.karmaMap model.hash model.inTermsOf
                 ( voteView, voteCmd ) =
-                    VoteView.fromHash model.karmaMap model.hash
+                    VoteView.fromHash model.karmaMap model.hash model.inTermsOf
                 cmds =
                     Cmd.batch
                     [ Cmd.map CommentsViewMsg commentCmd

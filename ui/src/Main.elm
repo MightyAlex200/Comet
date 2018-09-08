@@ -2,10 +2,12 @@ module Main exposing (..)
 
 import SimpleKarmaMap exposing (simpleKarmaMap)
 import Browser exposing (Document, UrlRequest)
-import Url.Parser as Url exposing (Parser, (</>))
+import Url.Parser as Url exposing (Parser, (</>), (<?>))
 import Browser.Navigation exposing (Key)
 import Loadable exposing (Loadable)
 import KarmaMap exposing (KarmaMap)
+import Url.Parser.Query as Query
+import Json.Decode as Decode
 import Html exposing (Html)
 import Url exposing (Url)
 import TestPostView
@@ -53,7 +55,16 @@ page =
             )
     in
         Url.oneOf
-            [ Url.map (\hash model -> correctPostView (PostView.fromHash model.karmaMap hash)) (Url.s "post" </> Url.string)
+            [ Url.map
+                (\hash inTermsOfString model ->
+                    let
+                        inTermsOf =
+                            inTermsOfString
+                                |> Maybe.andThen (Result.toMaybe << Decode.decodeString (Decode.list Decode.int))
+                    in
+                        correctPostView (PostView.fromHash model.karmaMap hash inTermsOf)
+                )
+                (Url.s "post" </> Url.string <?> Query.string "inTermsOf")
             , Url.map (\model -> correctTestPostView (TestPostView.init model.navKey)) (Url.s "testPost")
             ]
 
