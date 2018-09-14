@@ -464,7 +464,7 @@ function validateLink(entryName, baseHash, links, pkg, sources) {
       return false;
     case "tagLink":
     case "userLink":
-      return true
+      return true;
     case "postLink":
       switch (links[0].Tag) {
         case "defaultTag":
