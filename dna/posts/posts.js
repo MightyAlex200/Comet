@@ -413,8 +413,7 @@ function validateMod(entryName, entry, header, replaces, pkg, sources) {
   // Validation special to validateMod
   switch (entryName) {
     case "post":
-      return get(replaces, { GetMask: HC.GetMask.Sources })[0] == sources[0]
-        && entry.keyHash == get(replaces).keyHash;
+      return get(replaces, { GetMask: HC.GetMask.Sources })[0] == sources[0];
     case "tagLink":
     case "userLink":
     case "postLink":
