@@ -72,6 +72,32 @@ function genesis() {
 //  Validation functions for every change to the local chain or DHT
 // -----------------------------------------------------------------
 
+function validate(entryType, entry, header, pkg, sources) {
+  switch (entryType) {
+    case "comment":
+      return sources[0] == entry.keyHash;
+    case "commentLink":
+      // Base must be post or comment
+      var baseType = get(entry.Links[0].Base, { GetMask: HC.GetMask.EntryType });
+      if (baseType != "post" && baseType != "comment") {
+        return false;
+      }
+
+      // Link must be comment
+      var linkType = get(entry.Links[0].Link, { GetMask: HC.GetMask.EntryType });
+      if (linkType != "comment") {
+        return false;
+      }
+
+      // Source must be creator of comment
+      var linkSources = get(entry.Links[0].Link, { GetMask: HC.GetMask.Sources });
+      return linkSources[0] == sources[0];
+  }
+
+  // Invalid entry type
+  return false;
+}
+
 /**
  * Called to validate any changes to the local chain or DHT
  * @param {string} entryName - the type of entry
@@ -82,21 +108,16 @@ function genesis() {
  * @return {boolean} is valid?
  */
 function validateCommit(entryName, entry, header, pkg, sources) {
-  switch (entryName) {
-    case "comment":
-      // be sure to consider many edge cases for validating
-      // do not just flip this to true without considering what that means
-      // the action will ONLY be successfull if this returns true, so watch out!
-      return entry.keyHash == sources[0];
-    case "commentLink":
-      // be sure to consider many edge cases for validating
-      // do not just flip this to true without considering what that means
-      // the action will ONLY be successfull if this returns true, so watch out!
-      return get(entry.Links[0].Base) != HC.HashNotFound;
-    default:
-      // invalid entry name
-      return false;
+  if (!validate(entryName, entry, header, pkg, sources)) {
+    return false;
   }
+
+  // // Validation special to validateCommit
+  // switch (entryName) {
+  //
+  // }
+
+  return true;
 }
 
 /**
@@ -109,21 +130,16 @@ function validateCommit(entryName, entry, header, pkg, sources) {
  * @return {boolean} is valid?
  */
 function validatePut(entryName, entry, header, pkg, sources) {
-  switch (entryName) {
-    case "comment":
-      // be sure to consider many edge cases for validating
-      // do not just flip this to true without considering what that means
-      // the action will ONLY be successfull if this returns true, so watch out!
-      return true;
-    case "commentLink":
-      // be sure to consider many edge cases for validating
-      // do not just flip this to true without considering what that means
-      // the action will ONLY be successfull if this returns true, so watch out!
-      return true;
-    default:
-      // invalid entry name
-      return false;
+  if (!validate(entryName, entry, header, pkg, sources)) {
+    return false;
   }
+
+  // // Validation special to validatePut
+  // switch (entryName) {
+  //
+  // }
+
+  return true;
 }
 
 /**
@@ -137,21 +153,19 @@ function validatePut(entryName, entry, header, pkg, sources) {
  * @return {boolean} is valid?
  */
 function validateMod(entryName, entry, header, replaces, pkg, sources) {
+  if (!validate(entryName, entry, header, pkg, sources)) {
+    return false;
+  }
+
   switch (entryName) {
     case "comment":
-      // be sure to consider many edge cases for validating
-      // do not just flip this to true without considering what that means
-      // the action will ONLY be successfull if this returns true, so watch out!
-      return false;
-    case "commentLink":
-      // be sure to consider many edge cases for validating
-      // do not just flip this to true without considering what that means
-      // the action will ONLY be successfull if this returns true, so watch out!
       return get(replaces, { GetMask: HC.GetMask.Sources })[0] == sources[0];
-    default:
-      // invalid entry name
+    case "commentLink":
+      // Don't modify
       return false;
   }
+
+  return true;
 }
 
 /**
@@ -165,15 +179,9 @@ function validateMod(entryName, entry, header, replaces, pkg, sources) {
 function validateDel(entryName, hash, pkg, sources) {
   switch (entryName) {
     case "comment":
-      // be sure to consider many edge cases for validating
-      // do not just flip this to true without considering what that means
-      // the action will ONLY be successfull if this returns true, so watch out!
-      return false;
-    case "commentLink":
-      // be sure to consider many edge cases for validating
-      // do not just flip this to true without considering what that means
-      // the action will ONLY be successfull if this returns true, so watch out!
       return get(hash, { GetMask: HC.GetMask.Sources })[0] == sources[0];
+    case "commentLink":
+      return false;
     default:
       // invalid entry name
       return false;
@@ -190,16 +198,13 @@ function validateDel(entryName, hash, pkg, sources) {
  * @return {boolean} is valid?
  */
 function validateLink(entryName, baseHash, links, pkg, sources) {
+  // Will already have been validated by validateCommit and validatePut
+  
   switch (entryName) {
     case "comment":
-      // be sure to consider many edge cases for validating
-      // do not just flip this to true without considering what that means
-      // the action will ONLY be successfull if this returns true, so watch out!
+      // Not a link, do not validate
       return false;
     case "commentLink":
-      // be sure to consider many edge cases for validating
-      // do not just flip this to true without considering what that means
-      // the action will ONLY be successfull if this returns true, so watch out!
       return true;
     default:
       // invalid entry name
