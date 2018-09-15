@@ -79,7 +79,7 @@ function postCreate(input) {
   var userLinkHash = commit("userLink", {
     Links: [
       {
-        Base: App.Agent.Hash,
+        Base: App.Key.Hash,
         Link: postHash,
         Tag: 'post'
       }
@@ -241,7 +241,7 @@ function crosspost(input) {
     var userLinkHash = commit("userLink", {
       Links: [
         {
-          Base: App.Agent.Hash,
+          Base: App.Key.Hash,
           Link: input.from,
           Tag: 'post'
         }
@@ -300,6 +300,55 @@ function genesis() {
 //  Validation functions for every change to the local chain or DHT
 // -----------------------------------------------------------------
 
+function validate(entryType, entry, header, pkg, sources) {
+  switch (entryType) {
+    case "post":
+      return entry.keyHash == sources[0];
+    case "postLink":
+      for (var i = 0; i < entry.Links.length; i++) {
+        var link = entry.Links[i];
+        // Base must be post
+        if (get(link.Base, { GetMask: HC.GetMask.EntryType }) != "post") {
+          return false;
+        }
+        // Link must be tag
+        if (get(link.Link, { GetMask: HC.GetMask.EntryType }) != "anchor") {
+          return false;
+        }
+      }
+      return true;
+    case "tagLink":
+      for (var i = 0; i < entry.Links.length; i++) {
+        var link = entry.Links[i];
+        // Base must be tag
+        if (get(link.Base, { GetMask: HC.GetMask.EntryType }) != "anchor") {
+          return false;
+        }
+        // Link must be post
+        if (get(link.Link, { GetMask: HC.GetMask.EntryType }) != "post") {
+          return false;
+        }
+      }
+      return true;
+    case "userLink":
+      for (var i = 0; i < entry.Links.length; i++) {
+        var link = entry.Links[i];
+        // Link must be post
+        if (get(link.Link, { GetMask: HC.GetMask.EntryType }) != "post") {
+          return false;
+        }
+        // Source must be base
+        // Implies base is key hash
+        if (sources[0] != link.Base) {
+          return false;
+        }
+      }
+      return true;
+  }
+  // Invalid entry name
+  return false;
+}
+
 /**
  * Called to validate any changes to the local chain or DHT
  * @param {string} entryName - the type of entry
@@ -310,21 +359,17 @@ function genesis() {
  * @return {boolean} is valid?
  */
 function validateCommit(entryName, entry, header, pkg, sources) {
-  switch (entryName) {
-    case "post":
-      // be sure to consider many edge cases for validating
-      // do not just flip this to true without considering what that means
-      // the action will ONLY be successfull if this returns true, so watch out!
-      return entry.keyHash == sources[0];
-    case "tagLink":
-    case "userLink":
-      return true;
-    case "postLink":
-      return true;
-    default:
-      // invalid entry name
-      return false;
+  if (!validate(entryName, entry, header, pkg, sources)) {
+    return false;
   }
+
+  // Validation special to validateCommit
+  // switch (entryName) {
+  //   case "post":
+  //     return true;
+  // }
+  
+  return true;
 }
 
 /**
@@ -337,21 +382,17 @@ function validateCommit(entryName, entry, header, pkg, sources) {
  * @return {boolean} is valid?
  */
 function validatePut(entryName, entry, header, pkg, sources) {
-  switch (entryName) {
-    case "post":
-      // be sure to consider many edge cases for validating
-      // do not just flip this to true without considering what that means
-      // the action will ONLY be successfull if this returns true, so watch out!
-      return true;
-    case "tagLink":
-    case "userLink":
-      return true;
-    case "postLink":
-      return true;
-    default:
-      // invalid entry name
-      return false;
+  if (!validate(entryName, entry, header, pkg, sources)) {
+    return false;
   }
+  
+  // // Validation special to validatePut
+  // switch (entryName) {
+  //   case "post":
+  //     return true;
+  // }
+
+  return true;
 }
 
 /**
@@ -365,21 +406,21 @@ function validatePut(entryName, entry, header, pkg, sources) {
  * @return {boolean} is valid?
  */
 function validateMod(entryName, entry, header, replaces, pkg, sources) {
+  if (!validate(entryName, entry, header, pkg, sources)) {
+    return false;
+  }
+
+  // Validation special to validateMod
   switch (entryName) {
     case "post":
-      // be sure to consider many edge cases for validating
-      // do not just flip this to true without considering what that means
-      // the action will ONLY be successfull if this returns true, so watch out!
       return get(replaces, { GetMask: HC.GetMask.Sources })[0] == sources[0];
     case "tagLink":
     case "userLink":
-      return false;
     case "postLink":
-      return true;
-    default:
-      // invalid entry name
       return false;
   }
+
+  return true;
 }
 
 /**
@@ -393,11 +434,11 @@ function validateMod(entryName, entry, header, replaces, pkg, sources) {
 function validateDel(entryName, hash, pkg, sources) {
   switch (entryName) {
     case "post":
+      return get(hash, { GetMask: HC.GetMask.Sources })[0] == sources[0];
     case "tagLink":
     case "userLink":
-      return get(hash, { GetMask: HC.GetMask.Sources })[0] == sources[0];
     case "postLink":
-      return true;
+      return false;
     default:
       // invalid entry name
       return false;
@@ -414,20 +455,15 @@ function validateDel(entryName, hash, pkg, sources) {
  * @return {boolean} is valid?
  */
 function validateLink(entryName, baseHash, links, pkg, sources) {
+  // These links will have to be validated by validatePut to get here
+
   switch (entryName) {
     case "post":
-      // be sure to consider many edge cases for validating
-      // do not just flip this to true without considering what that means
-      // the action will ONLY be successfull if this returns true, so watch out!
+      // Not a link, don't validate
       return false;
     case "tagLink":
-      var baseEntry = get(links[0].Base);
-      if(baseEntry.anchorType != "tag" || baseEntry.anchorText != Math.abs(parseInt(baseEntry.anchorText)).toString()) {
-        return false;
-      }
     case "userLink":
-      var linkEntryType = get(links[0].Link, { GetMask: HC.GetMask.EntryType });
-      return linkEntryType == "post";
+      return true;
     case "postLink":
       switch (links[0].Tag) {
         case "defaultTag":
@@ -437,10 +473,9 @@ function validateLink(entryName, baseHash, links, pkg, sources) {
         default:
           return false;
       }
-    default:
-      // invalid entry name
-      return false;
   }
+
+  return true;
 }
 
 /**

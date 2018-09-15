@@ -87,6 +87,39 @@ function genesis() {
 //  Validation functions for every change to the local chain or DHT
 // -----------------------------------------------------------------
 
+function validate(entryType, entry, header, pkg, sources) {
+  switch (entryType) {
+    case "vote":
+      return entry.fraction >= 0 && entry.fraction <= 1
+        && entry.keyHash == sources[0];
+    case "voteLink":
+      // Only allow votes on posts and comments
+      var baseType = get(entry.Links[0].Base, { GetMask: HC.GetMask.EntryType });
+      if (baseType != "post" && baseType != "comment") {
+        return false;
+      }
+
+      // Only link to your own votes
+      var linkSources = get(entry.Links[0].Link, { GetMask: HC.GetMask.Sources });
+      if (sources[0] != linkSources[0]) {
+        return false;
+      }
+
+      // Only vote on something once
+      var links = getLinks(entry.Links[0].Base, "vote", { Load: true });
+      for (var i = 0; i < links.length; i++) {
+        if (links[i].Source == sources[0]) {
+          return false;
+        }
+      }
+
+      return true;
+  }
+
+  // Invalid entry type
+  return false;
+}
+
 /**
  * Called to validate any changes to the local chain or DHT
  * @param {string} entryName - the type of entry
@@ -97,29 +130,16 @@ function genesis() {
  * @return {boolean} is valid?
  */
 function validateCommit(entryName, entry, header, pkg, sources) {
-  switch (entryName) {
-    case "vote":
-      // be sure to consider many edge cases for validating
-      // do not just flip this to true without considering what that means
-      // the action will ONLY be successfull if this returns true, so watch out!
-      return entry.fraction >= 0 && entry.fraction <= 1 && entry.keyHash == sources[0];
-    case "voteLink":
-      // be sure to consider many edge cases for validating
-      // do not just flip this to true without considering what that means
-      // the action will ONLY be successfull if this returns true, so watch out!
-      var links = getLinks(entry.Links[0].Base, "vote", { Load: true });
-      var filteredLinks = [];
-      for(var i = 0; i < links.length; i++) {
-        if(links[i].Source == App.Key.Hash) {
-          filteredLinks.push(links[i]);
-        }
-      }
-      return (get(entry.Links[0].Base) != HC.HashNotFound) 
-        && (filteredLinks.length == 0);
-    default:
-      // invalid entry name
-      return false;
+  if (!validate(entryName, entry, header, pkg, sources)) {
+    return false;
   }
+
+  // // Validation special to validateCommit
+  // switch (entryName) {
+  //  
+  // }
+
+  return true;
 }
 
 /**
@@ -132,21 +152,16 @@ function validateCommit(entryName, entry, header, pkg, sources) {
  * @return {boolean} is valid?
  */
 function validatePut(entryName, entry, header, pkg, sources) {
-  switch (entryName) {
-    case "vote":
-      // be sure to consider many edge cases for validating
-      // do not just flip this to true without considering what that means
-      // the action will ONLY be successfull if this returns true, so watch out!
-      return true;
-    case "voteLink":
-      // be sure to consider many edge cases for validating
-      // do not just flip this to true without considering what that means
-      // the action will ONLY be successfull if this returns true, so watch out!
-      return true;
-    default:
-      // invalid entry name
-      return false;
+  if (!validate(entryName, entry, header, pkg, sources)) {
+    return false;
   }
+
+  // // Validation special to validatePut
+  // switch (entryName) {
+  //  
+  // }
+
+  return true;
 }
 
 /**
@@ -160,22 +175,16 @@ function validatePut(entryName, entry, header, pkg, sources) {
  * @return {boolean} is valid?
  */
 function validateMod(entryName, entry, header, replaces, pkg, sources) {
+  if (!validate(entryName, entry, header, pkg, sources)) {
+    return false;
+  }
+
   switch (entryName) {
     case "vote":
-      // be sure to consider many edge cases for validating
-      // do not just flip this to true without considering what that means
-      // the action will ONLY be successfull if this returns true, so watch out!
-
-      // Prevents modification loops (entry a updated to b, b updated to a)
-      if(makeHash("vote", get(makeHash("vote", entry))) == makeHash("vote", get(replaces))) {
-        throw "Modification Loop";
-      }
-
-      return (get(replaces, { GetMask: HC.GetMask.Sources })[0] == sources[0]);
+      var replacesSources = get(replaces, { GetMask: HC.GetMask.Sources });
+      return (replacesSources[0] == sources[0]);
     case "voteLink":
-      // be sure to consider many edge cases for validating
-      // do not just flip this to true without considering what that means
-      // the action will ONLY be successfull if this returns true, so watch out!
+      // Don't modify
       return false;
     default:
       // invalid entry name
@@ -194,14 +203,8 @@ function validateMod(entryName, entry, header, replaces, pkg, sources) {
 function validateDel(entryName, hash, pkg, sources) {
   switch (entryName) {
     case "vote":
-      // be sure to consider many edge cases for validating
-      // do not just flip this to true without considering what that means
-      // the action will ONLY be successfull if this returns true, so watch out!
       return false;
     case "voteLink":
-      // be sure to consider many edge cases for validating
-      // do not just flip this to true without considering what that means
-      // the action will ONLY be successfull if this returns true, so watch out!
       return false;
     default:
       // invalid entry name
@@ -219,16 +222,13 @@ function validateDel(entryName, hash, pkg, sources) {
  * @return {boolean} is valid?
  */
 function validateLink(entryName, baseHash, links, pkg, sources) {
+  // Will already have been validated by validateCommit and validatePut
+
   switch (entryName) {
     case "vote":
-      // be sure to consider many edge cases for validating
-      // do not just flip this to true without considering what that means
-      // the action will ONLY be successfull if this returns true, so watch out!
+      // Not a link, don't validate
       return false;
     case "voteLink":
-      // be sure to consider many edge cases for validating
-      // do not just flip this to true without considering what that means
-      // the action will ONLY be successfull if this returns true, so watch out!
       return true;
     default:
       // invalid entry name
