@@ -107,13 +107,13 @@ function postDelete(postHash) {
 }
 
 function search(query) {
-  function objectEquate(a, b) {
-    return JSON.stringify(a) == JSON.stringify(b);
+  function linkEquate(a, b) {
+    return a.link.Hash == b.link.Hash;
   }
 
   function has(arr, obj) {
     for (var i = 0; i < arr.length; i++) {
-      if (objectEquate(arr[i], obj)) {
+      if (linkEquate(arr[i], obj)) {
         return true;
       }
     }
@@ -202,23 +202,37 @@ function search(query) {
       case "exactly":
         var tag = query.values + ""; // cast to string
         var anc = anchor("tag", tag);
-        r = getLinks(anc, "post", { Load: true });
+        var links = getLinks(anc, "post", { Load: true });
+        for (var i = 0; i < links.length; i++) {
+          r[i] = { link: links[i], inTermsOf: [tag] }
+        }
         break;
     }
 
-    // Remove duplicates
-
-    var unduplicated = [];
-    for (var i = 0; i < r.length; i++) {
-      if (!has(unduplicated, r[i])) {
-        unduplicated.push(r[i]);
-      }
-    }
-
-    return unduplicated;
+    return r;
   }
 
-  return searchInternal(query);
+  var result = searchInternal(query);
+
+  // Remove duplicates
+  var unduplicatedObject = {};
+  for (var i = 0; i < result.length; i++) {
+    var hash = result[i].link.Hash;
+    if (unduplicatedObject[hash]) {
+      unduplicatedObject[hash].inTermsOf =
+        unduplicatedObject[hash].inTermsOf.concat(result[i].inTermsOf);
+    } else {
+      unduplicatedObject[hash] = result[i];
+    }
+  }
+
+  var unduplicated = [];
+  for (var i in unduplicatedObject) {
+    unduplicated.push(unduplicatedObject[i]);
+  }
+
+
+  return unduplicated;
 }
 
 function fromUser(keyHash, statusMask) {
