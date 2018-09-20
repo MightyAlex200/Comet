@@ -10,8 +10,12 @@ import Url.Parser.Query as Query
 import Json.Decode as Decode
 import Html exposing (Html)
 import Url exposing (Url)
+import TestSearchView
 import TestPostView
+import SearchParse
+import SearchView
 import PostView
+import Parser
 
 main : Program Flags Model Msg
 main =
@@ -37,7 +41,9 @@ type alias Model =
 
 type Page
     = PostView PostView.Model
+    | SearchView SearchView.Model
     | TestPostView TestPostView.Model
+    | TestSearchView TestSearchView.Model
     --| TagView TagView.Model
     --| UserView UserView.Model
     | EmptyPage
@@ -53,6 +59,14 @@ page =
             ( testPostView |> TestPostView
             , cmd |> Cmd.map TestPostViewMsg
             )
+        correctSearchView ( searchView, cmd ) =
+            ( searchView |> SearchView
+            , cmd |> Cmd.map SearchViewMsg
+            )
+        searchParse =
+            Url.custom
+                "SEARCH"
+                ((Parser.run SearchParse.search) >> Result.toMaybe)
     in
         Url.oneOf
             [ Url.map
@@ -66,11 +80,14 @@ page =
                 )
                 (Url.s "post" </> Url.string <?> Query.string "inTermsOf")
             , Url.map (\model -> correctTestPostView (TestPostView.init model.navKey)) (Url.s "testPost")
+            , Url.map (\tags model -> correctSearchView (SearchView.init model.karmaMap tags)) (Url.s "search" </> searchParse)
             ]
 
 type Msg
     = PostViewMsg PostView.Msg
     | TestPostViewMsg TestPostView.Msg
+    | TestSearchViewMsg TestSearchView.Msg
+    | SearchViewMsg SearchView.Msg
     --| TagViewMsg TagView.Msg
     --| UserViewMsg UserView.Msg
     | ChangePage (Model -> ( Page, Cmd Msg ))
@@ -80,11 +97,11 @@ init : Flags -> Url -> Key -> ( Model, Cmd Msg )
 init flags url key =
     let
         correctType tuple =
-            ( Model (TestPostView (Tuple.first tuple)) key simpleKarmaMap -- TODO: real karmamap
-            , Cmd.map TestPostViewMsg (Tuple.second tuple)
+            ( Model (TestSearchView (Tuple.first tuple)) key simpleKarmaMap -- TODO: real karmamap
+            , Cmd.map TestSearchViewMsg (Tuple.second tuple)
             )
     in
-        correctType (TestPostView.init key)
+        correctType (TestSearchView.init key)
 
 -- Update
 
@@ -108,6 +125,26 @@ update msg model =
                             TestPostView.update testMsg testView
                     in
                         ( { model | page = TestPostView newTestView }, Cmd.map TestPostViewMsg cmd )
+                _ ->
+                    ( model, Cmd.none )
+        TestSearchViewMsg searchMsg ->
+            case model.page of
+                TestSearchView searchView ->
+                    let
+                        ( newSearchView, cmd ) =
+                            TestSearchView.update searchMsg searchView
+                    in
+                        ( { model | page = TestSearchView newSearchView }, Cmd.map TestSearchViewMsg cmd)
+                _ ->
+                    ( model, Cmd.none )
+        SearchViewMsg searchMsg ->
+            case model.page of
+                SearchView searchView ->
+                    let
+                        ( newSearchView, cmd ) =
+                            SearchView.update searchMsg searchView
+                    in
+                        ( {model | page = SearchView newSearchView }, Cmd.map SearchViewMsg cmd )
                 _ ->
                     ( model, Cmd.none )
         ChangePage f ->
@@ -154,3 +191,11 @@ view model =
             Html.map TestPostViewMsg (TestPostView.view testView)
                 |> List.singleton
                 |> Document "Comet test page"
+        TestSearchView searchView ->
+            Html.map TestSearchViewMsg (TestSearchView.view searchView)
+                |> List.singleton
+                |> Document "Comet test page"
+        SearchView searchView ->
+            Html.map SearchViewMsg (SearchView.view searchView)
+                |> List.singleton
+                |> Document "Search"

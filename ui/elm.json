@@ -13,6 +13,7 @@
             "elm/html": "1.0.0",
             "elm/http": "1.0.0",
             "elm/json": "1.0.0",
+            "elm/parser": "1.1.0",
             "elm/url": "1.0.0",
             "elm-explorations/markdown": "1.0.0"
         },
