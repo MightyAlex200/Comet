@@ -38,6 +38,10 @@ body {
     display: flex;
 }
 
+.post-summary {
+    display: flex;
+}
+
 /* Votes */
 
 .vote-view {
