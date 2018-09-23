@@ -3,7 +3,7 @@ module Main exposing (..)
 import SimpleKarmaMap exposing (simpleKarmaMap)
 import Browser exposing (Document, UrlRequest)
 import Url.Parser as Url exposing (Parser, (</>), (<?>))
-import Browser.Navigation exposing (Key)
+import Browser.Navigation as Navigation exposing (Key)
 import Loadable exposing (Loadable)
 import KarmaMap exposing (KarmaMap)
 import Url.Parser.Query as Query
@@ -91,6 +91,7 @@ type Msg
     --| TagViewMsg TagView.Msg
     --| UserViewMsg UserView.Msg
     | ChangePage (Model -> ( Page, Cmd Msg ))
+    | LinkClicked UrlRequest
     | NoOp
 
 init : Flags -> Url -> Key -> ( Model, Cmd Msg )
@@ -153,6 +154,12 @@ update msg model =
                     f model
             in
                 ( { model | page = newPage }, newCmd )
+        LinkClicked request ->
+            case request of
+                Browser.Internal url ->
+                    ( model, Navigation.pushUrl model.navKey (Url.toString url) )
+                Browser.External url ->
+                    ( model, Navigation.load url )
         NoOp ->
             ( model, Cmd.none )
 
@@ -165,8 +172,8 @@ subscriptions model =
 -- Url Handling
 
 onUrlRequest : UrlRequest -> Msg
-onUrlRequest request =
-    NoOp
+onUrlRequest =
+    LinkClicked
 
 onUrlChange : Url -> Msg
 onUrlChange url =
