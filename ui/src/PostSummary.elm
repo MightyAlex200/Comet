@@ -1,4 +1,11 @@
-module PostSummary exposing (..)
+module PostSummary exposing
+    ( Model
+    , Msg
+    , fromHash
+    , fromPost
+    , update
+    , view
+    )
 
 import Html.Attributes as Attributes
 import Loadable exposing (Loadable)
@@ -27,20 +34,44 @@ type Msg
     | VoteViewMsg VoteView.Msg
     | NoOp
 
+uninitialized : VoteView.Model -> KarmaMap -> String -> Maybe (List Tag) -> Model
+uninitialized voteViewModel karmaMap hash inTermsOf =
+    Model
+        Loadable.Unloaded
+        voteViewModel
+        karmaMap
+        inTermsOf
+        hash
+
+fromPost : Post -> KarmaMap -> String -> Maybe (List Tag) -> ( Model, Cmd Msg )
+fromPost post karmaMap hash inTermsOf =
+    let
+        ( voteViewModel, voteViewCmd ) =
+            VoteView.fromHash karmaMap hash inTermsOf
+    in
+        uninitialized voteViewModel karmaMap hash inTermsOf
+            |> update (ReceivePost post)
+            |> Tuple.mapSecond (\cmd ->
+                    Cmd.batch
+                        [ cmd
+                        , Cmd.map VoteViewMsg voteViewCmd
+                        ]
+                )
+
 fromHash : KarmaMap -> String -> Maybe (List Tag) -> ( Model, Cmd Msg )
 fromHash karmaMap hash inTermsOf =
     let
         ( voteViewModel, voteViewCmd ) =
             VoteView.fromHash karmaMap hash inTermsOf
-        uninitialized =
-            Model
-                Loadable.Unloaded
-                voteViewModel
-                karmaMap
-                inTermsOf
-                hash
     in
-        update (RequestPost hash) uninitialized
+        uninitialized voteViewModel karmaMap hash inTermsOf
+            |> update (RequestPost hash)
+            |> Tuple.mapSecond (\cmd ->
+                    Cmd.batch
+                        [ cmd
+                        , Cmd.map VoteViewMsg voteViewCmd
+                        ]
+                )
 
 -- Update
 

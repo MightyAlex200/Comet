@@ -1,4 +1,12 @@
-module PostView exposing (..)
+module PostView exposing
+    ( Model
+    , Msg
+    , fromHash
+    , fromPost
+    , update
+    , documentTitle
+    , view
+    )
 
 import Tuple exposing (first, second)
 import Html.Attributes as Attributes
@@ -42,10 +50,8 @@ type Msg
     | ReceiveInTermsOf (List Tag)
     -- TODO: UpdateKarmaMap Msg
 
-fromHash : KarmaMap -> String -> Maybe (List Tag) -> ( Model, Cmd Msg )
-fromHash karmaMap hash inTermsOf =
-    let
-        uninitialized =
+uninitialized : KarmaMap -> String -> Maybe (List Tag) -> Model
+uninitialized karmaMap hash inTermsOf =
             Model
                 Loadable.Unloaded
                 (first (CommentsView.fromHash karmaMap hash inTermsOf))
@@ -55,8 +61,16 @@ fromHash karmaMap hash inTermsOf =
                 MarkdownCompose.init
                 False
                 inTermsOf
-    in
-        update (RequestPost hash) uninitialized
+
+fromHash : KarmaMap -> String -> Maybe (List Tag) -> ( Model, Cmd Msg )
+fromHash karmaMap hash inTermsOf =
+    uninitialized karmaMap hash inTermsOf
+        |> update (RequestPost hash)
+
+fromPost : Post -> KarmaMap -> String -> Maybe (List Tag) -> ( Model, Cmd Msg )
+fromPost post karmaMap hash inTermsOf =
+    uninitialized karmaMap hash inTermsOf
+        |> update (ReceivePost post)
 
 -- Update
 
