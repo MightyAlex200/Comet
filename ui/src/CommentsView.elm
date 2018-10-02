@@ -215,6 +215,7 @@ type Msg
     | RequestComments String
     | ReceiveError
     | ReceiveInTermsOf (List Tag)
+    | Sort
 
 fromHash : KarmaMap -> String -> Maybe (List Tag) -> ( Model, Cmd Msg )
 fromHash karmaMap hash inTermsOf =
@@ -256,11 +257,15 @@ update msg model =
                                     )
                             else
                                 ( Nothing, comment :: (second tuple) )
-                ( cmd, updatedComments ) =
+                ( processCmd, unsortedComments ) =
                     List.foldr processComment ( Nothing, [] ) model.comments
+                unsortedModel =
+                    { model | comments = unsortedComments }
+                ( sortedModel, sortCmd ) =
+                    update Sort unsortedModel
             in
-                ( { model | comments = updatedComments }
-                , withDefault Cmd.none cmd
+                ( sortedModel
+                , Cmd.batch [ Maybe.withDefault Cmd.none processCmd, sortCmd ]
                 )
         RequestComments hash ->
             let
@@ -299,6 +304,14 @@ update msg model =
                     }
             in
                 ( newModel, newCommentsCmds )
+        Sort ->
+            let
+                sortedComments = -- TODO: Setting for how you want to sort things
+                    model.comments
+                        |> List.sortBy (.voteView >> .score)
+                        |> List.reverse
+            in
+                ( { model | comments = sortedComments }, Cmd.none ) -- TODO: Scroll to comment if its position changed
 
 -- View
 
