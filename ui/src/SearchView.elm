@@ -11,6 +11,7 @@ import Post exposing (Post)
 import Html exposing (Html)
 import SearchResult
 import PostSummary
+import PostsView
 import Http
 
 -- Model
@@ -124,12 +125,8 @@ view : Model -> Html Msg
 view model = -- TODO
     let
         posts =
-            model.posts
-                |> List.map (\postSummary ->
-                        Html.map
-                            (PostSummaryMsg postSummary)
-                            (PostSummary.view postSummary)
-                    )
+            PostsView.view model.posts
+                |> Html.map (\(m, h) -> PostSummaryMsg m h)
     in
         Html.div []
-        posts
+        [ posts ]

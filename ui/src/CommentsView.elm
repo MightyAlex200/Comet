@@ -11,6 +11,7 @@ import Html exposing (Html)
 import Tags exposing (Tag)
 import MarkdownCompose
 import MarkdownOptions
+import OrderContent
 import Json.Encode
 import VoteView
 import Links
@@ -308,8 +309,7 @@ update msg model =
             let
                 sortedComments = -- TODO: Setting for how you want to sort things
                     model.comments
-                        |> List.sortBy (.voteView >> .score)
-                        |> List.reverse
+                        |> List.sortWith OrderContent.top
             in
                 ( { model | comments = sortedComments }, Cmd.none ) -- TODO: Scroll to comment if its position changed
 
