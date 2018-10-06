@@ -7,7 +7,7 @@ import KarmaMap exposing (KarmaMap)
 import Json.Encode as Encode
 import Json.Decode as Decode
 import Html.Events as Events
--- import FeatherIcons as Icons
+import FeatherIcons as Icons
 import Vote exposing (Vote)
 import Html exposing (Html)
 import Tags exposing (Tag)
@@ -198,11 +198,11 @@ voteSections model isPositive =
 voteButton : Model -> Bool -> Float -> Html Msg
 voteButton model isPositive value =
     let
-        -- icon =
-        --     if isPositive then
-        --         Icons.arrowUp
-        --     else
-        --         Icons.arrowDown
+        icon =
+            if isPositive then
+                Icons.arrowUp
+            else
+                Icons.arrowDown
         class =
             if isPositive then
                 "upvote-representation"
@@ -218,12 +218,12 @@ voteButton model isPositive value =
                 , Attributes.class class
                 , Attributes.style "clip-path" (getClip isPositive value)
                 ]
-                [ --icon
-                  --  |> Icons.toHtml []
+                [ icon
+                   |> Icons.toHtml []
                 ]
             , Html.div [ Attributes.class "vote-button-background" ]
-                [ --icon
-                  --  |> Icons.toHtml []
+                [ icon
+                    |> Icons.toHtml []
                 ]
             ]
 
