@@ -33,6 +33,13 @@
                     "Sharing": "public"
                 },
                 {
+                    "Name": "postLink",
+                    "DataFormat": "links",
+                    "Schema": "",
+                    "SchemaFile": "",
+                    "Sharing": "public"
+                },
+                {
                     "Name": "tagLink",
                     "DataFormat": "links",
                     "Schema": "",
@@ -74,17 +81,22 @@
                     "Exposure": "public"
                 },
                 {
-                    "Name": "fromTag",
-                    "CallingType": "string",
-                    "Exposure": "public"
-                },
-                {
-                    "Name": "fromTags",
+                    "Name": "search",
                     "CallingType": "json",
                     "Exposure": "public"
                 },
                 {
                     "Name": "fromUser",
+                    "CallingType": "string",
+                    "Exposure": "public"
+                },
+                {
+                    "Name": "tags",
+                    "CallingType": "string",
+                    "Exposure": "public"
+                },
+                {
+                    "Name": "defaultTags",
                     "CallingType": "string",
                     "Exposure": "public"
                 }

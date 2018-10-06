@@ -1,5 +1,7 @@
 module SimpleKarmaMap exposing (..)
 
-simpleKarmaMap : String -> Float
-simpleKarmaMap _ =
+import KarmaMap exposing (KarmaMap)
+
+simpleKarmaMap : KarmaMap
+simpleKarmaMap _ _ =
     1

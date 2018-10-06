@@ -1,21 +1,16 @@
 module VoteView exposing
-    ( Model
-    , Msg
-    , fromHash
-    , voteToValue
-    , valueToVote
-    , update
-    , view
-    )
+    (..)
 
 import Html.Attributes as Attributes
 import Links exposing (Links, Link)
+import KarmaMap exposing (KarmaMap)
 import Json.Encode as Encode
 import Json.Decode as Decode
 import Html.Events as Events
 import FeatherIcons as Icons
 import Vote exposing (Vote)
 import Html exposing (Html)
+import Tags exposing (Tag)
 import Http
 
 -- Model
@@ -29,7 +24,8 @@ type alias Model =
     { targetHash : String
     , value : Float
     , score : Float
-    , karmaMap : String -> Float
+    , karmaMap : KarmaMap
+    , inTermsOf : Maybe (List Tag)
     }
 
 type Msg
@@ -41,12 +37,13 @@ type Msg
     | RequestVotes
     | ReceiveVotes (Links Vote)
     | ReceiveError
+    | ReceiveInTermsOf (List Tag)
 
-fromHash : (String -> Float) -> String -> ( Model, Cmd Msg )
-fromHash karmaMap hash =
+fromHash : KarmaMap -> String -> Maybe (List Tag) -> ( Model, Cmd Msg )
+fromHash karmaMap hash inTermsOf =
     let
         uninitialized =
-            Model hash 0 0 karmaMap
+            Model hash 0 0 karmaMap inTermsOf
     in
         update RequestAll uninitialized
 
@@ -61,7 +58,7 @@ voteToValue vote =
     in
         sign * vote.fraction
 
-valueToVote : Float -> Vote
+valueToVote : Float -> Maybe (List Tag) -> Vote
 valueToVote value =
     Vote (value > 0) (abs value)
 
@@ -76,9 +73,9 @@ update msg model =
             let
                 body =
                     Encode.object
-                    [ ("targetHash", Encode.string model.targetHash)
-                    , ("voteEntry", Vote.encode vote)
-                    ]
+                        [ ("targetHash", Encode.string model.targetHash)
+                        , ("voteEntry", Vote.encode vote)
+                        ]
                 request =
                     Http.post "/fn/votes/vote" (Http.jsonBody body) (Decode.succeed Nothing)
                 handle _ =
@@ -112,7 +109,7 @@ update msg model =
                 sources =
                     List.map (\vote -> ( vote.source, voteToValue vote.entry )) votes
                 weighted =
-                    List.map (\( source, value ) -> ( model.karmaMap source, value )) sources
+                    List.map (\( source, value ) -> ( model.karmaMap model.inTermsOf source, value )) sources
                 multiplied =
                     List.map (\( weight, value ) -> weight * value) weighted
                 newScore =
@@ -137,6 +134,14 @@ update msg model =
             ( { model | value = voteToValue vote.entry }, Cmd.none )
         ReceiveError ->
             ( model, Cmd.none )
+        ReceiveInTermsOf inTermsOf ->
+            let
+                newModel =
+                    { model
+                    | inTermsOf = Just inTermsOf
+                    }
+            in
+                ( newModel, Cmd.none )
 
 -- View
 
@@ -149,7 +154,7 @@ getClip fromTop value =
                     adjustedValue =
                         clamp 0 1 value
                     top =
-                        toString ((1 - adjustedValue) * 100)
+                        String.fromFloat ((1 - adjustedValue) * 100)
                 in
                     "0% " ++ top ++ "%, 100% " ++ top ++ "%, 100% 100%, 0% 100%"
             else
@@ -157,14 +162,14 @@ getClip fromTop value =
                     adjustedValue =
                         clamp 0 1 (negate value)
                     bottom =
-                        toString (adjustedValue * 100)
+                        String.fromFloat (adjustedValue * 100)
                 in
                     "0% 0%, 100% 0%, 100% " ++ bottom ++ "%, 0% " ++ bottom ++ "%"
     in
         "polygon(" ++ points ++ ")"
 
-voteSections : Bool -> Html Msg
-voteSections isPositive =
+voteSections : Model -> Bool -> Html Msg
+voteSections model isPositive =
     Html.div
     [ Attributes.class "vote-sections" ]
     ((List.range 0 voteSectionCount)
@@ -179,13 +184,10 @@ voteSections isPositive =
                 in
                     Html.div
                     [ Attributes.class "vote-section"
-                    , Attributes.style
-                        [ ( "top", toString ((toFloat offset) * 24 / (toFloat voteSectionCount)) )
-                        , ( "height", toString (24 / (toFloat voteSectionCount)) )
-                        ]
+                    , Attributes.style "top" (String.fromFloat ((toFloat offset) * 24 / (toFloat voteSectionCount)))
+                    , Attributes.style "height" (String.fromFloat (24 / (toFloat voteSectionCount)))
                     , Events.onClick
-                        (value
-                            |> Vote isPositive
+                        (Vote isPositive value model.inTermsOf
                             |> SendVote
                         )
                     ]
@@ -193,8 +195,8 @@ voteSections isPositive =
             )
     )
 
-voteButton : Bool -> Float -> Html Msg
-voteButton isPositive value =
+voteButton : Model -> Bool -> Float -> Html Msg
+voteButton model isPositive value =
     let
         icon =
             if isPositive then
@@ -210,16 +212,14 @@ voteButton isPositive value =
         Html.div 
             [ Attributes.class "vote-button-container"
             ]
-            [ voteSections isPositive
+            [ voteSections model isPositive
             , Html.div 
                 [ Attributes.class "vote-button-representation"
                 , Attributes.class class
-                , Attributes.style
-                    [ ( "clip-path", getClip isPositive value )
-                    ]
+                , Attributes.style "clip-path" (getClip isPositive value)
                 ]
                 [ icon
-                    |> Icons.toHtml []
+                   |> Icons.toHtml []
                 ]
             , Html.div [ Attributes.class "vote-button-background" ]
                 [ icon
@@ -228,9 +228,9 @@ voteButton isPositive value =
             ]
 
 view : Model -> Html Msg
-view model = -- todo
+view model =
     Html.div [ Attributes.class "vote-view" ]
-    [ voteButton True model.value
-    , Html.text (toString model.score)
-    , voteButton False model.value
+    [ voteButton model True model.value
+    , Html.text (String.fromFloat model.score)
+    , voteButton model False model.value
     ]

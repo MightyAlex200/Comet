@@ -5,10 +5,13 @@ import Tuple exposing (first, second)
 import Maybe exposing (withDefault)
 import Html.Attributes as Attributes
 import Loadable exposing (Loadable)
+import KarmaMap exposing (KarmaMap)
 import Html.Events as Events
 import Html exposing (Html)
+import Tags exposing (Tag)
 import MarkdownCompose
 import MarkdownOptions
+import OrderContent
 import Json.Encode
 import VoteView
 import Links
@@ -26,9 +29,10 @@ type alias SingleView = -- TODO: VoteView
     , hash : String
     , comment : Loadable Comment
     , voteView : VoteView.Model
-    , karmaMap : String -> Float
+    , karmaMap : KarmaMap
     , replyComposeView : MarkdownCompose.Model
     , showReplyCompose : Bool
+    , inTermsOf : Maybe (List Tag)
     }
 
 type Replies
@@ -44,19 +48,21 @@ type SingleMsg
     | VoteViewMsg VoteView.Msg
     | MarkdownComposeMsg MarkdownCompose.Msg
     | ToggleShowReplyCompose
+    | ReceiveSingleInTermsOf (List Tag)
 
-singleFromHash : (String -> Float) -> String -> ( SingleView, Cmd SingleMsg )
-singleFromHash karmaMap hash =
+singleFromHash : KarmaMap -> String -> Maybe (List Tag) -> ( SingleView, Cmd SingleMsg )
+singleFromHash karmaMap hash inTermsOf =
     let
         uninitialized =
-            SingleView 
+            SingleView
                 Unloaded
                 ""
                 Loadable.Unloaded
-                (first (VoteView.fromHash karmaMap hash))
+                (first (VoteView.fromHash karmaMap hash inTermsOf))
                 karmaMap
                 MarkdownCompose.init
                 False
+                inTermsOf
     in
         singleUpdate (RequestComment hash) uninitialized
 
@@ -70,9 +76,9 @@ singleUpdate msg model =
         ReceiveComment comment ->
             let
                 ( replies, repliesCmd ) =
-                    fromHash model.karmaMap model.hash
+                    fromHash model.karmaMap model.hash model.inTermsOf
                 ( voteView, voteCmd ) =
-                    VoteView.fromHash model.karmaMap model.hash
+                    VoteView.fromHash model.karmaMap model.hash model.inTermsOf
             in
                 ( { model | comment = Loadable.Loaded comment, replies = Replies replies }
                 , Cmd.batch
@@ -96,24 +102,24 @@ singleUpdate msg model =
                 ( { model | hash = hash }, Http.send process request )
         ReceiveSingleError ->
             ( model, Cmd.none )
-        RepliesMsg msg ->
+        RepliesMsg replyMsg ->
             case model.replies of
                 Replies commentsView ->
                     let
                         ( newModel, cmd ) =
-                            update msg commentsView
+                            update replyMsg commentsView
                     in
                         ( { model | replies = Replies newModel }, Cmd.map RepliesMsg cmd )
                 Unloaded ->
                     ( model, Cmd.none )
-        VoteViewMsg msg ->
+        VoteViewMsg voteMsg ->
             let
                 ( updatedVoteView, cmd ) =
-                    VoteView.update msg model.voteView
+                    VoteView.update voteMsg model.voteView
             in
                 ( { model | voteView = updatedVoteView }, Cmd.map VoteViewMsg cmd )
-        MarkdownComposeMsg msg ->
-            case msg of
+        MarkdownComposeMsg composeMsg ->
+            case composeMsg of
                 MarkdownCompose.SubmitInput ->
                     let
                         process result =
@@ -125,11 +131,34 @@ singleUpdate msg model =
                 _ ->
                     let
                         ( updatedComposeView, cmd ) =
-                            MarkdownCompose.update msg model.replyComposeView
+                            MarkdownCompose.update composeMsg model.replyComposeView
                     in
                         ( { model | replyComposeView = updatedComposeView }, Cmd.map MarkdownComposeMsg cmd )
         ToggleShowReplyCompose ->
             ( { model | showReplyCompose = not model.showReplyCompose }, Cmd.none )
+        ReceiveSingleInTermsOf inTermsOf ->
+            let
+                updatedReplies =
+                    case model.replies of
+                        Replies replies ->
+                            Just (update (ReceiveInTermsOf inTermsOf) replies)
+                        Unloaded ->
+                            Nothing
+                ( newReplies, cmds ) =
+                    case updatedReplies of
+                        Just ( r, c ) ->
+                            ( Replies r
+                            , Cmd.map RepliesMsg c
+                            )
+                        Nothing ->
+                            ( Unloaded, Cmd.none )
+                newModel =
+                    { model
+                    | inTermsOf = Just inTermsOf
+                    , replies = newReplies
+                    }
+            in
+                ( newModel, cmds )
 
 -- View
 
@@ -176,7 +205,8 @@ viewSingle model =
 type alias Model =
     { comments : List SingleView
     , targetHash : String
-    , karmaMap : String -> Float
+    , karmaMap : KarmaMap
+    , inTermsOf : Maybe (List Tag)
     }
 
 type Msg
@@ -185,12 +215,14 @@ type Msg
     | ReceiveComments (List ( SingleView, Cmd SingleMsg ))
     | RequestComments String
     | ReceiveError
+    | ReceiveInTermsOf (List Tag)
+    | Sort
 
-fromHash : (String -> Float) -> String -> ( Model, Cmd Msg )
-fromHash karmaMap hash =
+fromHash : KarmaMap -> String -> Maybe (List Tag) -> ( Model, Cmd Msg )
+fromHash karmaMap hash inTermsOf =
     let
         uninitialized =
-            Model [] "" karmaMap
+            Model [] "" karmaMap inTermsOf
     in
         update (RequestComments hash) uninitialized
 
@@ -206,36 +238,40 @@ update msg model =
                 comments =
                     List.map first tuples
                 commands =
-                    List.map (\( comment, msg ) -> Cmd.map (SingleMsg comment) msg) tuples
+                    List.map (\( comment, commentMsg ) -> Cmd.map (SingleMsg comment) commentMsg) tuples
             in
                 ( { model | comments = comments }, Cmd.batch commands )
-        SingleMsg view msg ->
+        SingleMsg commentView commentMsg ->
             let
                 processComment comment tuple =
                     case first tuple of
-                        Just cmd ->
-                            ( Just cmd, comment :: (second tuple) )
+                        Just commentCmd ->
+                            ( Just commentCmd, comment :: (second tuple) )
                         Nothing ->
-                            if comment.hash == view.hash
+                            if comment.hash == commentView.hash
                             then
                                 let
-                                    updated = singleUpdate msg comment
+                                    updated = singleUpdate commentMsg comment
                                 in
                                     ( Just (Cmd.map (SingleMsg (first updated)) (second updated))
                                     , (first updated) :: (second tuple)
                                     )
                             else
                                 ( Nothing, comment :: (second tuple) )
-                ( cmd, updatedComments ) =
+                ( processCmd, unsortedComments ) =
                     List.foldr processComment ( Nothing, [] ) model.comments
+                unsortedModel =
+                    { model | comments = unsortedComments }
+                ( sortedModel, sortCmd ) =
+                    update Sort unsortedModel
             in
-                ( { model | comments = updatedComments }
-                , withDefault Cmd.none cmd
+                ( sortedModel
+                , Cmd.batch [ Maybe.withDefault Cmd.none processCmd, sortCmd ]
                 )
         RequestComments hash ->
             let
                 linkToCommentView link =
-                    singleFromHash model.karmaMap link.hash
+                    singleFromHash model.karmaMap link.hash model.inTermsOf
                 process result =
                     case result of
                         Ok res ->
@@ -250,6 +286,32 @@ update msg model =
                 ( { model | targetHash = hash }, Http.send process request )
         ReceiveError ->
             ( model, Cmd.none )
+        ReceiveInTermsOf inTermsOf ->
+            let
+                newComments =
+                    model.comments
+                        |> List.map (singleUpdate (ReceiveSingleInTermsOf inTermsOf))
+                newCommentsModels =
+                    newComments
+                        |> List.map Tuple.first
+                newCommentsCmds =
+                    newComments
+                        |> List.map (\( m, c ) -> Cmd.map (SingleMsg m) c)
+                        |> Cmd.batch
+                newModel =
+                    { model
+                    | inTermsOf = Just inTermsOf
+                    , comments = newCommentsModels
+                    }
+            in
+                ( newModel, newCommentsCmds )
+        Sort ->
+            let
+                sortedComments = -- TODO: Setting for how you want to sort things
+                    model.comments
+                        |> List.sortWith OrderContent.top
+            in
+                ( { model | comments = sortedComments }, Cmd.none ) -- TODO: Scroll to comment if its position changed
 
 -- View
 

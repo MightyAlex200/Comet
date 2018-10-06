@@ -21,12 +21,22 @@
       "$id": "/properties/timestamp",
       "type": "number",
       "default": ""
+    },
+    "inTermsOf": {
+      "$id": "/properties/inTermsOf",
+      "type": "array",
+      "default": "",
+      "items": {
+        "$id": "/properties/inTermsOf/items",
+        "type": "integer"
+      }
     }
   },
   "required": [
     "isPositive",
     "fraction",
     "keyHash",
-    "timestamp"
+    "timestamp",
+    "inTermsOf"
   ]
 }

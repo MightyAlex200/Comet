@@ -1,11 +1,22 @@
-module PostView exposing (..)
+module PostView exposing
+    ( Model
+    , Msg
+    , fromHash
+    , fromPost
+    , update
+    , documentTitle
+    , view
+    )
 
 import Tuple exposing (first, second)
 import Html.Attributes as Attributes
 import Loadable exposing (Loadable)
+import KarmaMap exposing (KarmaMap)
+import Json.Decode as Decode
 import Html.Events as Events
 import Post exposing (Post)
 import Html exposing (Html)
+import Tags exposing (Tag)
 import MarkdownOptions
 import MarkdownCompose
 import CommentsView
@@ -21,9 +32,10 @@ type alias Model =
     , comments : CommentsView.Model
     , voteView : VoteView.Model
     , hash : String
-    , karmaMap : String -> Float
+    , karmaMap : KarmaMap
     , replyComposeView : MarkdownCompose.Model
     , showReplyCompose : Bool
+    , inTermsOf : Maybe (List Tag)
     }
 
 type Msg
@@ -35,22 +47,30 @@ type Msg
     | VoteViewMsg VoteView.Msg
     | MarkdownComposeMsg MarkdownCompose.Msg
     | ToggleShowReplyCompose
+    | ReceiveInTermsOf (List Tag)
     -- TODO: UpdateKarmaMap Msg
 
-fromHash : (String -> Float) -> String -> ( Model, Cmd Msg )
-fromHash karmaMap hash =
-    let
-        uninitialized =
+uninitialized : KarmaMap -> String -> Maybe (List Tag) -> Model
+uninitialized karmaMap hash inTermsOf =
             Model
                 Loadable.Unloaded
-                (first (CommentsView.fromHash karmaMap hash))
-                (first (VoteView.fromHash karmaMap hash))
+                (first (CommentsView.fromHash karmaMap hash inTermsOf))
+                (first (VoteView.fromHash karmaMap hash inTermsOf))
                 ""
                 karmaMap
                 MarkdownCompose.init
                 False
-    in
-        update (RequestPost hash) uninitialized
+                inTermsOf
+
+fromHash : KarmaMap -> String -> Maybe (List Tag) -> ( Model, Cmd Msg )
+fromHash karmaMap hash inTermsOf =
+    uninitialized karmaMap hash inTermsOf
+        |> update (RequestPost hash)
+
+fromPost : Post -> KarmaMap -> String -> Maybe (List Tag) -> ( Model, Cmd Msg )
+fromPost post karmaMap hash inTermsOf =
+    uninitialized karmaMap hash inTermsOf
+        |> update (ReceivePost post)
 
 -- Update
 
@@ -62,9 +82,9 @@ update msg model =
         ReceivePost post ->
             let
                 ( comments, commentCmd ) =
-                    CommentsView.fromHash model.karmaMap model.hash
+                    CommentsView.fromHash model.karmaMap model.hash model.inTermsOf
                 ( voteView, voteCmd ) =
-                    VoteView.fromHash model.karmaMap model.hash
+                    VoteView.fromHash model.karmaMap model.hash model.inTermsOf
                 cmds =
                     Cmd.batch
                     [ Cmd.map CommentsViewMsg commentCmd
@@ -80,38 +100,57 @@ update msg model =
                 )
         RequestPost hash ->
             let
-                process result =
+                postProcess result =
                     case result of
                         Ok res ->
                             ReceivePost res
                         Err _ ->
                             ReceiveError    
-                body =
+                postBody =
                     Http.jsonBody (Json.Encode.string hash)
-                request =
-                    Http.post "/fn/posts/postRead" body Post.decoder
+                postRequest =
+                    Http.post "/fn/posts/postRead" postBody Post.decoder
+                postCmd =
+                    Http.send postProcess postRequest
+                inTermsOfProcess result =
+                    case result of
+                        Ok res ->
+                            ReceiveInTermsOf res
+                        Err _ ->
+                            NoOp
+                inTermsOfBody =
+                    Http.stringBody "" hash
+                inTermsOfRequest =
+                    Http.post "/fn/posts/defaultTags" inTermsOfBody (Decode.list Decode.int)
+                inTermsOfCmd =
+                    Http.send inTermsOfProcess inTermsOfRequest
+                cmds =
+                    Cmd.batch
+                        [ postCmd
+                        , inTermsOfCmd
+                        ]
             in
-                ( { model | hash = hash }, Http.send process request )
+                ( { model | hash = hash }, cmds )
         ReceiveError ->
             ( model, Cmd.none )
-        CommentsViewMsg msg ->
+        CommentsViewMsg commentsMsg ->
             let
                 correctType tuple =
                     ( first tuple
                     , Cmd.map CommentsViewMsg (second tuple)
                     )
                 ( updatedComments, cmd ) =
-                    correctType (CommentsView.update msg model.comments)
+                    correctType (CommentsView.update commentsMsg model.comments)
             in
                 ( { model | comments = updatedComments }, cmd )
-        VoteViewMsg msg ->
+        VoteViewMsg voteMsg ->
             let
                 ( updatedVoteView, cmd ) =
-                    VoteView.update msg model.voteView
+                    VoteView.update voteMsg model.voteView
             in
                 ( { model | voteView = updatedVoteView }, Cmd.map VoteViewMsg cmd )
-        MarkdownComposeMsg msg ->
-            case msg of
+        MarkdownComposeMsg composeMsg ->
+            case composeMsg of
                 MarkdownCompose.SubmitInput ->
                     let
                         process result =
@@ -123,11 +162,34 @@ update msg model =
                 _ ->
                     let
                         ( updatedComposeView, cmd ) =
-                            MarkdownCompose.update msg model.replyComposeView
+                            MarkdownCompose.update composeMsg model.replyComposeView
                     in
                         ( { model | replyComposeView = updatedComposeView }, Cmd.map MarkdownComposeMsg cmd  )
         ToggleShowReplyCompose ->
             ( { model | showReplyCompose = not model.showReplyCompose }, Cmd.none )
+        ReceiveInTermsOf inTermsOf ->
+            case model.inTermsOf of
+                Just _ ->
+                    ( model, Cmd.none )
+                Nothing ->
+                    let
+                        ( newComments, commentCmd ) =
+                            CommentsView.update (CommentsView.ReceiveInTermsOf inTermsOf) model.comments
+                        ( newVoteView, voteCmd ) =
+                            VoteView.update (VoteView.ReceiveInTermsOf inTermsOf) model.voteView
+                        newModel =
+                            { model
+                            | inTermsOf = Just inTermsOf
+                            , comments = newComments
+                            , voteView = newVoteView
+                            }
+                        cmds =
+                            Cmd.batch
+                                [ Cmd.map CommentsViewMsg commentCmd
+                                , Cmd.map VoteViewMsg voteCmd
+                                ]
+                    in
+                        ( newModel, cmds )
 
 -- View
 
@@ -160,3 +222,11 @@ view model =
         Loadable.Unloaded ->
             []
     )
+
+documentTitle : Model -> String
+documentTitle model =
+    case model.post of
+        Loadable.Loaded { title } ->
+            "\"" ++ title ++ "\" on Comet"
+        _ ->
+            "Comet"

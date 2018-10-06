@@ -57,11 +57,29 @@ function postCreate(input) {
         }
       ]
     });
+    var tagLinkHash = commit("postLink", {
+      Links: [
+        {
+          Base: postHash,
+          Link: anchorHash,
+          Tag: 'tag'
+        }
+      ]
+    });
+    var defaultTagLinkHash = commit("postLink", {
+      Links: [
+        {
+          Base: postHash,
+          Link: anchorHash,
+          Tag: 'defaultTag'
+        }
+      ]
+    });
   }
   var userLinkHash = commit("userLink", {
     Links: [
       {
-        Base: App.Agent.Hash,
+        Base: App.Key.Hash,
         Link: postHash,
         Tag: 'post'
       }
@@ -88,17 +106,133 @@ function postDelete(postHash) {
   return result;
 }
 
-function fromTag(tag, statusMask) {
-  return JSON.stringify(getLinks(anchor("tag", tag), "post", { Load: true, StatusMask: statusMask || HC.Status.Live }));
-}
-
-function fromTags(tags) {
-  var posts = [];
-  for(var i = 0; i < tags.length; i++) {
-    var tag = tags[i] + ""; // `+ ""` does a cast to string
-    posts = posts.concat(getLinks(anchor("tag", tag), "post", { Load: true }));
+function search(query) {
+  function linkEquate(a, b) {
+    return a.link.Hash == b.link.Hash;
   }
-  return JSON.stringify(posts);
+
+  function has(arr, obj) {
+    for (var i = 0; i < arr.length; i++) {
+      if (linkEquate(arr[i], obj)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  // Actual search function that returns arrays
+  function searchInternal(query) {
+    var r = [];
+    switch (query.type) {
+      case "and":
+        var vals = [];
+        for (var i = 0; i < query.values.length; i++) {
+          vals.push(searchInternal(query.values[i]));
+        }
+
+        if (vals[0]) {
+          for (var i = 0; i < vals[0].length; i++) {
+            // if it isn't in all vals, break and don't add
+            var add = true;
+            for (var k = 1; k < vals.length; k++) {
+              if (!has(vals[k], vals[0][i])) {
+                // not in val[v]
+                add = false;
+                break;
+              }
+            }
+
+            if (add) {
+              r.push(vals[0][i]);
+            }
+          }
+        }
+        break;
+      case "or":
+        for (var i = 0; i < query.values.length; i++) {
+          r = r.concat(searchInternal(query.values[i]));
+        }
+        break;
+      case "xor":
+        // The generalization of the xor operation
+        // to multiple inputs is uniqueness
+        var vals = [];
+        for (var i = 0; i < query.values.length; i++) {
+          vals.push(searchInternal(query.values[i]));
+        }
+
+        for (var i = 0; i < vals.length; i++) {
+          for (var k = 0; k < vals[i].length; k++) {
+            var add = true;
+            for (var v = 0; v < vals.length; v++) {
+              if ((v != i) && has(vals[v], vals[i][k])) {
+                // Not unique
+                add = false;
+                break;
+              }
+            }
+            
+            if (add) {
+              r.push(vals[i][k]);
+            }
+          }
+        }
+        break;
+      case "not":
+        // The generalization of the not operation to multiple inputs
+        // is to subtract all inputs from first input
+        // So 5 ! 2 ! 3
+        // Would be 5 without 2 nor 3
+        var first = query.values[0];
+        if (first) {
+          var resultFirst = searchInternal(first);
+          
+          var remove = [];
+          for (var i = 1; i < query.values.length; i++) {
+            remove = remove.concat(searchInternal(query.values[i]));
+          }
+
+          for (var i = 0; i < resultFirst.length; i++) {
+            if (!has(remove, resultFirst[i])) {
+              r.push(resultFirst[i]);
+            }
+          }
+        }
+        break;
+      case "exactly":
+        var tag = query.values + ""; // cast to string
+        var anc = anchor("tag", tag);
+        var links = getLinks(anc, "post", { Load: true });
+        for (var i = 0; i < links.length; i++) {
+          r[i] = { link: links[i], inTermsOf: [tag] }
+        }
+        break;
+    }
+
+    return r;
+  }
+
+  var result = searchInternal(query);
+
+  // Remove duplicates
+  var unduplicatedObject = {};
+  for (var i = 0; i < result.length; i++) {
+    var hash = result[i].link.Hash;
+    if (unduplicatedObject[hash]) {
+      unduplicatedObject[hash].inTermsOf =
+        unduplicatedObject[hash].inTermsOf.concat(result[i].inTermsOf);
+    } else {
+      unduplicatedObject[hash] = result[i];
+    }
+  }
+
+  var unduplicated = [];
+  for (var i in unduplicatedObject) {
+    unduplicated.push(unduplicatedObject[i]);
+  }
+
+
+  return unduplicated;
 }
 
 function fromUser(keyHash, statusMask) {
@@ -121,13 +255,46 @@ function crosspost(input) {
     var userLinkHash = commit("userLink", {
       Links: [
         {
-          Base: App.Agent.Hash,
+          Base: App.Key.Hash,
           Link: input.from,
           Tag: 'post'
         }
       ]
     });
+    var tagLinkHash = commit("postLink", {
+      Links: [
+        {
+          Base: input.from,
+          Link: tag,
+          Tag: 'tag'
+        }
+      ]
+    });
   }
+}
+
+function tagArray(links) {
+  var r = [];
+  for (var i = 0; i < links.length; i++) {
+    r[i] = parseInt(links[i].Entry.anchorText);
+  }
+  return r;
+}
+
+function tags(postHash) {
+  return JSON.stringify(
+    tagArray(
+      getLinks(postHash, "tag", { Load: true })
+    )
+  );
+}
+
+function defaultTags(postHash) {
+  return JSON.stringify(
+    tagArray(
+      getLinks(postHash, "defaultTag", { Load: true })
+    )
+  );
 }
 
 
@@ -147,6 +314,55 @@ function genesis() {
 //  Validation functions for every change to the local chain or DHT
 // -----------------------------------------------------------------
 
+function validate(entryType, entry, header, pkg, sources) {
+  switch (entryType) {
+    case "post":
+      return entry.keyHash == sources[0];
+    case "postLink":
+      for (var i = 0; i < entry.Links.length; i++) {
+        var link = entry.Links[i];
+        // Base must be post
+        if (get(link.Base, { GetMask: HC.GetMask.EntryType }) != "post") {
+          return false;
+        }
+        // Link must be tag
+        if (get(link.Link, { GetMask: HC.GetMask.EntryType }) != "anchor") {
+          return false;
+        }
+      }
+      return true;
+    case "tagLink":
+      for (var i = 0; i < entry.Links.length; i++) {
+        var link = entry.Links[i];
+        // Base must be tag
+        if (get(link.Base, { GetMask: HC.GetMask.EntryType }) != "anchor") {
+          return false;
+        }
+        // Link must be post
+        if (get(link.Link, { GetMask: HC.GetMask.EntryType }) != "post") {
+          return false;
+        }
+      }
+      return true;
+    case "userLink":
+      for (var i = 0; i < entry.Links.length; i++) {
+        var link = entry.Links[i];
+        // Link must be post
+        if (get(link.Link, { GetMask: HC.GetMask.EntryType }) != "post") {
+          return false;
+        }
+        // Source must be base
+        // Implies base is key hash
+        if (sources[0] != link.Base) {
+          return false;
+        }
+      }
+      return true;
+  }
+  // Invalid entry name
+  return false;
+}
+
 /**
  * Called to validate any changes to the local chain or DHT
  * @param {string} entryName - the type of entry
@@ -157,19 +373,17 @@ function genesis() {
  * @return {boolean} is valid?
  */
 function validateCommit(entryName, entry, header, pkg, sources) {
-  switch (entryName) {
-    case "post":
-      // be sure to consider many edge cases for validating
-      // do not just flip this to true without considering what that means
-      // the action will ONLY be successfull if this returns true, so watch out!
-      return entry.keyHash == sources[0];
-    case "tagLink":
-    case "userLink":
-      return true;
-    default:
-      // invalid entry name
-      return false;
+  if (!validate(entryName, entry, header, pkg, sources)) {
+    return false;
   }
+
+  // Validation special to validateCommit
+  // switch (entryName) {
+  //   case "post":
+  //     return true;
+  // }
+  
+  return true;
 }
 
 /**
@@ -182,19 +396,17 @@ function validateCommit(entryName, entry, header, pkg, sources) {
  * @return {boolean} is valid?
  */
 function validatePut(entryName, entry, header, pkg, sources) {
-  switch (entryName) {
-    case "post":
-      // be sure to consider many edge cases for validating
-      // do not just flip this to true without considering what that means
-      // the action will ONLY be successfull if this returns true, so watch out!
-      return true;
-    case "tagLink":
-    case "userLink":
-      return true;
-    default:
-      // invalid entry name
-      return false;
+  if (!validate(entryName, entry, header, pkg, sources)) {
+    return false;
   }
+  
+  // // Validation special to validatePut
+  // switch (entryName) {
+  //   case "post":
+  //     return true;
+  // }
+
+  return true;
 }
 
 /**
@@ -208,19 +420,21 @@ function validatePut(entryName, entry, header, pkg, sources) {
  * @return {boolean} is valid?
  */
 function validateMod(entryName, entry, header, replaces, pkg, sources) {
+  if (!validate(entryName, entry, header, pkg, sources)) {
+    return false;
+  }
+
+  // Validation special to validateMod
   switch (entryName) {
     case "post":
-      // be sure to consider many edge cases for validating
-      // do not just flip this to true without considering what that means
-      // the action will ONLY be successfull if this returns true, so watch out!
       return get(replaces, { GetMask: HC.GetMask.Sources })[0] == sources[0];
     case "tagLink":
     case "userLink":
-      return false;
-    default:
-      // invalid entry name
+    case "postLink":
       return false;
   }
+
+  return true;
 }
 
 /**
@@ -234,9 +448,11 @@ function validateMod(entryName, entry, header, replaces, pkg, sources) {
 function validateDel(entryName, hash, pkg, sources) {
   switch (entryName) {
     case "post":
+      return get(hash, { GetMask: HC.GetMask.Sources })[0] == sources[0];
     case "tagLink":
     case "userLink":
-      return get(hash, { GetMask: HC.GetMask.Sources })[0] == sources[0];
+    case "postLink":
+      return false;
     default:
       // invalid entry name
       return false;
@@ -253,24 +469,27 @@ function validateDel(entryName, hash, pkg, sources) {
  * @return {boolean} is valid?
  */
 function validateLink(entryName, baseHash, links, pkg, sources) {
+  // These links will have to be validated by validatePut to get here
+
   switch (entryName) {
     case "post":
-      // be sure to consider many edge cases for validating
-      // do not just flip this to true without considering what that means
-      // the action will ONLY be successfull if this returns true, so watch out!
+      // Not a link, don't validate
       return false;
     case "tagLink":
-      var baseEntry = get(links[0].Base);
-      if(baseEntry.anchorType != "tag" || baseEntry.anchorText != Math.abs(parseInt(baseEntry.anchorText)).toString()) {
-        return false;
-      }
     case "userLink":
-      var linkEntryType = get(links[0].Link, { GetMask: HC.GetMask.EntryType });
-      return linkEntryType == "post";
-    default:
-      // invalid entry name
-      return false;
+      return true;
+    case "postLink":
+      switch (links[0].Tag) {
+        case "defaultTag":
+          return sources[0] == get(links[0].Base, { GetMask: HC.GetMask.Sources });
+        case "tag":
+          return true;
+        default:
+          return false;
+      }
   }
+
+  return true;
 }
 
 /**
