@@ -1,0 +1,18 @@
+[package]
+name = "posts"
+version = "0.1.0"
+authors = ["MightyAlex200 <quantumtraveling@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+serde = "1.0"
+serde_json = "1.0"
+serde_derive = "1.0"
+hdk = { git = "https://github.com/holochain/holochain-rust", branch = "master" }
+holochain_wasm_utils = { git = "https://github.com/holochain/holochain-rust", branch = "master" }
+holochain_core_types_derive = { git = "https://github.com/holochain/holochain-rust", branch = "master" }
+anchors = { path = "../../anchors/code" }
+
+[lib]
+path = "src/lib.rs"
+crate-type = ["cdylib"]

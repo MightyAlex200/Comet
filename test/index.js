@@ -11,14 +11,16 @@ app.start();
 
 // Constants for testing
 const testAnchor = { anchor_type: 'type', anchor_text: 'text' };
+let anchorAddress;
+let testPost;
 
-test('Create anchor, has valid hash, exists, appears in `anchors`', t => {
-    const testAnchorAddress = app.call('anchors', 'main', 'anchor', { anchor: testAnchor });
-    t.equals(testAnchorAddress, 'QmZ2SRVaC3nazwUxqzzc9ARSPZcLi5WqLMd5PsT4bAFqj2', 'Address is correct')
+test('Test anchors zome', t => {
+    anchorAddress = app.call('anchors', 'main', 'anchor', { anchor: testAnchor });
+    t.equals(anchorAddress, 'QmZ2SRVaC3nazwUxqzzc9ARSPZcLi5WqLMd5PsT4bAFqj2', 'Address is correct')
 
     t.equals(
         app.call('anchors', 'main', 'exists', {
-            anchor_address: testAnchorAddress
+            anchor_address: anchorAddress
         }),
         true,
         'Anchor exists'
@@ -36,7 +38,7 @@ test('Create anchor, has valid hash, exists, appears in `anchors`', t => {
         app.call('anchors', 'main', 'anchors', {
             anchor_type: 'type'
         }),
-        [testAnchorAddress],
+        [anchorAddress],
         "Exactly 1 anchor with type 'type'"
     );
 
@@ -48,6 +50,100 @@ test('Create anchor, has valid hash, exists, appears in `anchors`', t => {
         "No anchor with the type 'unused type'"
     );
 
-    // ends this test
     t.end();
+});
+
+test('Test posts zome', t => {
+    testPost = app.call('posts', 'main', 'create_post', {
+        post: {
+            title: 'This is a test post',
+            content: 'This is the content of the post',
+            timestamp: '',
+            key_hash: '<insert your agent key here>', // This is the actual agent key for tests
+        },
+        tags: [1, 2],
+    });
+    t.equals(testPost, 'QmdoTsf1Qfv7B7kWEhtsevbu3w6BgzEDt9GNaKCktT65xL', 'Address is correct');
+
+    t.deepEquals(
+        app.call('posts', 'main', 'search', {
+            query: { Exactly: 1 }
+        }),
+        [testPost],
+        'Exactly query finds post'
+    );
+
+    t.deepEquals(
+        app.call('posts', 'main', 'search', {
+            query: { Exactly: 5 }
+        }),
+        [],
+        'Exactly query finds no post'
+    );
+
+    t.deepEquals(
+        app.call('posts', 'main', 'search', {
+            query: { Or: [{ Exactly: 5 }, { Exactly: 1 }] }
+        }),
+        [testPost],
+        'Or query finds post'
+    );
+
+    t.deepEquals(
+        app.call('posts', 'main', 'search', {
+            query: { Or: [{ Exactly: 5 }, { Exactly: 8 }] }
+        }),
+        [],
+        'Or query finds no post'
+    );
+
+    t.deepEquals(
+        app.call('posts', 'main', 'search', {
+            query: { And: [{ Exactly: 1 }, { Exactly: 2 }] }
+        }),
+        [testPost],
+        'And query finds post'
+    );
+
+    t.deepEquals(
+        app.call('posts', 'main', 'search', {
+            query: { And: [{ Exactly: 0 }, { Exactly: 3 }] }
+        }),
+        [],
+        'And query finds no post'
+    );
+
+    t.deepEquals(
+        app.call('posts', 'main', 'search', {
+            query: { Not: [{ Exactly: 2 }, { Exactly: 5 }] }
+        }),
+        [testPost],
+        'Not query finds post'
+    );
+
+    t.deepEquals(
+        app.call('posts', 'main', 'search', {
+            query: { Not: [{ Exactly: 1 }, { Exactly: 2 }] }
+        }),
+        [],
+        'Not query finds no post'
+    );
+
+    t.deepEquals(
+        app.call('posts', 'main', 'search', {
+            query: { Xor: [{ Exactly: 5 }, { Exactly: 2 }] }
+        }),
+        [testPost],
+        'Xor query finds post'
+    );
+
+    t.deepEquals(
+        app.call('posts', 'main', 'search', {
+            query: { Xor: [{ Exactly: 1 }, { Exactly: 2 }] }
+        }),
+        [],
+        'Xor query finds no post'
+    );
+
+    t.end()
 });
