@@ -67,7 +67,7 @@ test('Test posts zome', t => {
 
     t.deepEquals(
         app.call('posts', 'main', 'search', {
-            query: { Exactly: 1 }
+            query: { type: "exactly", values: 1 }
         }),
         [testPost],
         'Exactly query finds post'
@@ -75,7 +75,7 @@ test('Test posts zome', t => {
 
     t.deepEquals(
         app.call('posts', 'main', 'search', {
-            query: { Exactly: 5 }
+            query: { type: "exactly", values: 5 }
         }),
         [],
         'Exactly query finds no post'
@@ -83,7 +83,7 @@ test('Test posts zome', t => {
 
     t.deepEquals(
         app.call('posts', 'main', 'search', {
-            query: { Or: [{ Exactly: 5 }, { Exactly: 1 }] }
+            query: { type: "or", values: [{ type: "exactly", values: 5 }, { type: "exactly", values: 1 }] }
         }),
         [testPost],
         'Or query finds post'
@@ -91,7 +91,7 @@ test('Test posts zome', t => {
 
     t.deepEquals(
         app.call('posts', 'main', 'search', {
-            query: { Or: [{ Exactly: 5 }, { Exactly: 8 }] }
+            query: { type: "or", values: [{ type: "exactly", values: 5 }, { type: "exactly", values: 8 }] }
         }),
         [],
         'Or query finds no post'
@@ -99,7 +99,7 @@ test('Test posts zome', t => {
 
     t.deepEquals(
         app.call('posts', 'main', 'search', {
-            query: { And: [{ Exactly: 1 }, { Exactly: 2 }] }
+            query: { type: "and", values: [{ type: "exactly", values: 1 }, { type: "exactly", values: 2 }] }
         }),
         [testPost],
         'And query finds post'
@@ -107,7 +107,7 @@ test('Test posts zome', t => {
 
     t.deepEquals(
         app.call('posts', 'main', 'search', {
-            query: { And: [{ Exactly: 0 }, { Exactly: 3 }] }
+            query: { type: "and", values: [{ type: "exactly", values: 0 }, { type: "exactly", values: 3 }] }
         }),
         [],
         'And query finds no post'
@@ -115,7 +115,7 @@ test('Test posts zome', t => {
 
     t.deepEquals(
         app.call('posts', 'main', 'search', {
-            query: { Not: [{ Exactly: 2 }, { Exactly: 5 }] }
+            query: { type: "not", values: [{ type: "exactly", values: 2 }, { type: "exactly", values: 5 }] }
         }),
         [testPost],
         'Not query finds post'
@@ -123,7 +123,7 @@ test('Test posts zome', t => {
 
     t.deepEquals(
         app.call('posts', 'main', 'search', {
-            query: { Not: [{ Exactly: 1 }, { Exactly: 2 }] }
+            query: { type: "not", values: [{ type: "exactly", values: 1 }, { type: "exactly", values: 2 }] }
         }),
         [],
         'Not query finds no post'
@@ -131,7 +131,7 @@ test('Test posts zome', t => {
 
     t.deepEquals(
         app.call('posts', 'main', 'search', {
-            query: { Xor: [{ Exactly: 5 }, { Exactly: 2 }] }
+            query: { type: "xor", values: [{ type: "exactly", values: 5 }, { type: "exactly", values: 2 }] }
         }),
         [testPost],
         'Xor query finds post'
@@ -139,7 +139,7 @@ test('Test posts zome', t => {
 
     t.deepEquals(
         app.call('posts', 'main', 'search', {
-            query: { Xor: [{ Exactly: 1 }, { Exactly: 2 }] }
+            query: { type: "xor", values: [{ type: "exactly", values: 1 }, { type: "exactly", values: 2 }] }
         }),
         [],
         'Xor query finds no post'

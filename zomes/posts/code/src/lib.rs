@@ -45,6 +45,8 @@ type Tag = i64;
 
 /// Represents post search queries
 #[derive(Serialize, Deserialize, Debug, DefaultJson, Clone)]
+#[serde(rename_all = "lowercase")]
+#[serde(tag = "type", content = "values")]
 enum Search {
     /// Returned posts will match all search requirements
     And(Vec<Search>),
