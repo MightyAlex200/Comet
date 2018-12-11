@@ -33,17 +33,39 @@ use hdk::{
 };
 use std::collections::HashSet;
 
+/// Represents a post in Comet, which will be linked to and from:
+/// - Tag anchors
+/// - Comments
+/// - Votes
 #[derive(Debug, Clone, DefaultJson, Serialize, Deserialize)]
 struct Post {
     title: String,
+    /// Body of the post. Intended to be formatted in Markdown.
     content: String,
+    /// Key hash of the person who created this post.
+    /// Used to avoid malicious hash collisions
     key_hash: String,
+    /// Time of the post creation.
+    /// They are used to avoid accidental hash collisions.
+    ///
+    /// *Should not be used as real timestamp.*
     timestamp: Iso8601,
 }
 
-type Tag = i64;
+/// Type representing "tags", the "things" posts are linked to/from.
+/// They are not strings for i18n reasons.
+///
+/// Must implement `ToString` for anchors.
+type Tag = u64;
 
-/// Represents post search queries
+/// Represents post search queries.
+///
+/// # Examples
+/// `And(vec![Exactly(1), Exactly(2)])` is a search query that would return
+/// all posts linked from tag 1 and 2.
+///
+/// `Not(vec![Xor(vec![9, 3]), Exactly(6)])` is a search query that would
+/// return all posts with either (**not** both) 9 or 3 and are not tagged 1.
 #[derive(Serialize, Deserialize, Debug, DefaultJson, Clone)]
 #[serde(rename_all = "lowercase")]
 #[serde(tag = "type", content = "values")]
@@ -61,6 +83,8 @@ enum Search {
     Exactly(Tag),
 }
 
+/// Anchor function from anchors zome.
+// TODO: `extern crate anchors`?
 fn anchor(anchor_type: String, anchor_text: String) -> ZomeApiResult<Address> {
     let anchor: JsonString = Anchor {
         anchor_type: anchor_type,
@@ -90,6 +114,7 @@ fn anchor(anchor_type: String, anchor_text: String) -> ZomeApiResult<Address> {
     }
 }
 
+/// Turn a search query into a JsonString containing the results
 fn handle_search(query: Search) -> JsonString {
     fn handle_search_helper(query: &Search) -> ZomeApiResult<HashSet<Address>> {
         match query {
@@ -146,6 +171,7 @@ fn handle_search(query: Search) -> JsonString {
     }
 }
 
+/// Create a post and link to to/from a set of tags
 fn handle_create_post(post: Post, tags: Vec<Tag>) -> JsonString {
     fn handle_create_post_helper(post: Post, tags: Vec<Tag>) -> ZomeApiResult<JsonString> {
         let post_entry = Entry::new(EntryType::App("post".to_owned()), post);
@@ -183,6 +209,7 @@ define_zome! {
             links: [
                 // Posts link to tags and are linked from tags
                 // TODO: Better way to find if post is in source chain
+                // TODO: Verify anchor_text is valid (deserializable to Tag type)
                 to!(
                     "anchor",
                     tag: "tag",
