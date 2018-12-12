@@ -69,7 +69,7 @@ test('Test posts zome', t => {
         app.call('posts', 'main', 'search', {
             query: { type: "exactly", values: 1 }
         }),
-        [testPost],
+        [{ address: testPost, in_terms_of: [1] }],
         'Exactly query finds post'
     );
 
@@ -85,7 +85,7 @@ test('Test posts zome', t => {
         app.call('posts', 'main', 'search', {
             query: { type: "or", values: [{ type: "exactly", values: 5 }, { type: "exactly", values: 1 }] }
         }),
-        [testPost],
+        [{ address: testPost, in_terms_of: [1] }],
         'Or query finds post'
     );
 
@@ -101,7 +101,7 @@ test('Test posts zome', t => {
         app.call('posts', 'main', 'search', {
             query: { type: "and", values: [{ type: "exactly", values: 1 }, { type: "exactly", values: 2 }] }
         }),
-        [testPost],
+        [{ address: testPost, in_terms_of: [1, 2] }],
         'And query finds post'
     );
 
@@ -117,7 +117,7 @@ test('Test posts zome', t => {
         app.call('posts', 'main', 'search', {
             query: { type: "not", values: [{ type: "exactly", values: 2 }, { type: "exactly", values: 5 }] }
         }),
-        [testPost],
+        [{ address: testPost, in_terms_of: [2] }],
         'Not query finds post'
     );
 
@@ -133,7 +133,7 @@ test('Test posts zome', t => {
         app.call('posts', 'main', 'search', {
             query: { type: "xor", values: [{ type: "exactly", values: 5 }, { type: "exactly", values: 2 }] }
         }),
-        [testPost],
+        [{ address: testPost, in_terms_of: [2] }],
         'Xor query finds post'
     );
 
