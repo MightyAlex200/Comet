@@ -168,7 +168,6 @@ fn anchor(anchor_type: String, anchor_text: String) -> ZomeApiResult<Address> {
 /// Turn a search query into a JsonString containing the results
 fn handle_search(query: Search) -> JsonString {
     fn handle_search_helper(query: Search) -> ZomeApiResult<HMap<Address, InTermsOf>> {
-        // TODO: Helper function for `intersection` without impractically large type signature?
         match query {
             Search::And(args) => {
                 // convert `args` to `results`: Iterator<Item = HMap<Address, InTermsOf>>
@@ -275,6 +274,38 @@ fn handle_create_post(post: Post, tags: Vec<Tag>) -> JsonString {
     }
 }
 
+/// Determine if a post to anchor link is valid. Returns
+/// `Ok(())` if it is, `Err(e)` when it's not where `e`
+/// is a `String` detailing why it is not valid.
+fn post_anchor_link_valid(
+    post_address: Address,
+    anchor_address: Address,
+    ctx: hdk::ValidationData,
+) -> Result<(), String> {
+    // TODO: Better way to find if post is in source chain
+    match ctx.package.source_chain_headers {
+        Some(headers) => match headers
+            .iter()
+            .map(|header| header.entry_address())
+            .any(|entry_address| entry_address == &post_address)
+        {
+            true => match api::get_entry(anchor_address) {
+                Ok(Some(entry)) => match serde_json::from_str::<Anchor>(entry.value().into()) {
+                    Ok(anchor) => match serde_json::from_str::<Tag>(&anchor.anchor_text) {
+                        Ok(_) => Ok(()),
+                        Err(_) => Err("`anchor_text` is not a valid tag.".to_owned()),
+                    },
+                    Err(_) => Err("Error deserializing anchor".to_owned()),
+                },
+                Ok(None) => Err("Link entry doesn't exist.".to_owned()),
+                Err(_) => Err("Error getting link entry.".to_owned()),
+            },
+            false => Err("Could not find post in chain.".to_owned()),
+        },
+        None => Err("Internal error: Invalid validation package.".to_owned()),
+    }
+}
+
 define_zome! {
     entries: [
         entry!(
@@ -291,20 +322,12 @@ define_zome! {
             },
             links: [
                 // Posts link to tags and are linked from tags
-                // TODO: Better way to find if post is in source chain
-                // TODO: Verify anchor_text is valid (deserializable to Tag type)
                 to!(
                     "anchor",
                     tag: "tag",
                     validation_package: || hdk::ValidationPackageDefinition::ChainHeaders,
                     validation: |base: Address, link: Address, ctx: hdk::ValidationData| {
-                        match ctx.package.source_chain_headers {
-                            Some(headers) => match headers.iter().map(|header| header.entry_address()).any(|entry_address| entry_address == &base) {
-                                true => Ok(()),
-                                false => Err("Could not find post in chain.".to_owned()),
-                            },
-                            None => Err("Internal error: Invalid validation package.".to_owned()),
-                        }
+                        post_anchor_link_valid(base, link, ctx)
                     }
                 ),
                 from!(
@@ -312,13 +335,7 @@ define_zome! {
                     tag: "tag",
                     validation_package: || hdk::ValidationPackageDefinition::ChainHeaders,
                     validation: |base: Address, link: Address, ctx: hdk::ValidationData| {
-                        match ctx.package.source_chain_headers {
-                            Some(headers) => match headers.iter().map(|header| header.entry_address()).any(|entry_address| entry_address == &link) {
-                                true => Ok(()),
-                                false => Err("Could not find post in chain.".to_owned()),
-                            },
-                            None => Err("Internal error: Invalid validation package.".to_owned()),
-                        }
+                        post_anchor_link_valid(link, base, ctx)
                     }
                 )
             ]
