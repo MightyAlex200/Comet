@@ -67,7 +67,8 @@ test('Test posts zome', t => {
 
     t.deepEquals(
         app.call('posts', 'main', 'search', {
-            query: { type: "exactly", values: 1 }
+            query: { type: "exactly", values: 1 },
+            exclude_crossposts: false,
         }),
         [{ address: testPost, in_terms_of: [1] }],
         'Exactly query finds post'
@@ -75,7 +76,8 @@ test('Test posts zome', t => {
 
     t.deepEquals(
         app.call('posts', 'main', 'search', {
-            query: { type: "exactly", values: 5 }
+            query: { type: "exactly", values: 5 },
+            exclude_crossposts: false,
         }),
         [],
         'Exactly query finds no post'
@@ -83,7 +85,8 @@ test('Test posts zome', t => {
 
     t.deepEquals(
         app.call('posts', 'main', 'search', {
-            query: { type: "or", values: [{ type: "exactly", values: 5 }, { type: "exactly", values: 1 }] }
+            query: { type: "or", values: [{ type: "exactly", values: 5 }, { type: "exactly", values: 1 }] },
+            exclude_crossposts: false,
         }),
         [{ address: testPost, in_terms_of: [1] }],
         'Or query finds post'
@@ -91,7 +94,8 @@ test('Test posts zome', t => {
 
     t.deepEquals(
         app.call('posts', 'main', 'search', {
-            query: { type: "or", values: [{ type: "exactly", values: 5 }, { type: "exactly", values: 8 }] }
+            query: { type: "or", values: [{ type: "exactly", values: 5 }, { type: "exactly", values: 8 }] },
+            exclude_crossposts: false,
         }),
         [],
         'Or query finds no post'
@@ -99,7 +103,8 @@ test('Test posts zome', t => {
 
     t.deepEquals(
         app.call('posts', 'main', 'search', {
-            query: { type: "and", values: [{ type: "exactly", values: 1 }, { type: "exactly", values: 2 }] }
+            query: { type: "and", values: [{ type: "exactly", values: 1 }, { type: "exactly", values: 2 }] },
+            exclude_crossposts: false,
         }),
         [{ address: testPost, in_terms_of: [1, 2] }],
         'And query finds post'
@@ -107,7 +112,8 @@ test('Test posts zome', t => {
 
     t.deepEquals(
         app.call('posts', 'main', 'search', {
-            query: { type: "and", values: [{ type: "exactly", values: 0 }, { type: "exactly", values: 3 }] }
+            query: { type: "and", values: [{ type: "exactly", values: 0 }, { type: "exactly", values: 3 }] },
+            exclude_crossposts: false,
         }),
         [],
         'And query finds no post'
@@ -115,7 +121,8 @@ test('Test posts zome', t => {
 
     t.deepEquals(
         app.call('posts', 'main', 'search', {
-            query: { type: "not", values: [{ type: "exactly", values: 2 }, { type: "exactly", values: 5 }] }
+            query: { type: "not", values: [{ type: "exactly", values: 2 }, { type: "exactly", values: 5 }] },
+            exclude_crossposts: false,
         }),
         [{ address: testPost, in_terms_of: [2] }],
         'Not query finds post'
@@ -123,7 +130,8 @@ test('Test posts zome', t => {
 
     t.deepEquals(
         app.call('posts', 'main', 'search', {
-            query: { type: "not", values: [{ type: "exactly", values: 1 }, { type: "exactly", values: 2 }] }
+            query: { type: "not", values: [{ type: "exactly", values: 1 }, { type: "exactly", values: 2 }] },
+            exclude_crossposts: false,
         }),
         [],
         'Not query finds no post'
@@ -131,7 +139,8 @@ test('Test posts zome', t => {
 
     t.deepEquals(
         app.call('posts', 'main', 'search', {
-            query: { type: "xor", values: [{ type: "exactly", values: 5 }, { type: "exactly", values: 2 }] }
+            query: { type: "xor", values: [{ type: "exactly", values: 5 }, { type: "exactly", values: 2 }] },
+            exclude_crossposts: false,
         }),
         [{ address: testPost, in_terms_of: [2] }],
         'Xor query finds post'
@@ -139,11 +148,39 @@ test('Test posts zome', t => {
 
     t.deepEquals(
         app.call('posts', 'main', 'search', {
-            query: { type: "xor", values: [{ type: "exactly", values: 1 }, { type: "exactly", values: 2 }] }
+            query: { type: "xor", values: [{ type: "exactly", values: 1 }, { type: "exactly", values: 2 }] },
+            exclude_crossposts: false,
         }),
         [],
         'Xor query finds no post'
     );
+
+    t.equals(
+        app.call('posts', 'main', 'crosspost', {
+            post: testPost,
+            tags: [3, 4],
+        }),
+        true,
+        'Crossposting returns true'
+    );
+
+    t.deepEquals(
+        app.call('posts', 'main', 'search', {
+            query: { type: 'and', values: [{ type: 'exactly', values: 3 }, { type: 'exactly', values: 4 }] },
+            exclude_crossposts: false,
+        }),
+        [{ address: 'QmdoTsf1Qfv7B7kWEhtsevbu3w6BgzEDt9GNaKCktT65xL', in_terms_of: [3, 4] }],
+        'Crossposts can be found with search'
+    )
+
+    t.deepEquals(
+        app.call('posts', 'main', 'search', {
+            query: { type: 'and', values: [{ type: 'exactly', values: 3 }, { type: 'exactly', values: 4 }] },
+            exclude_crossposts: true,
+        }),
+        [],
+        'Crossposts can be excluded with search'
+    )
 
     t.end()
 });

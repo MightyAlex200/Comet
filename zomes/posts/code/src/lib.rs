@@ -166,14 +166,17 @@ fn anchor(anchor_type: String, anchor_text: String) -> ZomeApiResult<Address> {
 }
 
 /// Turn a search query into a JsonString containing the results
-fn handle_search(query: Search) -> JsonString {
-    fn handle_search_helper(query: Search) -> ZomeApiResult<HMap<Address, InTermsOf>> {
+fn handle_search(query: Search, exclude_crossposts: bool) -> JsonString {
+    fn handle_search_helper(
+        query: Search,
+        exclude_crossposts: bool,
+    ) -> ZomeApiResult<HMap<Address, InTermsOf>> {
         match query {
             Search::And(args) => {
                 // convert `args` to `results`: Iterator<Item = HMap<Address, InTermsOf>>
                 let mut results = args
                     .into_iter()
-                    .filter_map(|arg| handle_search_helper(arg).ok());
+                    .filter_map(|arg| handle_search_helper(arg, exclude_crossposts).ok());
                 // map `results` to `intersection`: where elements only have *completely* non-unique keys
                 let intersection = results.clone().map(|result| {
                     result
@@ -186,17 +189,18 @@ fn handle_search(query: Search) -> JsonString {
                 // flatten `intersection`
                 Ok(flatten_searches(intersection))
             }
-            Search::Or(args) => Ok(flatten_searches(
-                args.into_iter()
-                    .filter_map(|arg| handle_search_helper(arg).ok()),
-            )),
+            Search::Or(args) => {
+                Ok(flatten_searches(args.into_iter().filter_map(|arg| {
+                    handle_search_helper(arg, exclude_crossposts).ok()
+                })))
+            }
             Search::Xor(args) => {
-                let results =
-                    args.into_iter()
-                        .filter_map(|arg| match handle_search_helper(arg.clone()) {
-                            Ok(result) => Some((arg, result)),
-                            Err(_) => None,
-                        });
+                let results = args.into_iter().filter_map(|arg| {
+                    match handle_search_helper(arg.clone(), exclude_crossposts) {
+                        Ok(result) => Some((arg, result)),
+                        Err(_) => None,
+                    }
+                });
                 // map `results` to `intersection`: where elements only have unique keys
                 let intersection = results.clone().map(|(search, result)| {
                     result
@@ -216,7 +220,7 @@ fn handle_search(query: Search) -> JsonString {
                 // convert `args` to `results`: Iterator<Item = HMap<Address, InTermsOf>>
                 let mut results = args
                     .into_iter()
-                    .filter_map(|arg| handle_search_helper(arg).ok());
+                    .filter_map(|arg| handle_search_helper(arg, exclude_crossposts).ok());
                 let intersection = match results.next() {
                     Some(result) => result.into_iter().filter(|(address, _)| {
                         results
@@ -230,20 +234,28 @@ fn handle_search(query: Search) -> JsonString {
             }
             Search::Exactly(tag) => {
                 let tag_anchor_address = anchor("tag".to_owned(), tag.to_string())?;
-                Ok(api::get_links(&tag_anchor_address, "tag")?
-                    .addresses()
-                    .iter()
-                    .cloned()
-                    .map(|address| {
-                        let mut in_terms_of = HashSet::new();
-                        in_terms_of.insert(tag);
-                        (address, in_terms_of)
-                    })
-                    .collect())
+                let original_links = api::get_links(&tag_anchor_address, "original_tag")?;
+                let original_tags = original_links.addresses().iter().cloned().map(|address| {
+                    let mut in_terms_of = HashSet::new();
+                    in_terms_of.insert(tag);
+                    (address, in_terms_of)
+                });
+                if exclude_crossposts {
+                    Ok(original_tags.collect())
+                } else {
+                    let crosspost_links = api::get_links(&tag_anchor_address, "crosspost_tag")?;
+                    let crosspost_tags =
+                        crosspost_links.addresses().iter().cloned().map(|address| {
+                            let mut in_terms_of = HashSet::new();
+                            in_terms_of.insert(tag);
+                            (address, in_terms_of)
+                        });
+                    Ok(original_tags.chain(crosspost_tags).collect())
+                }
             }
         }
     }
-    match handle_search_helper(query) {
+    match handle_search_helper(query, exclude_crossposts) {
         Ok(results) => results
             .into_iter()
             .map(|result| result.into())
@@ -261,9 +273,9 @@ fn handle_create_post(post: Post, tags: Vec<Tag>) -> JsonString {
         for tag in tags {
             let tag_anchor = anchor("tag".to_owned(), tag.to_string())?;
             // Link from post to tag anchor
-            api::link_entries(&post_entry_address, &tag_anchor, "tag")?;
+            api::link_entries(&post_entry_address, &tag_anchor, "original_tag")?;
             // Link from tag anchor to post
-            api::link_entries(&tag_anchor, &post_entry_address, "tag")?;
+            api::link_entries(&tag_anchor, &post_entry_address, "original_tag")?;
         }
         Ok(post_entry_address.into())
     }
@@ -281,13 +293,15 @@ fn post_anchor_link_valid(
     post_address: Address,
     anchor_address: Address,
     ctx: hdk::ValidationData,
+    must_be_author: bool,
 ) -> Result<(), String> {
     // TODO: Better way to find if post is in source chain
     match ctx.package.source_chain_headers {
-        Some(headers) => match headers
-            .iter()
-            .map(|header| header.entry_address())
-            .any(|entry_address| entry_address == &post_address)
+        Some(headers) => match !must_be_author
+            || headers
+                .iter()
+                .map(|header| header.entry_address())
+                .any(|entry_address| entry_address == &post_address)
         {
             true => match api::get_entry(anchor_address) {
                 Ok(Some(entry)) => match serde_json::from_str::<Anchor>(entry.value().into()) {
@@ -306,6 +320,24 @@ fn post_anchor_link_valid(
     }
 }
 
+/// "Crosspost" a post to a set of tags
+/// Return if the action completely successfully
+fn handle_crosspost(post: Address, tags: Vec<Tag>) -> JsonString {
+    fn handle_crosspost_handle(post: Address, tags: Vec<Tag>) -> ZomeApiResult<()> {
+        for tag in tags {
+            let tag_anchor = anchor("tag".to_owned(), tag.to_string())?;
+            api::link_entries(&tag_anchor, &post, "crosspost_tag")?;
+            api::link_entries(&post, &tag_anchor, "crosspost_tag")?;
+        }
+        Ok(())
+    }
+
+    match handle_crosspost_handle(post, tags) {
+        Ok(_) => true.to_string().into(),
+        Err(_) => false.to_string().into(),
+    }
+}
+
 define_zome! {
     entries: [
         entry!(
@@ -321,21 +353,38 @@ define_zome! {
                 }
             },
             links: [
-                // Posts link to tags and are linked from tags
+                // Posts link to and from their original tags
                 to!(
                     "anchor",
-                    tag: "tag",
+                    tag: "original_tag",
                     validation_package: || hdk::ValidationPackageDefinition::ChainHeaders,
                     validation: |base: Address, link: Address, ctx: hdk::ValidationData| {
-                        post_anchor_link_valid(base, link, ctx)
+                        post_anchor_link_valid(base, link, ctx, true)
                     }
                 ),
                 from!(
                     "anchor",
-                    tag: "tag",
+                    tag: "original_tag",
                     validation_package: || hdk::ValidationPackageDefinition::ChainHeaders,
                     validation: |base: Address, link: Address, ctx: hdk::ValidationData| {
-                        post_anchor_link_valid(link, base, ctx)
+                        post_anchor_link_valid(link, base, ctx, true)
+                    }
+                ),
+                // Posts link and from crossposted tags
+                to!(
+                    "anchor",
+                    tag: "crosspost_tag",
+                    validation_package: || hdk::ValidationPackageDefinition::ChainHeaders,
+                    validation: |base: Address, link: Address, ctx: hdk::ValidationData| {
+                        post_anchor_link_valid(base, link, ctx, false)
+                    }
+                ),
+                from!(
+                    "anchor",
+                    tag: "crosspost_tag",
+                    validation_package: || hdk::ValidationPackageDefinition::ChainHeaders,
+                    validation: |base: Address, link: Address, ctx: hdk::ValidationData| {
+                        post_anchor_link_valid(link, base, ctx, false)
                     }
                 )
             ]
@@ -352,9 +401,14 @@ define_zome! {
                 handler: handle_create_post
             }
             search: {
-                inputs: |query: Search|,
+                inputs: |query: Search, exclude_crossposts: bool|,
                 outputs: |result: Vec<Address>|,
                 handler: handle_search
+            }
+            crosspost: {
+                inputs: |post: Address, tags: Vec<Tag>|,
+                outputs: |ok: bool|,
+                handler: handle_crosspost
             }
         }
     }
