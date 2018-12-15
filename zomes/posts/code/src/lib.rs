@@ -5,6 +5,7 @@ extern crate hdk;
 extern crate serde;
 #[macro_use]
 extern crate serde_derive;
+#[macro_use]
 extern crate serde_json;
 #[macro_use]
 extern crate holochain_core_types_derive;
@@ -29,6 +30,7 @@ use hdk::{
         json::JsonString,
         time::Iso8601,
     },
+    holochain_wasm_utils::api_serialization::get_links::GetLinksResult,
     ValidationPackageDefinition,
 };
 use std::{
@@ -338,6 +340,33 @@ fn handle_crosspost(post: Address, tags: Vec<Tag>) -> JsonString {
     }
 }
 
+fn handle_post_tags(post: Address) -> JsonString {
+    fn get_tags(links: GetLinksResult) -> Vec<Tag> {
+        links
+            .addresses()
+            .iter()
+            .filter_map(|address| match api::get_entry(address.clone()) {
+                Ok(Some(entry)) => match serde_json::from_str::<Anchor>(entry.value().into()) {
+                    Ok(anchor) => match serde_json::from_str::<Tag>(&anchor.anchor_text) {
+                        Ok(tag) => Some(tag),
+                        Err(_) => None,
+                    },
+                    Err(_) => None,
+                },
+                _ => None,
+            })
+            .collect()
+    }
+
+    match api::get_links(&post, "original_tag") {
+        Ok(original_tags) => match api::get_links(&post, "crosspost_tag"){
+            Ok(crosspost_tags) => json!({ "original_tags": get_tags(original_tags), "crosspost_tags": get_tags(crosspost_tags) }).into(),
+            Err(e) => e.into()
+        }
+        Err(e) => e.into(),
+    }
+}
+
 define_zome! {
     entries: [
         entry!(
@@ -409,6 +438,11 @@ define_zome! {
                 inputs: |post: Address, tags: Vec<Tag>|,
                 outputs: |ok: bool|,
                 handler: handle_crosspost
+            }
+            post_tags: {
+                inputs: |post: Address|,
+                outputs: |original_tags: Vec<Tag>, crosspost_tags: Vec<Tag>|,
+                handler: handle_post_tags
             }
         }
     }

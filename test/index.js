@@ -65,6 +65,20 @@ test('Test posts zome', t => {
     });
     t.equals(testPost, 'QmdoTsf1Qfv7B7kWEhtsevbu3w6BgzEDt9GNaKCktT65xL', 'Address is correct');
 
+    (() => {
+        const post_tags = app.call('posts', 'main', 'post_tags', {
+            post: testPost,
+        });
+        const ok =
+            post_tags.original_tags &&
+            post_tags.crosspost_tags &&
+            post_tags.original_tags.length == 2 &&
+            post_tags.crosspost_tags.length == 0 &&
+            post_tags.original_tags.includes(1) &&
+            post_tags.original_tags.includes(2);
+        t.ok(ok, 'Post tags are valid');
+    })();
+
     t.deepEquals(
         app.call('posts', 'main', 'search', {
             query: { type: "exactly", values: 1 },
@@ -171,7 +185,7 @@ test('Test posts zome', t => {
         }),
         [{ address: 'QmdoTsf1Qfv7B7kWEhtsevbu3w6BgzEDt9GNaKCktT65xL', in_terms_of: [3, 4] }],
         'Crossposts can be found with search'
-    )
+    );
 
     t.deepEquals(
         app.call('posts', 'main', 'search', {
@@ -180,7 +194,23 @@ test('Test posts zome', t => {
         }),
         [],
         'Crossposts can be excluded with search'
-    )
+    );
+
+    (() => {
+        const post_tags = app.call('posts', 'main', 'post_tags', {
+            post: testPost,
+        });
+        const ok =
+            post_tags.original_tags &&
+            post_tags.crosspost_tags &&
+            post_tags.original_tags.length == 2 &&
+            post_tags.crosspost_tags.length == 2 &&
+            post_tags.original_tags.includes(1) &&
+            post_tags.original_tags.includes(2) &&
+            post_tags.crosspost_tags.includes(3) &&
+            post_tags.crosspost_tags.includes(4);
+        t.ok(ok, 'Post tags are valid with crosspost tags');
+    })();
 
     t.end()
 });
