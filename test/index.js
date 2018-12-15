@@ -54,13 +54,14 @@ test('Test anchors zome', t => {
 });
 
 test('Test posts zome', t => {
+    const testPostEntry = {
+        title: 'This is a test post',
+        content: 'This is the content of the post',
+        timestamp: '',
+        key_hash: '<insert your agent key here>', // This is the actual agent key for tests
+    };
     testPost = app.call('posts', 'main', 'create_post', {
-        post: {
-            title: 'This is a test post',
-            content: 'This is the content of the post',
-            timestamp: '',
-            key_hash: '<insert your agent key here>', // This is the actual agent key for tests
-        },
+        post: testPostEntry,
         tags: [1, 2],
     });
     t.equals(testPost, 'QmdoTsf1Qfv7B7kWEhtsevbu3w6BgzEDt9GNaKCktT65xL', 'Address is correct');
@@ -211,6 +212,49 @@ test('Test posts zome', t => {
             post_tags.crosspost_tags.includes(4);
         t.ok(ok, 'Post tags are valid with crosspost tags');
     })();
+
+    t.deepEqual(
+        app.call('posts', 'main', 'read_post', {
+            post: testPost
+        }),
+        testPostEntry,
+        'Posts can be read',
+    );
+
+    const updatedTestPostEntry = { ...testPostEntry, content: 'Updated test post' };
+
+    t.deepEqual(
+        app.call('posts', 'main', 'update_post', {
+            old_post: testPost,
+            new_post: updatedTestPostEntry,
+        }),
+        'QmcNN7YiESAeto9Mx6gULW44ix3duvoVGXQLDmZMb4A65X',
+        'Posts can be updated',
+    );
+
+    t.deepEqual(
+        app.call('posts', 'main', 'read_post', {
+            post: 'QmcNN7YiESAeto9Mx6gULW44ix3duvoVGXQLDmZMb4A65X',
+        }),
+        updatedTestPostEntry,
+        'Updated posts can be read',
+    );
+
+    t.deepEqual(
+        app.call('posts', 'main', 'delete_post', {
+            old_post: testPost
+        }),
+        true,
+        'Posts can be deleted',
+    );
+
+    t.deepEqual(
+        app.call('posts', 'main', 'read_post', {
+            post: testPost
+        }),
+        null, // TODO: Is this actually what is returned when an entry is removed?
+        'Posts can\'t be read after deletion',
+    );
 
     t.end()
 });

@@ -288,6 +288,36 @@ fn handle_create_post(post: Post, tags: Vec<Tag>) -> JsonString {
     }
 }
 
+/// Read a post into a JsonString
+fn handle_read_post(post: Address) -> JsonString {
+    match api::get_entry(post) {
+        Ok(Some(entry)) => match serde_json::from_str::<Post>(entry.value().into()) {
+            Ok(post) => post.into(),
+            Err(_) => "Failed to deserialize entry into post.".into(),
+        },
+        Ok(None) => JsonString::null(),
+        Err(e) => e.into(),
+    }
+}
+
+fn handle_update_post(old_post: Address, new_post: Post) -> JsonString {
+    match api::update_entry(
+        "post",
+        Entry::new(EntryType::App("post".to_owned()), new_post),
+        old_post,
+    ) {
+        Ok(address) => address.into(),
+        Err(e) => e.into(),
+    }
+}
+
+fn handle_delete_post(post: Address) -> JsonString {
+    match api::remove_entry(post, "Post removed.") {
+        Ok(_) => true.to_string().into(),
+        Err(_) => false.to_string().into(),
+    }
+}
+
 /// Determine if a post to anchor link is valid. Returns
 /// `Ok(())` if it is, `Err(e)` when it's not where `e`
 /// is a `String` detailing why it is not valid.
@@ -428,6 +458,21 @@ define_zome! {
                 inputs: |post: Post, tags: Vec<Tag>|,
                 outputs: |post_address: Address|,
                 handler: handle_create_post
+            }
+            read_post: {
+                inputs: |post: Address|,
+                outputs: |post: Post|,
+                handler: handle_read_post
+            }
+            update_post: {
+                inputs: |old_post: Address, new_post: Post|,
+                outputs: |new_post: Address|,
+                handler: handle_update_post
+            }
+            delete_post: {
+                inputs: |old_post: Address|,
+                outputs: |ok: bool|,
+                handler: handle_delete_post
             }
             search: {
                 inputs: |query: Search, exclude_crossposts: bool|,
