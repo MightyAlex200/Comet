@@ -278,6 +278,8 @@ fn handle_create_post(post: Post, tags: Vec<Tag>) -> JsonString {
             api::link_entries(&post_entry_address, &tag_anchor, "original_tag")?;
             // Link from tag anchor to post
             api::link_entries(&tag_anchor, &post_entry_address, "original_tag")?;
+            // Link from author
+            api::link_entries(&api::AGENT_ADDRESS, &post_entry_address, "author")?;
         }
         Ok(post_entry_address.into())
     }
@@ -397,6 +399,17 @@ fn handle_post_tags(post: Address) -> JsonString {
     }
 }
 
+fn handle_user_posts(author: Address) -> JsonString {
+    fn handle_user_posts_helper(author: Address) -> ZomeApiResult<Vec<Address>> {
+        api::get_links(&author, "author").map(|links| links.addresses().clone())
+    }
+
+    match handle_user_posts_helper(author) {
+        Ok(posts) => posts.into(),
+        Err(e) => e.into(),
+    }
+}
+
 define_zome! {
     entries: [
         entry!(
@@ -429,7 +442,7 @@ define_zome! {
                         post_anchor_link_valid(link, base, ctx, true)
                     }
                 ),
-                // Posts link and from crossposted tags
+                // Posts link to and from crossposted tags
                 to!(
                     "anchor",
                     tag: "crosspost_tag",
@@ -444,6 +457,18 @@ define_zome! {
                     validation_package: || hdk::ValidationPackageDefinition::ChainHeaders,
                     validation: |base: Address, link: Address, ctx: hdk::ValidationData| {
                         post_anchor_link_valid(link, base, ctx, false)
+                    }
+                ),
+                // Posts links from (to implicit by `key_hash` field) their author's key hash
+                from!(
+                    "%agent_id",
+                    tag: "author",
+                    validation_package: || hdk::ValidationPackageDefinition::Entry,
+                    validation: |base: Address, link: Address, ctx: hdk::ValidationData| {
+                        // TODO: Author validation
+                        // `base` is (supposed to be) address of key
+                        // Ensure ctx.sources[0] == get_entry(base)
+                        Ok(())
                     }
                 )
             ]
@@ -488,6 +513,11 @@ define_zome! {
                 inputs: |post: Address|,
                 outputs: |original_tags: Vec<Tag>, crosspost_tags: Vec<Tag>|,
                 handler: handle_post_tags
+            }
+            user_posts: {
+                inputs: |author: Address|,
+                outputs: |posts: Vec<Address>|,
+                handler: handle_user_posts
             }
         }
     }

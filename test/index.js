@@ -66,6 +66,14 @@ test('Test posts zome', t => {
     });
     t.equals(testPost, 'QmdoTsf1Qfv7B7kWEhtsevbu3w6BgzEDt9GNaKCktT65xL', 'Address is correct');
 
+    t.deepEquals(
+        app.call('posts', 'main', 'user_posts', {
+            author: '<insert your agent key here>'
+        }),
+        ['QmdoTsf1Qfv7B7kWEhtsevbu3w6BgzEDt9GNaKCktT65xL'],
+        'Author has posts attributed to them'
+    );
+
     (() => {
         const post_tags = app.call('posts', 'main', 'post_tags', {
             post: testPost,
