@@ -76,7 +76,7 @@ test('Test posts zome', t => {
 
     (() => {
         const post_tags = app.call('posts', 'main', 'post_tags', {
-            post: testPost,
+            address: testPost,
         });
         const ok =
             post_tags.original_tags &&
@@ -180,7 +180,7 @@ test('Test posts zome', t => {
 
     t.equals(
         app.call('posts', 'main', 'crosspost', {
-            post: testPost,
+            post_address: testPost,
             tags: [3, 4],
         }),
         true,
@@ -207,7 +207,7 @@ test('Test posts zome', t => {
 
     (() => {
         const post_tags = app.call('posts', 'main', 'post_tags', {
-            post: testPost,
+            address: testPost,
         });
         const ok =
             post_tags.original_tags &&
@@ -223,7 +223,7 @@ test('Test posts zome', t => {
 
     t.deepEqual(
         app.call('posts', 'main', 'read_post', {
-            post: testPost
+            address: testPost
         }),
         testPostEntry,
         'Posts can be read',
@@ -233,8 +233,8 @@ test('Test posts zome', t => {
 
     t.deepEqual(
         app.call('posts', 'main', 'update_post', {
-            old_post: testPost,
-            new_post: updatedTestPostEntry,
+            old_address: testPost,
+            new_entry: updatedTestPostEntry,
         }),
         'QmcNN7YiESAeto9Mx6gULW44ix3duvoVGXQLDmZMb4A65X',
         'Posts can be updated',
@@ -242,7 +242,7 @@ test('Test posts zome', t => {
 
     t.deepEqual(
         app.call('posts', 'main', 'read_post', {
-            post: 'QmcNN7YiESAeto9Mx6gULW44ix3duvoVGXQLDmZMb4A65X',
+            address: 'QmcNN7YiESAeto9Mx6gULW44ix3duvoVGXQLDmZMb4A65X',
         }),
         updatedTestPostEntry,
         'Updated posts can be read',
@@ -250,7 +250,7 @@ test('Test posts zome', t => {
 
     t.deepEqual(
         app.call('posts', 'main', 'delete_post', {
-            old_post: testPost
+            address: testPost
         }),
         true,
         'Posts can be deleted',
@@ -258,7 +258,7 @@ test('Test posts zome', t => {
 
     t.deepEqual(
         app.call('posts', 'main', 'read_post', {
-            post: testPost
+            address: testPost
         }),
         null, // TODO: Is this actually what is returned when an entry is removed?
         'Posts can\'t be read after deletion',
@@ -310,7 +310,7 @@ test('Test comments zome', t => {
 
     t.deepEquals(
         app.call('comments', 'main', 'read_comment', {
-            comment: commentAddress
+            address: commentAddress
         }),
         commentEntry,
         'Comments can be read'
@@ -320,8 +320,8 @@ test('Test comments zome', t => {
 
     t.deepEqual(
         app.call('comments', 'main', 'update_comment', {
-            old_comment: commentAddress,
-            new_comment: updatedCommentEntry,
+            old_address: commentAddress,
+            new_entry: updatedCommentEntry,
         }),
         'QmegNB3W4NsKC2BHzRd1DVTxLxNwLBtaVgEyFHXKsMjsVE',
         'Comments can be updated',
@@ -329,7 +329,7 @@ test('Test comments zome', t => {
 
     t.deepEqual(
         app.call('comments', 'main', 'read_comment', {
-            comment: updatedCommentEntry,
+            address: 'QmegNB3W4NsKC2BHzRd1DVTxLxNwLBtaVgEyFHXKsMjsVE',
         }),
         updatedCommentEntry,
         'Updated comments can be read',
@@ -337,7 +337,7 @@ test('Test comments zome', t => {
 
     t.equal(
         app.call('comments', 'main', 'delete_comment', {
-            comment: commentAddress
+            address: commentAddress
         }),
         true,
         'Comments can be deleted',
@@ -345,7 +345,7 @@ test('Test comments zome', t => {
 
     t.deepEqual(
         app.call('comments', 'main', 'read_comment', {
-            comment: commentAddress
+            address: commentAddress
         }),
         null, // TODO: Is this actually what is returned when an entry is removed?
         'Comments can\'t be read after deletion',

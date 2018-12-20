@@ -291,8 +291,8 @@ fn handle_create_post(post: Post, tags: Vec<Tag>) -> JsonString {
 }
 
 /// Read a post into a JsonString
-fn handle_read_post(post: Address) -> JsonString {
-    match api::get_entry(post) {
+fn handle_read_post(address: Address) -> JsonString {
+    match api::get_entry(address) {
         Ok(Some(entry)) => match serde_json::from_str::<Post>(entry.value().into()) {
             Ok(post) => post.into(),
             Err(_) => "Failed to deserialize entry into post.".into(),
@@ -302,19 +302,19 @@ fn handle_read_post(post: Address) -> JsonString {
     }
 }
 
-fn handle_update_post(old_post: Address, new_post: Post) -> JsonString {
+fn handle_update_post(old_address: Address, new_entry: Post) -> JsonString {
     match api::update_entry(
         "post",
-        Entry::new(EntryType::App("post".to_owned()), new_post),
-        old_post,
+        Entry::new(EntryType::App("post".to_owned()), new_entry),
+        old_address,
     ) {
         Ok(address) => address.into(),
         Err(e) => e.into(),
     }
 }
 
-fn handle_delete_post(post: Address) -> JsonString {
-    match api::remove_entry(post, "Post removed.") {
+fn handle_delete_post(address: Address) -> JsonString {
+    match api::remove_entry(address, "Post removed.") {
         Ok(_) => true.to_string().into(),
         Err(_) => false.to_string().into(),
     }
@@ -356,23 +356,23 @@ fn post_anchor_link_valid(
 
 /// "Crosspost" a post to a set of tags
 /// Return if the action completely successfully
-fn handle_crosspost(post: Address, tags: Vec<Tag>) -> JsonString {
-    fn handle_crosspost_handle(post: Address, tags: Vec<Tag>) -> ZomeApiResult<()> {
+fn handle_crosspost(post_address: Address, tags: Vec<Tag>) -> JsonString {
+    fn handle_crosspost_handle(post_address: Address, tags: Vec<Tag>) -> ZomeApiResult<()> {
         for tag in tags {
             let tag_anchor = anchor("tag".to_owned(), tag.to_string())?;
-            api::link_entries(&tag_anchor, &post, "crosspost_tag")?;
-            api::link_entries(&post, &tag_anchor, "crosspost_tag")?;
+            api::link_entries(&tag_anchor, &post_address, "crosspost_tag")?;
+            api::link_entries(&post_address, &tag_anchor, "crosspost_tag")?;
         }
         Ok(())
     }
 
-    match handle_crosspost_handle(post, tags) {
+    match handle_crosspost_handle(post_address, tags) {
         Ok(_) => true.to_string().into(),
         Err(_) => false.to_string().into(),
     }
 }
 
-fn handle_post_tags(post: Address) -> JsonString {
+fn handle_post_tags(address: Address) -> JsonString {
     fn get_tags(links: GetLinksResult) -> Vec<Tag> {
         links
             .addresses()
@@ -390,8 +390,8 @@ fn handle_post_tags(post: Address) -> JsonString {
             .collect()
     }
 
-    match api::get_links(&post, "original_tag") {
-        Ok(original_tags) => match api::get_links(&post, "crosspost_tag"){
+    match api::get_links(&address, "original_tag") {
+        Ok(original_tags) => match api::get_links(&address, "crosspost_tag"){
             Ok(crosspost_tags) => json!({ "original_tags": get_tags(original_tags), "crosspost_tags": get_tags(crosspost_tags) }).into(),
             Err(e) => e.into()
         }
@@ -485,17 +485,17 @@ define_zome! {
                 handler: handle_create_post
             }
             read_post: {
-                inputs: |post: Address|,
+                inputs: |address: Address|,
                 outputs: |post: Post|,
                 handler: handle_read_post
             }
             update_post: {
-                inputs: |old_post: Address, new_post: Post|,
+                inputs: |old_address: Address, new_entry: Post|,
                 outputs: |new_post: Address|,
                 handler: handle_update_post
             }
             delete_post: {
-                inputs: |old_post: Address|,
+                inputs: |address: Address|,
                 outputs: |ok: bool|,
                 handler: handle_delete_post
             }
@@ -505,12 +505,12 @@ define_zome! {
                 handler: handle_search
             }
             crosspost: {
-                inputs: |post: Address, tags: Vec<Tag>|,
+                inputs: |post_address: Address, tags: Vec<Tag>|,
                 outputs: |ok: bool|,
                 handler: handle_crosspost
             }
             post_tags: {
-                inputs: |post: Address|,
+                inputs: |address: Address|,
                 outputs: |original_tags: Vec<Tag>, crosspost_tags: Vec<Tag>|,
                 handler: handle_post_tags
             }

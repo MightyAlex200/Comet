@@ -53,8 +53,8 @@ fn handle_create_comment(comment: Comment, target: Address) -> JsonString {
     }
 }
 
-fn handle_read_comment(comment: Address) -> JsonString {
-    match api::get_entry(comment) {
+fn handle_read_comment(address: Address) -> JsonString {
+    match api::get_entry(address) {
         Ok(Some(entry)) => match serde_json::from_str::<Comment>(entry.value().into()) {
             Ok(comment) => comment.into(),
             Err(_) => "Failed to deserialize entry into comment".into(),
@@ -64,16 +64,16 @@ fn handle_read_comment(comment: Address) -> JsonString {
     }
 }
 
-fn handle_update_comment(old_comment: Address, new_comment: Comment) -> JsonString {
-    let new_comment_entry = Entry::new(EntryType::App("comment".to_owned()), new_comment);
-    match api::update_entry("comment", new_comment_entry, old_comment) {
+fn handle_update_comment(old_address: Address, new_entry: Comment) -> JsonString {
+    let new_comment_entry = Entry::new(EntryType::App("comment".to_owned()), new_entry);
+    match api::update_entry("comment", new_comment_entry, old_address) {
         Ok(address) => address.into(),
         Err(e) => e.into(),
     }
 }
 
-fn handle_delete_comment(comment: Address) -> JsonString {
-    match api::remove_entry(comment, "Comment removed") {
+fn handle_delete_comment(address: Address) -> JsonString {
+    match api::remove_entry(address, "Comment removed") {
         Ok(_) => true.to_string().into(),
         Err(_) => false.to_string().into(),
     }
@@ -175,17 +175,17 @@ define_zome! {
                 handler: handle_create_comment
             }
             read_comment: {
-                inputs: |comment: Address|,
+                inputs: |address: Address|,
                 outputs: |comment: Comment|,
                 handler: handle_read_comment
             }
             update_comment: {
-                inputs: |old_comment: Address, new_comment: Comment|,
+                inputs: |old_address: Address, new_entry: Comment|,
                 outputs: |new_comment: Address|,
                 handler: handle_update_comment
             }
             delete_comment: {
-                inputs: |comment: Address|,
+                inputs: |address: Address|,
                 outputs: |ok: bool|,
                 handler: handle_delete_comment
             }
