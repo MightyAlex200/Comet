@@ -264,5 +264,111 @@ test('Test posts zome', t => {
         'Posts can\'t be read after deletion',
     );
 
-    t.end()
+    t.end();
+});
+
+test('Test comments zome', t => {
+    const postAddress = app.call('posts', 'main', 'create_post', {
+        post: {
+            title: 'Testing post',
+            content: 'This post is used for testing the comments zome',
+            timestamp: '',
+            key_hash: '<insert your agent key here>',
+        },
+        tags: [0]
+    });
+
+    const commentEntry = {
+        content: 'This is a comment!',
+    };
+
+    const otherCommentEntry = {
+        content: 'This is another comment!',
+    };
+
+    const commentAddress = app.call('comments', 'main', 'create_comment', {
+        comment: commentEntry,
+        target: postAddress,
+    });
+
+    const otherCommentAddress = app.call('comments', 'main', 'create_comment', {
+        comment: otherCommentEntry,
+        target: commentAddress,
+    });
+
+    t.equals(
+        commentAddress,
+        'QmX4PgWtKigQutvoCY6XT3oN2974T26zhPm5iRhasHoHg3',
+        'Address is correct, comments can be made on posts'
+    );
+
+    t.equals(
+        otherCommentAddress,
+        'QmRs4WaAzHpuvRrVcN2SfFQx8hJ9Sqmmfb8fPVkimrwAJX',
+        'Address is correct, comments can be made on other comments'
+    );
+
+    t.deepEquals(
+        app.call('comments', 'main', 'read_comment', {
+            comment: commentAddress
+        }),
+        commentEntry,
+        'Comments can be read'
+    );
+
+    const updatedCommentEntry = { content: 'This is an updated comment.' };
+
+    t.deepEqual(
+        app.call('comments', 'main', 'update_comment', {
+            old_comment: commentAddress,
+            new_comment: updatedCommentEntry,
+        }),
+        'QmegNB3W4NsKC2BHzRd1DVTxLxNwLBtaVgEyFHXKsMjsVE',
+        'Comments can be updated',
+    );
+
+    t.deepEqual(
+        app.call('comments', 'main', 'read_comment', {
+            comment: updatedCommentEntry,
+        }),
+        updatedCommentEntry,
+        'Updated comments can be read',
+    );
+
+    t.equal(
+        app.call('comments', 'main', 'delete_comment', {
+            comment: commentAddress
+        }),
+        true,
+        'Comments can be deleted',
+    );
+
+    t.deepEqual(
+        app.call('comments', 'main', 'read_comment', {
+            comment: commentAddress
+        }),
+        null, // TODO: Is this actually what is returned when an entry is removed?
+        'Comments can\'t be read after deletion',
+    );
+
+    // TODO: Do deleted entries show up here?
+
+    t.deepEqual(
+        app.call('comments', 'main', 'comments_from_address', {
+            address: postAddress,
+        }),
+        ['QmegNB3W4NsKC2BHzRd1DVTxLxNwLBtaVgEyFHXKsMjsVE'],
+        'Comments can be retrieved from the address of a post',
+    );
+
+    t.deepEqual(
+        app.call('comments', 'main', 'comments_from_address', {
+            // TODO: Should this be the address of the updated post?
+            address: commentAddress,
+        }),
+        ['QmRs4WaAzHpuvRrVcN2SfFQx8hJ9Sqmmfb8fPVkimrwAJX'],
+        'Comments can be retrieved from the address of a comment',
+    );
+
+    t.end();
 });
