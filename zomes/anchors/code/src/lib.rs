@@ -19,6 +19,7 @@ use hdk::{
         error::HolochainError,
         json::JsonString,
     },
+    EntryAction,
 };
 use holochain_wasm_utils::api_serialization::get_links::GetLinksResult;
 
@@ -111,7 +112,12 @@ define_zome! {
             sharing: Sharing::Public,
             native_type: Anchor,
             validation_package: || hdk::ValidationPackageDefinition::Entry,
-            validation: |entry: Anchor, _ctx: hdk::ValidationData| Ok(()),
+            validation: |entry: Anchor, ctx: hdk::ValidationData| {
+                match ctx.action {
+                    EntryAction::Commit => Ok(()),
+                    _ => Err("Anchors are read only.".to_owned()),
+                }
+            },
             links: [
                 to!(
                     "anchor",
