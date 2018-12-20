@@ -302,6 +302,7 @@ fn handle_read_post(address: Address) -> JsonString {
     }
 }
 
+/// Update a post at address `old_address` with the entry `new_entry`
 fn handle_update_post(old_address: Address, new_entry: Post) -> JsonString {
     match api::update_entry(
         "post",
@@ -313,6 +314,7 @@ fn handle_update_post(old_address: Address, new_entry: Post) -> JsonString {
     }
 }
 
+/// Delete a post
 fn handle_delete_post(address: Address) -> JsonString {
     match api::remove_entry(address, "Post removed.") {
         Ok(_) => true.to_string().into(),
@@ -372,6 +374,14 @@ fn handle_crosspost(post_address: Address, tags: Vec<Tag>) -> JsonString {
     }
 }
 
+/// Get the tags of a post.
+/// Returned as a json with the structure
+/// ```
+/// {
+///     original_tags: Vec<Tag>,
+///     crosspost_tags: Vec<Tag>,
+/// }
+/// ```
 fn handle_post_tags(address: Address) -> JsonString {
     fn get_tags(links: GetLinksResult) -> Vec<Tag> {
         links
@@ -399,6 +409,7 @@ fn handle_post_tags(address: Address) -> JsonString {
     }
 }
 
+/// Return the addresses of posts a user has made by their key address
 fn handle_user_posts(author: Address) -> JsonString {
     fn handle_user_posts_helper(author: Address) -> ZomeApiResult<Vec<Address>> {
         api::get_links(&author, "author").map(|links| links.addresses().clone())

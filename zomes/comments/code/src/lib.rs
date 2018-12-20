@@ -53,6 +53,7 @@ fn handle_create_comment(comment: Comment, target: Address) -> JsonString {
     }
 }
 
+/// Read a comment
 fn handle_read_comment(address: Address) -> JsonString {
     match api::get_entry(address) {
         Ok(Some(entry)) => match serde_json::from_str::<Comment>(entry.value().into()) {
@@ -64,6 +65,7 @@ fn handle_read_comment(address: Address) -> JsonString {
     }
 }
 
+/// Update a comment at address `old_address` with the entry `new_entry`
 fn handle_update_comment(old_address: Address, new_entry: Comment) -> JsonString {
     let new_comment_entry = Entry::new(EntryType::App("comment".to_owned()), new_entry);
     match api::update_entry("comment", new_comment_entry, old_address) {
@@ -72,6 +74,7 @@ fn handle_update_comment(old_address: Address, new_entry: Comment) -> JsonString
     }
 }
 
+/// Delete a comment
 fn handle_delete_comment(address: Address) -> JsonString {
     match api::remove_entry(address, "Comment removed") {
         Ok(_) => true.to_string().into(),
