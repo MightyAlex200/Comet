@@ -5,7 +5,6 @@ extern crate hdk;
 extern crate serde;
 #[macro_use]
 extern crate serde_derive;
-#[macro_use]
 extern crate serde_json;
 #[macro_use]
 extern crate holochain_core_types_derive;
@@ -23,8 +22,8 @@ use hdk::{
     error::{ZomeApiError, ZomeApiResult},
     holochain_core_types::{
         cas::content::Address,
-        dna::zome::entry_types::Sharing,
-        entry::{entry_type::EntryType, Entry},
+        dna::entry_types::Sharing,
+        entry::Entry,
         error::{error::ZomeApiInternalResult, HolochainError},
         hash::HashString,
         json::JsonString,
@@ -95,6 +94,25 @@ enum Search {
 /// with `2`, and `{1, 2}` for a post tagged as both.
 type InTermsOf = HashSet<Tag>;
 
+/// Struct that represents the original and crosspost tags of a post
+/// 
+/// # Examples
+/// Let's say that you made a post titled "Hello!", posted it to tags 1 and
+/// 2, and then somebody else reposted it to tags 3 and 4. Calling `post_tags`
+/// on this post would yield a `PostTags` that looks like this:
+/// 
+/// ```
+/// PostTags {
+///     original_tags: [1, 2],
+///     crosspost_tags: [3, 4],
+/// }
+/// ```
+#[derive(Deserialize, Serialize, DefaultJson, Debug)]
+struct PostTags {
+    original_tags: Vec<Tag>,
+    crosspost_tags: Vec<Tag>,
+}
+
 /// Flattens an `Iterator` of `HashMap<Address, InTermsOf>` to a
 /// `HashMap<Address, InTermsOf>`, combining `InTermsOf`s.
 ///
@@ -139,36 +157,31 @@ impl From<(Address, InTermsOf)> for SearchResult {
 /// Anchor function from anchors zome.
 // TODO: `extern crate anchors`?
 fn anchor(anchor_type: String, anchor_text: String) -> ZomeApiResult<Address> {
-    let anchor: JsonString = Anchor {
+    #[derive(Serialize, Deserialize, Debug, DefaultJson)]
+    struct AnchorCallType {
+        anchor: Anchor,
+    }
+    let anchor = Anchor {
         anchor_type: anchor_type,
         anchor_text: anchor_text,
-    }
-    .into();
+    };
     let json_string: String = api::call(
+        hdk::THIS_INSTANCE,
         "anchors",
         "main",
+        "", // TODO: Capability token
         "anchor",
-        format!("{{ \"anchor\": {} }}", anchor).into(),
+        (AnchorCallType { anchor: anchor }).into(),
     )?
     .into();
-    match serde_json::from_str::<ZomeApiInternalResult>(&json_string[..]) {
-        Ok(result) => match result.ok {
-            true => {
-                // Remove quotes
-                let mut unquoted = result.value[1..].to_owned();
-                unquoted.pop();
-                return Ok(unquoted.into());
-            }
-            false => Err(ZomeApiError::Internal(result.error)),
-        },
-        Err(_) => Err(ZomeApiError::Internal(
-            "Could not deserialze anchor".to_owned(),
-        )),
+    match serde_json::from_str::<ZomeApiResult<Address>>(&json_string) {
+        Ok(result) => result,
+        Err(_) => Err(ZomeApiError::Internal("Failed to deserialize anchor result".to_owned())),
     }
 }
 
 /// Turn a search query into a JsonString containing the results
-fn handle_search(query: Search, exclude_crossposts: bool) -> JsonString {
+fn handle_search(query: Search, exclude_crossposts: bool) -> ZomeApiResult<Vec<SearchResult>> {
     fn handle_search_helper(
         query: Search,
         exclude_crossposts: bool,
@@ -257,69 +270,47 @@ fn handle_search(query: Search, exclude_crossposts: bool) -> JsonString {
             }
         }
     }
-    match handle_search_helper(query, exclude_crossposts) {
-        Ok(results) => results
-            .into_iter()
-            .map(|result| result.into())
-            .collect::<Vec<SearchResult>>()
-            .into(),
-        Err(e) => e.into(),
-    }
+    handle_search_helper(query, exclude_crossposts)
+        .map(|hmap| {
+            hmap
+                .into_iter()
+                .map(|result| result.into())
+                .collect::<Vec<SearchResult>>()
+        })
 }
 
 /// Create a post and link to to/from a set of tags
-fn handle_create_post(post: Post, tags: Vec<Tag>) -> JsonString {
-    fn handle_create_post_helper(post: Post, tags: Vec<Tag>) -> ZomeApiResult<JsonString> {
-        let post_entry = Entry::new(EntryType::App("post".to_owned()), post);
-        let post_entry_address = api::commit_entry(&post_entry)?;
-        for tag in tags {
-            let tag_anchor = anchor("tag".to_owned(), tag.to_string())?;
-            // Link from post to tag anchor
-            api::link_entries(&post_entry_address, &tag_anchor, "original_tag")?;
-            // Link from tag anchor to post
-            api::link_entries(&tag_anchor, &post_entry_address, "original_tag")?;
-            // Link from author
-            api::link_entries(&api::AGENT_ADDRESS, &post_entry_address, "author")?;
-        }
-        Ok(post_entry_address.into())
+fn handle_create_post(post: Post, tags: Vec<Tag>) -> ZomeApiResult<Address> {
+    let post_entry = Entry::App("post".into(), post.into());
+    let post_entry_address = api::commit_entry(&post_entry)?;
+    for tag in tags {
+        let tag_anchor = anchor("tag".to_owned(), tag.to_string())?;
+        // Link from post to tag anchor
+        api::link_entries(&post_entry_address, &tag_anchor, "original_tag")?;
+        // Link from tag anchor to post
+        api::link_entries(&tag_anchor, &post_entry_address, "original_tag")?;
+        // Link from author
+        api::link_entries(&api::AGENT_ADDRESS, &post_entry_address, "author")?;
     }
-
-    match handle_create_post_helper(post, tags) {
-        Ok(x) => x,
-        Err(e) => e.into(),
-    }
+    Ok(post_entry_address)
 }
 
 /// Read a post into a JsonString
-fn handle_read_post(address: Address) -> JsonString {
-    match api::get_entry(address) {
-        Ok(Some(entry)) => match serde_json::from_str::<Post>(entry.value().into()) {
-            Ok(post) => post.into(),
-            Err(_) => "Failed to deserialize entry into post.".into(),
-        },
-        Ok(None) => JsonString::null(),
-        Err(e) => e.into(),
-    }
+fn handle_read_post(address: Address) -> ZomeApiResult<Option<Entry>> {
+    api::get_entry(&address)
 }
 
 /// Update a post at address `old_address` with the entry `new_entry`
-fn handle_update_post(old_address: Address, new_entry: Post) -> JsonString {
-    match api::update_entry(
-        "post",
-        Entry::new(EntryType::App("post".to_owned()), new_entry),
-        old_address,
-    ) {
-        Ok(address) => address.into(),
-        Err(e) => e.into(),
-    }
+fn handle_update_post(old_address: Address, new_entry: Post) -> ZomeApiResult<Address> {
+    api::update_entry(
+        Entry::App("post".into(), new_entry.into()),
+        &old_address,
+    )
 }
 
 /// Delete a post
-fn handle_delete_post(address: Address) -> JsonString {
-    match api::remove_entry(address, "Post removed.") {
-        Ok(_) => true.to_string().into(),
-        Err(_) => false.to_string().into(),
-    }
+fn handle_delete_post(address: Address) -> ZomeApiResult<()> {
+    api::remove_entry(&address)
 }
 
 /// Determine if a post to anchor link is valid. Returns
@@ -339,14 +330,15 @@ fn post_anchor_link_valid(
                 .map(|header| header.entry_address())
                 .any(|entry_address| entry_address == &post_address)
         {
-            true => match api::get_entry(anchor_address) {
-                Ok(Some(entry)) => match serde_json::from_str::<Anchor>(entry.value().into()) {
+            true => match api::get_entry(&anchor_address) {
+                Ok(Some(Entry::App(_, entry))) => match serde_json::from_str::<Anchor>(&Into::<String>::into(entry)) {
                     Ok(anchor) => match serde_json::from_str::<Tag>(&anchor.anchor_text) {
                         Ok(_) => Ok(()),
                         Err(_) => Err("`anchor_text` is not a valid tag.".to_owned()),
                     },
                     Err(_) => Err("Error deserializing anchor".to_owned()),
                 },
+                Ok(Some(_)) => Err("Link entry was not App entry.".to_owned()),
                 Ok(None) => Err("Link entry doesn't exist.".to_owned()),
                 Err(_) => Err("Error getting link entry.".to_owned()),
             },
@@ -357,21 +349,15 @@ fn post_anchor_link_valid(
 }
 
 /// "Crosspost" a post to a set of tags
-/// Return if the action completely successfully
-fn handle_crosspost(post_address: Address, tags: Vec<Tag>) -> JsonString {
-    fn handle_crosspost_handle(post_address: Address, tags: Vec<Tag>) -> ZomeApiResult<()> {
-        for tag in tags {
-            let tag_anchor = anchor("tag".to_owned(), tag.to_string())?;
-            api::link_entries(&tag_anchor, &post_address, "crosspost_tag")?;
-            api::link_entries(&post_address, &tag_anchor, "crosspost_tag")?;
-        }
-        Ok(())
+/// Return Ok(()) if the action completely successfully
+fn handle_crosspost(post_address: Address, tags: Vec<Tag>) -> ZomeApiResult<()> {
+    for tag in tags {
+        let tag_anchor = anchor("tag".to_owned(), tag.to_string())?;
+        api::link_entries(&tag_anchor, &post_address, "crosspost_tag")?;
+        api::link_entries(&post_address, &tag_anchor, "crosspost_tag")?;
+        // assert!(api::get_links(&post_address, "crosspost_tag")?.addresses().len() > 0);
     }
-
-    match handle_crosspost_handle(post_address, tags) {
-        Ok(_) => true.to_string().into(),
-        Err(_) => false.to_string().into(),
-    }
+    Ok(())
 }
 
 /// Get the tags of a post.
@@ -382,13 +368,13 @@ fn handle_crosspost(post_address: Address, tags: Vec<Tag>) -> JsonString {
 ///     crosspost_tags: Vec<Tag>,
 /// }
 /// ```
-fn handle_post_tags(address: Address) -> JsonString {
+fn handle_post_tags(address: Address) -> ZomeApiResult<PostTags> {
     fn get_tags(links: GetLinksResult) -> Vec<Tag> {
         links
             .addresses()
             .iter()
-            .filter_map(|address| match api::get_entry(address.clone()) {
-                Ok(Some(entry)) => match serde_json::from_str::<Anchor>(entry.value().into()) {
+            .filter_map(|address| match api::get_entry(&address) {
+                Ok(Some(Entry::App(_, entry))) => match serde_json::from_str::<Anchor>(&Into::<String>::into(entry)) {
                     Ok(anchor) => match serde_json::from_str::<Tag>(&anchor.anchor_text) {
                         Ok(tag) => Some(tag),
                         Err(_) => None,
@@ -400,25 +386,22 @@ fn handle_post_tags(address: Address) -> JsonString {
             .collect()
     }
 
-    match api::get_links(&address, "original_tag") {
-        Ok(original_tags) => match api::get_links(&address, "crosspost_tag"){
-            Ok(crosspost_tags) => json!({ "original_tags": get_tags(original_tags), "crosspost_tags": get_tags(crosspost_tags) }).into(),
-            Err(e) => e.into()
-        }
-        Err(e) => e.into(),
-    }
+    match (api::get_links(&address, "original_tag"), api::get_links(&address, "crosspost_tag")) {
+        (Ok(original_tags), Ok(crosspost_tags)) =>
+            Ok(
+                PostTags {
+                    original_tags: get_tags(original_tags),
+                    crosspost_tags: get_tags(crosspost_tags),
+                }
+            ),
+        (Err(e), _) => Err(e),
+        (_, Err(e)) => Err(e),
+    }        
 }
 
 /// Return the addresses of posts a user has made by their key address
-fn handle_user_posts(author: Address) -> JsonString {
-    fn handle_user_posts_helper(author: Address) -> ZomeApiResult<Vec<Address>> {
-        api::get_links(&author, "author").map(|links| links.addresses().clone())
-    }
-
-    match handle_user_posts_helper(author) {
-        Ok(posts) => posts.into(),
-        Err(e) => e.into(),
-    }
+fn handle_user_posts(author: Address) -> ZomeApiResult<GetLinksResult> {
+    api::get_links(&author, "author")
 }
 
 define_zome! {
@@ -492,42 +475,42 @@ define_zome! {
         main(Public) {
             create_post: {
                 inputs: |post: Post, tags: Vec<Tag>|,
-                outputs: |post_address: Address|,
+                outputs: |post_address: ZomeApiResult<Address>|,
                 handler: handle_create_post
             }
             read_post: {
                 inputs: |address: Address|,
-                outputs: |post: Post|,
+                outputs: |post: ZomeApiResult<Option<Entry>>|,
                 handler: handle_read_post
             }
             update_post: {
                 inputs: |old_address: Address, new_entry: Post|,
-                outputs: |new_post: Address|,
+                outputs: |new_post: ZomeApiResult<Address>|,
                 handler: handle_update_post
             }
             delete_post: {
                 inputs: |address: Address|,
-                outputs: |ok: bool|,
+                outputs: |ok: ZomeApiResult<()>|,
                 handler: handle_delete_post
             }
             search: {
                 inputs: |query: Search, exclude_crossposts: bool|,
-                outputs: |result: Vec<Address>|,
+                outputs: |result: ZomeApiResult<Vec<SearchResult>>|,
                 handler: handle_search
             }
             crosspost: {
                 inputs: |post_address: Address, tags: Vec<Tag>|,
-                outputs: |ok: bool|,
+                outputs: |ok: ZomeApiResult<()>|,
                 handler: handle_crosspost
             }
             post_tags: {
                 inputs: |address: Address|,
-                outputs: |original_tags: Vec<Tag>, crosspost_tags: Vec<Tag>|,
+                outputs: |tags: ZomeApiResult<PostTags>|,
                 handler: handle_post_tags
             }
             user_posts: {
                 inputs: |author: Address|,
-                outputs: |posts: Vec<Address>|,
+                outputs: |posts: ZomeApiResult<GetLinksResult>|,
                 handler: handle_user_posts
             }
         }

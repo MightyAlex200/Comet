@@ -14,8 +14,8 @@ use hdk::{
     error::ZomeApiResult,
     holochain_core_types::{
         cas::content::Address,
-        dna::zome::entry_types::Sharing,
-        entry::{entry_type::EntryType, Entry},
+        dna::entry_types::Sharing,
+        entry::Entry,
         error::HolochainError,
         json::JsonString,
         validation::ValidationPackageDefinition,
@@ -38,59 +38,33 @@ fn validate_comment_link(_parent: Address, _child: Address) -> Result<(), String
 }
 
 /// Creates a comment on a target
-fn handle_create_comment(comment: Comment, target: Address) -> JsonString {
-    fn handle_create_comment_helper(comment: Comment, target: Address) -> ZomeApiResult<Address> {
-        let comment_entry = Entry::new(EntryType::App("comment".to_owned()), comment);
-        let comment_address = api::commit_entry(&comment_entry)?;
-        api::link_entries(&target, &comment_address, "comment")?;
-        api::link_entries(&comment_address, &target, "child_of")?;
-        Ok(comment_address)
-    }
-
-    match handle_create_comment_helper(comment, target) {
-        Ok(address) => address.into(),
-        Err(e) => e.into(),
-    }
+fn handle_create_comment(comment: Comment, target: Address) -> ZomeApiResult<Address> {
+    let comment_entry = Entry::App("comment".into(), comment.into());
+    let comment_address = api::commit_entry(&comment_entry)?;
+    api::link_entries(&target, &comment_address, "comment")?;
+    api::link_entries(&comment_address, &target, "child_of")?;
+    Ok(comment_address)
 }
 
 /// Read a comment
-fn handle_read_comment(address: Address) -> JsonString {
-    match api::get_entry(address) {
-        Ok(Some(entry)) => match serde_json::from_str::<Comment>(entry.value().into()) {
-            Ok(comment) => comment.into(),
-            Err(_) => "Failed to deserialize entry into comment".into(),
-        },
-        Ok(None) => JsonString::null(),
-        Err(e) => e.into(),
-    }
+fn handle_read_comment(address: Address) -> ZomeApiResult<Option<Entry>> {
+    api::get_entry(&address)
 }
 
 /// Update a comment at address `old_address` with the entry `new_entry`
-fn handle_update_comment(old_address: Address, new_entry: Comment) -> JsonString {
-    let new_comment_entry = Entry::new(EntryType::App("comment".to_owned()), new_entry);
-    match api::update_entry("comment", new_comment_entry, old_address) {
-        Ok(address) => address.into(),
-        Err(e) => e.into(),
-    }
+fn handle_update_comment(old_address: Address, new_entry: Comment) -> ZomeApiResult<Address> {
+    let new_comment_entry = Entry::App("comment".into(), new_entry.into());
+    api::update_entry(new_comment_entry, &old_address)
 }
 
 /// Delete a comment
-fn handle_delete_comment(address: Address) -> JsonString {
-    match api::remove_entry(address, "Comment removed") {
-        Ok(_) => true.to_string().into(),
-        Err(_) => false.to_string().into(),
-    }
+fn handle_delete_comment(address: Address) -> ZomeApiResult<()> {
+    api::remove_entry(&address)
 }
 
 /// Return the addresses of entries linked by "comment"
-fn handle_comments_from_address(address: Address) -> JsonString {
-    fn handle_comments_from_address_helper(address: Address) -> ZomeApiResult<Vec<Address>> {
-        Ok(api::get_links(&address, "comment")?.addresses().clone())
-    }
-    match handle_comments_from_address_helper(address) {
-        Ok(links) => links.into(),
-        Err(e) => e.into(),
-    }
+fn handle_comments_from_address(address: Address) -> ZomeApiResult<Vec<Address>> {
+    Ok(api::get_links(&address, "comment")?.addresses().clone())
 }
 
 define_zome! {
@@ -104,9 +78,9 @@ define_zome! {
             // TODO: Better way to find if post is in source chain
             validation: |comment: Comment, ctx: hdk::ValidationData| {
                 match ctx.action {
-                    EntryAction::Commit => Ok(()),
+                    EntryAction::Create => Ok(()),
                     _ => {
-                        let comment_address = match hdk::entry_address(&Entry::new(EntryType::App("comment".to_owned()), comment)) {
+                        let comment_address = match hdk::entry_address(&Entry::App("comment".into(), comment.into())) {
                             Ok(address) => address,
                             Err(e) => return Err("Couldn't get address of comment.".to_owned()),
                         };
@@ -174,27 +148,27 @@ define_zome! {
         main(Public) {
             create_comment: {
                 inputs: |comment: Comment, target: Address|,
-                outputs: |address: Address|,
+                outputs: |address: ZomeApiResult<Address>|,
                 handler: handle_create_comment
             }
             read_comment: {
                 inputs: |address: Address|,
-                outputs: |comment: Comment|,
+                outputs: |comment: ZomeApiResult<Option<Entry>>|,
                 handler: handle_read_comment
             }
             update_comment: {
                 inputs: |old_address: Address, new_entry: Comment|,
-                outputs: |new_comment: Address|,
+                outputs: |new_comment: ZomeApiResult<Address>|,
                 handler: handle_update_comment
             }
             delete_comment: {
                 inputs: |address: Address|,
-                outputs: |ok: bool|,
+                outputs: |ok: ZomeApiResult<()>|,
                 handler: handle_delete_comment
             }
             comments_from_address: {
                 inputs: |address: Address|,
-                outputs: |comments: Vec<Address>|,
+                outputs: |comments: ZomeApiResult<Vec<Address>>|,
                 handler: handle_comments_from_address
             }
         }
