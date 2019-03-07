@@ -13,14 +13,9 @@ use hdk::{
     api,
     error::ZomeApiResult,
     holochain_core_types::{
-        cas::content::Address,
-        dna::entry_types::Sharing,
-        entry::Entry,
-        error::HolochainError,
-        json::JsonString,
-        validation::ValidationPackageDefinition,
+        cas::content::Address, dna::entry_types::Sharing, entry::Entry, error::HolochainError,
+        hash::HashString, json::JsonString, time::Iso8601, validation::ValidationPackageDefinition,
     },
-    EntryAction,
 };
 
 /// Represents a users comment
@@ -28,6 +23,14 @@ use hdk::{
 struct Comment {
     /// The content of the comment
     content: String,
+    /// Key hash of the person who created this post.
+    /// Used to avoid malicious hash collisions
+    key_hash: String,
+    /// Time of the post creation.
+    /// They are used to avoid accidental hash collisions.
+    ///
+    /// *Should not be used as real timestamp.*
+    timestamp: Iso8601,
 }
 
 /// Returns `Ok(())` if these comments can be linked in a parent/child
@@ -74,30 +77,11 @@ define_zome! {
             description: "User comment",
             sharing: Sharing::Public,
             native_type: Comment,
-            validation_package: || ValidationPackageDefinition::ChainHeaders,
-            // TODO: Better way to find if post is in source chain
+            validation_package: || ValidationPackageDefinition::Entry,
             validation: |comment: Comment, ctx: hdk::ValidationData| {
-                match ctx.action {
-                    EntryAction::Create => Ok(()),
-                    _ => {
-                        let comment_address = match hdk::entry_address(&Entry::App("comment".into(), comment.into())) {
-                            Ok(address) => address,
-                            Err(e) => return Err("Couldn't get address of comment.".to_owned()),
-                        };
-                        match ctx.package.source_chain_headers {
-                            Some(headers) =>
-                                if headers
-                                    .iter()
-                                    .map(|header| header.entry_address())
-                                    .any(|entry_address| entry_address == &comment_address)
-                                {
-                                    Ok(())
-                                } else {
-                                    Err("Cannot alter comment that is not yours.".to_owned())
-                                },
-                            None => Err("Invalid validation package.".to_owned())
-                        }
-                    }
+                match HashString::from(comment.key_hash) == ctx.sources()[0] {
+                    true => Ok(()),
+                    false => Err("Cannot alter comment that is not yours".to_owned()),
                 }
             },
             links: [
@@ -144,33 +128,35 @@ define_zome! {
 
     genesis: || { Ok(()) }
 
-    functions: {
-        main(Public) {
-            create_comment: {
-                inputs: |comment: Comment, target: Address|,
-                outputs: |address: ZomeApiResult<Address>|,
-                handler: handle_create_comment
-            }
-            read_comment: {
-                inputs: |address: Address|,
-                outputs: |comment: ZomeApiResult<Option<Entry>>|,
-                handler: handle_read_comment
-            }
-            update_comment: {
-                inputs: |old_address: Address, new_entry: Comment|,
-                outputs: |new_comment: ZomeApiResult<Address>|,
-                handler: handle_update_comment
-            }
-            delete_comment: {
-                inputs: |address: Address|,
-                outputs: |ok: ZomeApiResult<()>|,
-                handler: handle_delete_comment
-            }
-            comments_from_address: {
-                inputs: |address: Address|,
-                outputs: |comments: ZomeApiResult<Vec<Address>>|,
-                handler: handle_comments_from_address
-            }
+    functions: [
+        create_comment: {
+            inputs: |comment: Comment, target: Address|,
+            outputs: |address: ZomeApiResult<Address>|,
+            handler: handle_create_comment
         }
+        read_comment: {
+            inputs: |address: Address|,
+            outputs: |comment: ZomeApiResult<Option<Entry>>|,
+            handler: handle_read_comment
+        }
+        update_comment: {
+            inputs: |old_address: Address, new_entry: Comment|,
+            outputs: |new_comment: ZomeApiResult<Address>|,
+            handler: handle_update_comment
+        }
+        delete_comment: {
+            inputs: |address: Address|,
+            outputs: |ok: ZomeApiResult<()>|,
+            handler: handle_delete_comment
+        }
+        comments_from_address: {
+            inputs: |address: Address|,
+            outputs: |comments: ZomeApiResult<Vec<Address>>|,
+            handler: handle_comments_from_address
+        }
+    ]
+
+    traits: {
+        hc_public [create_comment, read_comment, update_comment, delete_comment, comments_from_address]
     }
 }

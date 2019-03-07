@@ -114,23 +114,25 @@ define_zome! {
 
     genesis: || { Ok(()) }
 
-    functions: {
-        main(Public) {
-            anchor: {
-                inputs: |anchor: Anchor|,
-                outputs: |anchor_hash: ZomeApiResult<Address>|,
-                handler: handle_anchor
-            }
-            exists: {
-                inputs: |anchor_address: Address|,
-                outputs: |anchor_exists: ZomeApiResult<JsonString>|,
-                handler: handle_anchor_exists
-            }
-            anchors: {
-                inputs: |anchor_type: String|,
-                outputs: |anchors: ZomeApiResult<GetLinksResult>|,
-                handler: handle_anchors
-            }
+    functions: [
+        anchor: {
+            inputs: |anchor: Anchor|,
+            outputs: |anchor_hash: ZomeApiResult<Address>|,
+            handler: handle_anchor
         }
+        exists: {
+            inputs: |anchor_address: Address|,
+            outputs: |anchor_exists: ZomeApiResult<JsonString>|,
+            handler: handle_anchor_exists
+        }
+        anchors: {
+            inputs: |anchor_type: String|,
+            outputs: |anchors: ZomeApiResult<GetLinksResult>|,
+            handler: handle_anchors
+        }
+    ]
+
+    traits: {
+        hc_public [anchor, exists, anchors]
     }
 }

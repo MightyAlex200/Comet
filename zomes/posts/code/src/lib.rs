@@ -21,13 +21,8 @@ use hdk::{
     api,
     error::{ZomeApiError, ZomeApiResult},
     holochain_core_types::{
-        cas::content::Address,
-        dna::entry_types::Sharing,
-        entry::Entry,
-        error::{error::ZomeApiInternalResult, HolochainError},
-        hash::HashString,
-        json::JsonString,
-        time::Iso8601,
+        cas::content::Address, dna::entry_types::Sharing, entry::Entry, error::HolochainError,
+        hash::HashString, json::JsonString, time::Iso8601,
     },
     holochain_wasm_utils::api_serialization::get_links::GetLinksResult,
     ValidationPackageDefinition,
@@ -95,12 +90,12 @@ enum Search {
 type InTermsOf = HashSet<Tag>;
 
 /// Struct that represents the original and crosspost tags of a post
-/// 
+///
 /// # Examples
 /// Let's say that you made a post titled "Hello!", posted it to tags 1 and
 /// 2, and then somebody else reposted it to tags 3 and 4. Calling `post_tags`
 /// on this post would yield a `PostTags` that looks like this:
-/// 
+///
 /// ```
 /// PostTags {
 ///     original_tags: [1, 2],
@@ -169,14 +164,15 @@ fn anchor(anchor_type: String, anchor_text: String) -> ZomeApiResult<Address> {
         hdk::THIS_INSTANCE,
         "anchors",
         "main",
-        "", // TODO: Capability token
         "anchor",
         (AnchorCallType { anchor: anchor }).into(),
     )?
     .into();
     match serde_json::from_str::<ZomeApiResult<Address>>(&json_string) {
         Ok(result) => result,
-        Err(_) => Err(ZomeApiError::Internal("Failed to deserialize anchor result".to_owned())),
+        Err(_) => Err(ZomeApiError::Internal(
+            "Failed to deserialize anchor result".to_owned(),
+        )),
     }
 }
 
@@ -270,13 +266,11 @@ fn handle_search(query: Search, exclude_crossposts: bool) -> ZomeApiResult<Vec<S
             }
         }
     }
-    handle_search_helper(query, exclude_crossposts)
-        .map(|hmap| {
-            hmap
-                .into_iter()
-                .map(|result| result.into())
-                .collect::<Vec<SearchResult>>()
-        })
+    handle_search_helper(query, exclude_crossposts).map(|hmap| {
+        hmap.into_iter()
+            .map(|result| result.into())
+            .collect::<Vec<SearchResult>>()
+    })
 }
 
 /// Create a post and link to to/from a set of tags
@@ -302,10 +296,7 @@ fn handle_read_post(address: Address) -> ZomeApiResult<Option<Entry>> {
 
 /// Update a post at address `old_address` with the entry `new_entry`
 fn handle_update_post(old_address: Address, new_entry: Post) -> ZomeApiResult<Address> {
-    api::update_entry(
-        Entry::App("post".into(), new_entry.into()),
-        &old_address,
-    )
+    api::update_entry(Entry::App("post".into(), new_entry.into()), &old_address)
 }
 
 /// Delete a post
@@ -331,13 +322,15 @@ fn post_anchor_link_valid(
                 .any(|entry_address| entry_address == &post_address)
         {
             true => match api::get_entry(&anchor_address) {
-                Ok(Some(Entry::App(_, entry))) => match serde_json::from_str::<Anchor>(&Into::<String>::into(entry)) {
-                    Ok(anchor) => match serde_json::from_str::<Tag>(&anchor.anchor_text) {
-                        Ok(_) => Ok(()),
-                        Err(_) => Err("`anchor_text` is not a valid tag.".to_owned()),
-                    },
-                    Err(_) => Err("Error deserializing anchor".to_owned()),
-                },
+                Ok(Some(Entry::App(_, entry))) => {
+                    match serde_json::from_str::<Anchor>(&Into::<String>::into(entry)) {
+                        Ok(anchor) => match serde_json::from_str::<Tag>(&anchor.anchor_text) {
+                            Ok(_) => Ok(()),
+                            Err(_) => Err("`anchor_text` is not a valid tag.".to_owned()),
+                        },
+                        Err(_) => Err("Error deserializing anchor".to_owned()),
+                    }
+                }
                 Ok(Some(_)) => Err("Link entry was not App entry.".to_owned()),
                 Ok(None) => Err("Link entry doesn't exist.".to_owned()),
                 Err(_) => Err("Error getting link entry.".to_owned()),
@@ -374,29 +367,31 @@ fn handle_post_tags(address: Address) -> ZomeApiResult<PostTags> {
             .addresses()
             .iter()
             .filter_map(|address| match api::get_entry(&address) {
-                Ok(Some(Entry::App(_, entry))) => match serde_json::from_str::<Anchor>(&Into::<String>::into(entry)) {
-                    Ok(anchor) => match serde_json::from_str::<Tag>(&anchor.anchor_text) {
-                        Ok(tag) => Some(tag),
+                Ok(Some(Entry::App(_, entry))) => {
+                    match serde_json::from_str::<Anchor>(&Into::<String>::into(entry)) {
+                        Ok(anchor) => match serde_json::from_str::<Tag>(&anchor.anchor_text) {
+                            Ok(tag) => Some(tag),
+                            Err(_) => None,
+                        },
                         Err(_) => None,
-                    },
-                    Err(_) => None,
-                },
+                    }
+                }
                 _ => None,
             })
             .collect()
     }
 
-    match (api::get_links(&address, "original_tag"), api::get_links(&address, "crosspost_tag")) {
-        (Ok(original_tags), Ok(crosspost_tags)) =>
-            Ok(
-                PostTags {
-                    original_tags: get_tags(original_tags),
-                    crosspost_tags: get_tags(crosspost_tags),
-                }
-            ),
+    match (
+        api::get_links(&address, "original_tag"),
+        api::get_links(&address, "crosspost_tag"),
+    ) {
+        (Ok(original_tags), Ok(crosspost_tags)) => Ok(PostTags {
+            original_tags: get_tags(original_tags),
+            crosspost_tags: get_tags(crosspost_tags),
+        }),
         (Err(e), _) => Err(e),
         (_, Err(e)) => Err(e),
-    }        
+    }
 }
 
 /// Return the addresses of posts a user has made by their key address
@@ -413,7 +408,7 @@ define_zome! {
             native_type: Post,
             validation_package: || ValidationPackageDefinition::Entry,
             validation: |post: Post, ctx: hdk::ValidationData| {
-                match HashString::from(post.key_hash) == ctx.sources[0] {
+                match HashString::from(post.key_hash) == ctx.sources()[0] {
                     true => Ok(()),
                     false => Err("Cannot alter post that is not yours".to_owned()),
                 }
@@ -471,48 +466,50 @@ define_zome! {
 
     genesis: || { Ok(()) }
 
-    functions: {
-        main(Public) {
-            create_post: {
-                inputs: |post: Post, tags: Vec<Tag>|,
-                outputs: |post_address: ZomeApiResult<Address>|,
-                handler: handle_create_post
-            }
-            read_post: {
-                inputs: |address: Address|,
-                outputs: |post: ZomeApiResult<Option<Entry>>|,
-                handler: handle_read_post
-            }
-            update_post: {
-                inputs: |old_address: Address, new_entry: Post|,
-                outputs: |new_post: ZomeApiResult<Address>|,
-                handler: handle_update_post
-            }
-            delete_post: {
-                inputs: |address: Address|,
-                outputs: |ok: ZomeApiResult<()>|,
-                handler: handle_delete_post
-            }
-            search: {
-                inputs: |query: Search, exclude_crossposts: bool|,
-                outputs: |result: ZomeApiResult<Vec<SearchResult>>|,
-                handler: handle_search
-            }
-            crosspost: {
-                inputs: |post_address: Address, tags: Vec<Tag>|,
-                outputs: |ok: ZomeApiResult<()>|,
-                handler: handle_crosspost
-            }
-            post_tags: {
-                inputs: |address: Address|,
-                outputs: |tags: ZomeApiResult<PostTags>|,
-                handler: handle_post_tags
-            }
-            user_posts: {
-                inputs: |author: Address|,
-                outputs: |posts: ZomeApiResult<GetLinksResult>|,
-                handler: handle_user_posts
-            }
+    functions: [
+        create_post: {
+            inputs: |post: Post, tags: Vec<Tag>|,
+            outputs: |post_address: ZomeApiResult<Address>|,
+            handler: handle_create_post
         }
+        read_post: {
+            inputs: |address: Address|,
+            outputs: |post: ZomeApiResult<Option<Entry>>|,
+            handler: handle_read_post
+        }
+        update_post: {
+            inputs: |old_address: Address, new_entry: Post|,
+            outputs: |new_post: ZomeApiResult<Address>|,
+            handler: handle_update_post
+        }
+        delete_post: {
+            inputs: |address: Address|,
+            outputs: |ok: ZomeApiResult<()>|,
+            handler: handle_delete_post
+        }
+        search: {
+            inputs: |query: Search, exclude_crossposts: bool|,
+            outputs: |result: ZomeApiResult<Vec<SearchResult>>|,
+            handler: handle_search
+        }
+        crosspost: {
+            inputs: |post_address: Address, tags: Vec<Tag>|,
+            outputs: |ok: ZomeApiResult<()>|,
+            handler: handle_crosspost
+        }
+        post_tags: {
+            inputs: |address: Address|,
+            outputs: |tags: ZomeApiResult<PostTags>|,
+            handler: handle_post_tags
+        }
+        user_posts: {
+            inputs: |author: Address|,
+            outputs: |posts: ZomeApiResult<GetLinksResult>|,
+            handler: handle_user_posts
+        }
+    ]
+
+    traits: {
+        hc_public [create_post, read_post, update_post, delete_post, search, crosspost, post_tags, user_posts]
     }
 }
