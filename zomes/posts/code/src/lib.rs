@@ -410,7 +410,7 @@ define_zome! {
             validation: |post: Post, ctx: hdk::ValidationData| {
                 match HashString::from(post.key_hash) == ctx.sources()[0] {
                     true => Ok(()),
-                    false => Err("Cannot alter post that is not yours".to_owned()),
+                    false => Err(format!("Cannot alter post that is not yours. Your agent address is {}", *api::AGENT_ADDRESS)),
                 }
             },
             links: [

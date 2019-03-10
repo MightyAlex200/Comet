@@ -66,6 +66,24 @@ scenario.runTape('Test posts zome', (t, { alice }) => {
 
     t.deepEquals(testPost, { Ok: 'QmXM83qyaKbYhCrazapGCnwLta8wEc1cbenaovKgTdSi45' }, 'Address is correct');
 
+    const invalidTestPostEntry = { ...testPostEntry, key_hash: 'invalid' };
+
+    t.deepEquals(
+        alice.call(
+            'posts',
+            'create_post',
+            { post: invalidTestPostEntry, tags: [1, 2] },
+        ),
+        {
+            Err:
+            {
+                Internal:
+                    '{"kind":{"ValidationFailed":"Cannot alter post that is not yours. Your agent address is alice-----------------------------------------------------------------------------AAAIuDJb4M"},"file":"/home/travis/build/holochain/holochain-rust/core/src/nucleus/ribosome/runtime.rs","line":"131"}'
+            }
+        },
+        'Cannot create post with invalid key hash',
+    );
+
     t.deepEquals(
         alice.call('posts', 'user_posts', {
             author: 'alice-----------------------------------------------------------------------------AAAIuDJb4M'

@@ -81,7 +81,7 @@ define_zome! {
             validation: |comment: Comment, ctx: hdk::ValidationData| {
                 match HashString::from(comment.key_hash) == ctx.sources()[0] {
                     true => Ok(()),
-                    false => Err("Cannot alter comment that is not yours".to_owned()),
+                    false => Err(format!("Cannot alter comment that is not yours. Your agent address is {}", *api::AGENT_ADDRESS)),
                 }
             },
             links: [
