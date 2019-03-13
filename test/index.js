@@ -3,7 +3,7 @@
 const { Config, Scenario } = require("@holochain/holochain-nodejs");
 Scenario.setTape(require("tape"));
 
-const dnaPath = "./dist/bundle.json"
+const dnaPath = "./dist/Comet.dna.json"
 const agentAlice = Config.agent("alice");
 const dna = Config.dna(dnaPath);
 const instanceAlice = Config.instance(agentAlice, dna);
@@ -14,7 +14,7 @@ const testAnchor = { anchor_type: 'type', anchor_text: 'text' };
 let anchorAddress;
 let testPost;
 
-scenario.runTape('Test anchors zome', (t, { alice }) => {
+scenario.runTape('Test anchors zome', async (t, { alice }) => {
     anchorAddress = alice.call('anchors', 'anchor', { anchor: testAnchor });
     t.deepEquals(anchorAddress, { Ok: 'QmaSQL21LjUj67aieoVyzwyUj36kbuCCsAyuScX5kXFMdB' }, 'Address is correct')
 
@@ -51,12 +51,12 @@ scenario.runTape('Test anchors zome', (t, { alice }) => {
     );
 });
 
-scenario.runTape('Test posts zome', (t, { alice }) => {
+scenario.runTape('Test posts zome', async (t, { alice }) => {
     const testPostEntry = {
         title: 'This is a test post',
         content: 'This is the content of the post',
         timestamp: '1970-01-01T00:00:00+00:00',
-        key_hash: 'alice-----------------------------------------------------------------------------AAAIuDJb4M',
+        key_hash: 'HcScjwO9ji9633ZYxa6IYubHJHW6ctfoufv5eq4F7ZOxay8wR76FP4xeG9pY3ui',
     };
 
     testPost = alice.call('posts', 'create_post', {
@@ -64,29 +64,33 @@ scenario.runTape('Test posts zome', (t, { alice }) => {
         tags: [1, 2],
     });
 
-    t.deepEquals(testPost, { Ok: 'QmXM83qyaKbYhCrazapGCnwLta8wEc1cbenaovKgTdSi45' }, 'Address is correct');
+    t.deepEquals(testPost, { Ok: 'QmZznbVvtoWZ3PwsEKqJyRYRWpsW6kU5wpFsHWfCmX8xLk' }, 'Address is correct');
 
     const invalidTestPostEntry = { ...testPostEntry, key_hash: 'invalid' };
 
-    t.deepEquals(
-        alice.call(
-            'posts',
-            'create_post',
-            { post: invalidTestPostEntry, tags: [1, 2] },
-        ),
-        {
-            Err:
-            {
-                Internal:
-                    '{"kind":{"ValidationFailed":"Cannot alter post that is not yours. Your agent address is alice-----------------------------------------------------------------------------AAAIuDJb4M"},"file":"/home/travis/build/holochain/holochain-rust/core/src/nucleus/ribosome/runtime.rs","line":"131"}'
-            }
-        },
-        'Cannot create post with invalid key hash',
-    );
+    (() => {
+        const invalidPostResponse =
+            alice.call(
+                'posts',
+                'create_post',
+                { post: invalidTestPostEntry, tags: [1, 2] },
+            );
+        const ok =
+            invalidPostResponse
+            && invalidPostResponse.Err
+            && invalidPostResponse.Err.Internal;
+        t.ok(ok);
+        if (ok) {
+            t.ok(
+                JSON.parse(invalidPostResponse.Err.Internal).kind.ValidationFailed.startsWith('Cannot alter post that is not yours. Your agent address is '),
+                'Cannot create post with invalid key hash',
+            );
+        }
+    })();
 
     t.deepEquals(
         alice.call('posts', 'user_posts', {
-            author: 'alice-----------------------------------------------------------------------------AAAIuDJb4M'
+            author: 'HcScjwO9ji9633ZYxa6IYubHJHW6ctfoufv5eq4F7ZOxay8wR76FP4xeG9pY3ui'
         }),
         { Ok: { addresses: [testPost.Ok] } },
         'Author has posts attributed to them'
@@ -263,13 +267,13 @@ scenario.runTape('Test posts zome', (t, { alice }) => {
             old_address: testPost.Ok,
             new_entry: updatedTestPostEntry,
         }),
-        { Ok: 'QmUUDKErHFJkq7QVkQyUihTeaPtrNEsWEX7o7ViTvpMpnz' },
+        { Ok: 'QmZyKXyWQMt9J5MSDT31JXfkkeH4Z7m97NWjjS875TBco6' },
         'Posts can be updated',
     );
 
     (() => {
         const read_post = alice.call('posts', 'read_post', {
-            address: 'QmUUDKErHFJkq7QVkQyUihTeaPtrNEsWEX7o7ViTvpMpnz',
+            address: testPost.Ok,
         });
         const ok =
             read_post.Ok &&
@@ -299,13 +303,13 @@ scenario.runTape('Test posts zome', (t, { alice }) => {
     );
 });
 
-scenario.runTape('Test comments zome', (t, { alice }) => {
+scenario.runTape('Test comments zome', async (t, { alice }) => {
     const postAddress = alice.call('posts', 'create_post', {
         post: {
             title: 'Testing post',
             content: 'This post is used for testing the comments zome',
             timestamp: '1970-01-01T00:00:00+00:00',
-            key_hash: 'alice-----------------------------------------------------------------------------AAAIuDJb4M',
+            key_hash: 'HcScjwO9ji9633ZYxa6IYubHJHW6ctfoufv5eq4F7ZOxay8wR76FP4xeG9pY3ui',
         },
         tags: [0]
     });
@@ -313,13 +317,13 @@ scenario.runTape('Test comments zome', (t, { alice }) => {
     const commentEntry = {
         content: 'This is a comment!',
         timestamp: '1970-01-01T00:00:00+00:00',
-        key_hash: 'alice-----------------------------------------------------------------------------AAAIuDJb4M',
+        key_hash: 'HcScjwO9ji9633ZYxa6IYubHJHW6ctfoufv5eq4F7ZOxay8wR76FP4xeG9pY3ui',
     };
 
     const otherCommentEntry = {
         content: 'This is another comment!',
         timestamp: '1970-01-01T00:00:00+00:00',
-        key_hash: 'alice-----------------------------------------------------------------------------AAAIuDJb4M',
+        key_hash: 'HcScjwO9ji9633ZYxa6IYubHJHW6ctfoufv5eq4F7ZOxay8wR76FP4xeG9pY3ui',
     };
 
     const commentAddress = alice.call('comments', 'create_comment', {
@@ -334,13 +338,13 @@ scenario.runTape('Test comments zome', (t, { alice }) => {
 
     t.deepEquals(
         commentAddress,
-        { Ok: 'QmSQuaxced5NncDBEytudUQXF4sfbHP1FqXD8XqinXbepA' },
+        { Ok: 'QmeAjLTzh2tV8T7jeAGgCo41S1zpHwbzBfbH52mTzAZ1Ws' },
         'Address is correct, comments can be made on posts'
     );
 
     t.deepEquals(
         otherCommentAddress,
-        { Ok: 'QmRjPg8VNuyX1Kt7woEw8xwE1r2viAiip324E4Xgr8sGjE' },
+        { Ok: 'QmP8zSSeTCj7NpfbMqUuSkFDxSZjVhkWhrwcqHvwKqUBdv' },
         'Address is correct, comments can be made on other comments'
     );
 
@@ -367,23 +371,23 @@ scenario.runTape('Test comments zome', (t, { alice }) => {
     });
 
     t.deepEqual(
-        updatedCommentAddress.Ok,
-        'QmfYVyk9T19RbFMGpGezHX9oT8xWeXL39wyrtPG5PdvdYj',
+        updatedCommentAddress,
+        { Ok: 'Qma4WG8UZjqnroMnUxbmxEyUgaKgvVAZqkwGWaeYNAHzpc' },
         'Comments can be updated',
     );
 
     (() => {
-        const read_comment = alice.call('comments', 'read_comment', {
-            address: updatedCommentAddress.Ok,
+        const readComment = alice.call('comments', 'read_comment', {
+            address: commentAddress.Ok,
         });
         const ok =
-            read_comment.Ok &&
-            read_comment.Ok.App &&
-            read_comment.Ok.App[0] == 'comment' &&
-            read_comment.Ok.App[1];
+            readComment.Ok &&
+            readComment.Ok.App &&
+            readComment.Ok.App[0] == 'comment' &&
+            readComment.Ok.App[1];
         t.ok(ok, 'Updated comments can be read');
         if (ok) {
-            t.deepEqual(JSON.parse(read_comment.Ok.App[1]), updatedCommentEntry, 'Updated comments are read correctly');
+            t.deepEqual(JSON.parse(readComment.Ok.App[1]), updatedCommentEntry, 'Updated comments are read correctly');
         }
     })();
 

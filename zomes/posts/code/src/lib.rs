@@ -163,7 +163,7 @@ fn anchor(anchor_type: String, anchor_text: String) -> ZomeApiResult<Address> {
     let json_string: String = api::call(
         hdk::THIS_INSTANCE,
         "anchors",
-        "main",
+        Address::from(api::PUBLIC_TOKEN.to_string()),
         "anchor",
         (AnchorCallType { anchor: anchor }).into(),
     )?
