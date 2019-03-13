@@ -1,60 +1,109 @@
 # Comet
 Comet is a reddit-like Holochain application.
 
-## Features
+Because it is built on Holochain, Comet has no censorship or moderation, and can
+run on the devices of the users without the help of servers.
 
+Comet also replaces the idea of "subreddits" with tags, and allows posts to be 
+created and crossposted with more than 1 tag.
+
+Perhaps the most interesting feature of Comet, though, is its voting system.
+Firstly, votes can be fractional, they range from -1 to 1. Votes are also not
+counted as "objective". The scores of posts and comments are always calculated
+from the perspective of a particular agent (the user). This agent will have
+upvoted and downvoted other posts from other people. The score is counted
+depending on how the agent has voted on the other voters in the past. This helps
+fight spam, vote manipulation, and helps maintain community in an otherwise
+lawless space.
+
+## Features
+- [x] Posts
+- [x] Tags
+- [x] Comments
+- [ ] Voting
 - [ ] Polls
     - Bridge to other poll holochain?
 - [ ] Migration plan
     - Important to do before any official release!
-- [ ] ~~Testing~~
-    - [ ] ~~Posts~~
-        - [x] ~~Creating a post~~
-        - [x] ~~Reading a post~~
-        - [x] ~~Changing a post~~
-        - [ ] ~~Deleting a post~~
-        - [x] ~~`fromTag`~~
-        - [x] ~~`fromUser`~~
-        - [x] ~~`crosspost`~~
-    - [ ] ~~Comments~~
-        - [x] ~~Creating a comment~~
-        - [x] ~~Reading a comment~~
-        - [ ] ~~Changing a comment~~
-        - [ ] ~~Deleting a comment~~
-        - [x] ~~`fromHash`~~
-    - [x] ~~Votes~~
-        - [x] ~~Voting~~
-        - [x] ~~Revoting~~
-        - [x] ~~Going back to original vote~~
-        - [x] ~~`fromHash`~~~~
-    - I'm giving up on testing until it's possible to do it without somehow dereferencing a null pointer (wait for beta)
-- [x] Posts
-- [x] Tags
-- [x] Comments
-- [x] Voting
-- [ ] Comments (in the code)
-    - [ ] Backend
-        - [ ] Posts
-        - [ ] Comments
-        - [ ] Votes
-        - [ ] TimeMachine
-    - [ ] Frontend
 - [ ] UI
-    - Tags
+    - [ ] Tags
         - [ ] View tags
         - [ ] Create tags
         - [ ] Rename tags
-    - Posts
+    - [ ] Posts
         - [ ] View posts with tag
         - [ ] View posts on user
         - [ ] Create posts on tag/user
         - [ ] Save posts
-    - Comments
+    - [ ] Comments
         - [ ] View comments on post
         - [ ] Save comments
         - [ ] Create comments
-    - Voting
+    - [ ] Voting
         - [ ] Vote on posts
         - [ ] Vote on comments
-- [ ] Rewritten in Rust
-    - Wait until Holochain refactor and WASM/Rust ribosome
+- [ ] Testing
+    - [x] Anchors
+      - [x] Anchors can be created
+      - [x] Anchors exist
+          - [x] Positive
+          - [x] Negative
+      - [x] Anchors are linked to the empty anchors
+          - [x] Positive
+          - [x] Negative
+    - [ ] Posts
+        - [x] Creating a post
+          - [x] Positive
+          - [x] Negative
+        - [x] Reading a post
+          - [x] Positive
+          - [ ] Negative
+        - [x] Updating a post
+          - [x] Positive
+          - [ ] Negative
+        - [x] Deleting a post
+          - [x] Positive
+          - [ ] Negative
+        - [x] Searching
+          - [x] Positive
+          - [x] Negative
+        - [x] Getting tags from post
+          - [x] Positive
+          - [ ] Negative
+        - [x] Crossposting
+          - [x] Positive
+          - [ ] Negative
+        - [x] Can find posts from user
+          - [x] Positive
+          - [ ] Negative
+    - [ ] Comments
+        - [ ] Creating a comment
+          - [x] Positive
+          - [ ] Negative
+        - [ ] Reading a comment
+          - [x] Positive
+          - [ ] Negative
+        - [ ] Updating a comment
+          - [x] Positive
+          - [ ] Negative
+        - [ ] Deleting a comment
+          - [x] Positive
+          - [ ] Negative
+        - [x] Get comments from post or another comment
+          - [x] Positive
+          - [x] Negative
+    - [ ] Votes
+        - [ ] Voting
+        - [ ] Revoting
+        - [ ] Going back to original vote
+        - [ ] Get votes from post/comment
+- [ ] Comments (in the code)
+    - [x] Backend
+        - [x] Posts
+        - [x] Comments
+        - [x] Votes
+    - [ ] Frontend
+    - [ ] Tests
+      - [ ] Posts
+      - [ ] Comments
+      - [ ] Votes
