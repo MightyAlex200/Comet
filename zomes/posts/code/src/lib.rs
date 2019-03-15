@@ -51,6 +51,26 @@ struct Post {
     timestamp: Iso8601,
 }
 
+/// The type of post that the "client" will give the "server".
+/// Missing `key_hash` and `timestamp` from `Post`
+#[derive(Debug, Clone, DefaultJson, Serialize, Deserialize)]
+struct PostContent {
+    title: String,
+    content: String,
+    utc_unix_time: u64,
+}
+
+impl Into<Post> for PostContent {
+    fn into(self) -> Post {
+        Post {
+            title: self.title,
+            content: self.content,
+            key_hash: api::AGENT_ADDRESS.to_string(),
+            timestamp: self.utc_unix_time.into(),
+        }
+    }
+}
+
 /// Type representing "tags", the "things" posts are linked to/from.
 /// They are not strings for i18n reasons.
 ///
@@ -274,7 +294,13 @@ fn handle_search(query: Search, exclude_crossposts: bool) -> ZomeApiResult<Vec<S
 }
 
 /// Create a post and link to to/from a set of tags
-fn handle_create_post(post: Post, tags: Vec<Tag>) -> ZomeApiResult<Address> {
+fn handle_create_post(post: PostContent, tags: Vec<Tag>) -> ZomeApiResult<Address> {
+    handle_create_post_raw(post.into(), tags)
+}
+
+/// Create a post given a full `Post` struct, including `timestamp` and
+/// `key_hash`
+fn handle_create_post_raw(post: Post, tags: Vec<Tag>) -> ZomeApiResult<Address> {
     let post_entry = Entry::App("post".into(), post.into());
     let post_entry_address = api::commit_entry(&post_entry)?;
     for tag in tags {
@@ -295,7 +321,8 @@ fn handle_read_post(address: Address) -> ZomeApiResult<Option<Entry>> {
 }
 
 /// Update a post at address `old_address` with the entry `new_entry`
-fn handle_update_post(old_address: Address, new_entry: Post) -> ZomeApiResult<Address> {
+fn handle_update_post(old_address: Address, new_entry: PostContent) -> ZomeApiResult<Address> {
+    let new_entry: Post = new_entry.into();
     api::update_entry(Entry::App("post".into(), new_entry.into()), &old_address)
 }
 
@@ -468,9 +495,14 @@ define_zome! {
 
     functions: [
         create_post: {
-            inputs: |post: Post, tags: Vec<Tag>|,
+            inputs: |post: PostContent, tags: Vec<Tag>|,
             outputs: |post_address: ZomeApiResult<Address>|,
             handler: handle_create_post
+        }
+        create_post_raw: {
+            inputs: |post: Post, tags: Vec<Tag>|,
+            outputs: |post_address: ZomeApiResult<Address>|,
+            handler: handle_create_post_raw
         }
         read_post: {
             inputs: |address: Address|,
@@ -478,7 +510,7 @@ define_zome! {
             handler: handle_read_post
         }
         update_post: {
-            inputs: |old_address: Address, new_entry: Post|,
+            inputs: |old_address: Address, new_entry: PostContent|,
             outputs: |new_post: ZomeApiResult<Address>|,
             handler: handle_update_post
         }
@@ -510,6 +542,16 @@ define_zome! {
     ]
 
     traits: {
-        hc_public [create_post, read_post, update_post, delete_post, search, crosspost, post_tags, user_posts]
+        hc_public [
+            create_post,
+            create_post_raw,
+            read_post,
+            update_post,
+            delete_post,
+            search,
+            crosspost,
+            post_tags,
+            user_posts
+        ]
     }
 }

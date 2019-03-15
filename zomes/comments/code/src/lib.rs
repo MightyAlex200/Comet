@@ -33,6 +33,24 @@ struct Comment {
     timestamp: Iso8601,
 }
 
+/// The type of comment that the "client" will give the "server".
+/// Missing `key_hash` and `timestamp` from `Comment`
+#[derive(Serialize, Deserialize, Debug, DefaultJson)]
+struct CommentContent {
+    content: String,
+    utc_unix_time: u64,
+}
+
+impl Into<Comment> for CommentContent {
+    fn into(self) -> Comment {
+        Comment {
+            content: self.content,
+            key_hash: api::AGENT_ADDRESS.to_string(),
+            timestamp: self.utc_unix_time.into(),
+        }
+    }
+}
+
 /// Returns `Ok(())` if these comments can be linked in a parent/child
 /// relationship without causing problems
 fn validate_comment_link(_parent: Address, _child: Address) -> Result<(), String> {
@@ -41,7 +59,13 @@ fn validate_comment_link(_parent: Address, _child: Address) -> Result<(), String
 }
 
 /// Creates a comment on a target
-fn handle_create_comment(comment: Comment, target: Address) -> ZomeApiResult<Address> {
+fn handle_create_comment(comment: CommentContent, target: Address) -> ZomeApiResult<Address> {
+    handle_create_comment_raw(comment.into(), target)
+}
+
+/// Create a post given a full `Post` struct, including `timestamp` and
+/// `key_hash`
+fn handle_create_comment_raw(comment: Comment, target: Address) -> ZomeApiResult<Address> {
     let comment_entry = Entry::App("comment".into(), comment.into());
     let comment_address = api::commit_entry(&comment_entry)?;
     api::link_entries(&target, &comment_address, "comment")?;
@@ -55,7 +79,11 @@ fn handle_read_comment(address: Address) -> ZomeApiResult<Option<Entry>> {
 }
 
 /// Update a comment at address `old_address` with the entry `new_entry`
-fn handle_update_comment(old_address: Address, new_entry: Comment) -> ZomeApiResult<Address> {
+fn handle_update_comment(
+    old_address: Address,
+    new_entry: CommentContent,
+) -> ZomeApiResult<Address> {
+    let new_entry: Comment = new_entry.into();
     let new_comment_entry = Entry::App("comment".into(), new_entry.into());
     api::update_entry(new_comment_entry, &old_address)
 }
@@ -130,9 +158,14 @@ define_zome! {
 
     functions: [
         create_comment: {
-            inputs: |comment: Comment, target: Address|,
+            inputs: |comment: CommentContent, target: Address|,
             outputs: |address: ZomeApiResult<Address>|,
             handler: handle_create_comment
+        }
+        create_comment_raw: {
+            inputs: |comment: Comment, target: Address|,
+            outputs: |address: ZomeApiResult<Address>|,
+            handler: handle_create_comment_raw
         }
         read_comment: {
             inputs: |address: Address|,
@@ -140,7 +173,7 @@ define_zome! {
             handler: handle_read_comment
         }
         update_comment: {
-            inputs: |old_address: Address, new_entry: Comment|,
+            inputs: |old_address: Address, new_entry: CommentContent|,
             outputs: |new_comment: ZomeApiResult<Address>|,
             handler: handle_update_comment
         }
@@ -157,6 +190,12 @@ define_zome! {
     ]
 
     traits: {
-        hc_public [create_comment, read_comment, update_comment, delete_comment, comments_from_address]
+        hc_public [
+            create_comment,
+            read_comment,
+            update_comment,
+            delete_comment,
+            comments_from_address
+        ]
     }
 }
