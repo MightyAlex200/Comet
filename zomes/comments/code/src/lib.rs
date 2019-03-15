@@ -26,7 +26,7 @@ struct Comment {
     content: String,
     /// Key hash of the person who created this post.
     /// Used to avoid malicious hash collisions
-    key_hash: String,
+    key_hash: Address,
     /// Time of the post creation.
     /// They are used to avoid accidental hash collisions.
     ///
@@ -46,7 +46,7 @@ impl Into<Comment> for CommentContent {
     fn into(self) -> Comment {
         Comment {
             content: self.content,
-            key_hash: api::AGENT_ADDRESS.to_string(),
+            key_hash: api::AGENT_ADDRESS.clone(),
             timestamp: self.utc_unix_time.into(),
         }
     }
@@ -70,6 +70,8 @@ fn handle_create_comment_raw(comment: Comment, target: Address) -> ZomeApiResult
     let comment_entry = Entry::App("comment".into(), comment.into());
     let comment_address = api::commit_entry(&comment_entry)?;
     utils::link_entries_bidir(&target, &comment_address, "comment", "child_of")?;
+    // Link from author
+    api::link_entries(&api::AGENT_ADDRESS, &comment_address, "author")?;
     Ok(comment_address)
 }
 
@@ -149,6 +151,24 @@ define_zome! {
                     validation_package: || ValidationPackageDefinition::Entry,
                     validation: |base: Address, link: Address, _ctx: hdk::ValidationData| {
                         validate_comment_link(link, base)
+                    }
+                ),
+                // Comments links from (to implicit by `key_hash` field) their author's key hash
+                from!(
+                    "%agent_id",
+                    tag: "author",
+                    validation_package: || hdk::ValidationPackageDefinition::Entry,
+                    validation: |base: Address, link: Address, ctx: hdk::ValidationData| {
+                        match utils::get_as_type::<Comment>(link) {
+                            Ok(comment) => {
+                                if comment.key_hash == base {
+                                    Ok(())
+                                } else {
+                                    Err("Cannot link to comment from author not in `key_hash`".to_owned())
+                                }
+                            },
+                            Err(_) => Err("Link was not comment".to_owned())
+                        }
                     }
                 )
             ]

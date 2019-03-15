@@ -44,7 +44,7 @@ struct Post {
     content: String,
     /// Key hash of the person who created this post.
     /// Used to avoid malicious hash collisions
-    key_hash: String,
+    key_hash: Address,
     /// Time of the post creation.
     /// They are used to avoid accidental hash collisions.
     ///
@@ -66,7 +66,7 @@ impl Into<Post> for PostContent {
         Post {
             title: self.title,
             content: self.content,
-            key_hash: api::AGENT_ADDRESS.to_string(),
+            key_hash: api::AGENT_ADDRESS.clone(),
             timestamp: self.utc_unix_time.into(),
         }
     }
@@ -473,10 +473,16 @@ define_zome! {
                     tag: "author",
                     validation_package: || hdk::ValidationPackageDefinition::Entry,
                     validation: |base: Address, link: Address, ctx: hdk::ValidationData| {
-                        // TODO: Author validation
-                        // `base` is (supposed to be) address of key
-                        // Ensure ctx.sources[0] == get_entry(base)
-                        Ok(())
+                        match utils::get_as_type::<Post>(link) {
+                            Ok(post) => {
+                                if post.key_hash == base {
+                                    Ok(())
+                                } else {
+                                    Err("Cannot link to post from author not in `key_hash`".to_owned())
+                                }
+                            },
+                            Err(_) => Err("Link was not post".to_owned())
+                        }
                     }
                 )
             ]
