@@ -17,6 +17,7 @@ pub struct Anchor {
     anchor_text: String,
 }
 
+use hdk::utils;
 use hdk::{
     api,
     error::{ZomeApiError, ZomeApiResult},
@@ -188,12 +189,9 @@ fn anchor(anchor_type: String, anchor_text: String) -> ZomeApiResult<Address> {
         (AnchorCallType { anchor: anchor }).into(),
     )?
     .into();
-    match serde_json::from_str::<ZomeApiResult<Address>>(&json_string) {
-        Ok(result) => result,
-        Err(_) => Err(ZomeApiError::Internal(
-            "Failed to deserialize anchor result".to_owned(),
-        )),
-    }
+    serde_json::from_str::<ZomeApiResult<Address>>(&json_string)
+        .map_err(|_| ZomeApiError::Internal("Failed to deserialize anchor result".to_owned()))
+        .and_then(|address_result| address_result)
 }
 
 /// Turn a search query into a JsonString containing the results
@@ -305,10 +303,13 @@ fn handle_create_post_raw(post: Post, tags: Vec<Tag>) -> ZomeApiResult<Address> 
     let post_entry_address = api::commit_entry(&post_entry)?;
     for tag in tags {
         let tag_anchor = anchor("tag".to_owned(), tag.to_string())?;
-        // Link from post to tag anchor
-        api::link_entries(&post_entry_address, &tag_anchor, "original_tag")?;
-        // Link from tag anchor to post
-        api::link_entries(&tag_anchor, &post_entry_address, "original_tag")?;
+        // Link from post to tag anchor and vice versa
+        utils::link_entries_bidir(
+            &post_entry_address,
+            &tag_anchor,
+            "original_tag",
+            "original_tag",
+        )?;
         // Link from author
         api::link_entries(&api::AGENT_ADDRESS, &post_entry_address, "author")?;
     }
@@ -316,8 +317,8 @@ fn handle_create_post_raw(post: Post, tags: Vec<Tag>) -> ZomeApiResult<Address> 
 }
 
 /// Read a post into a JsonString
-fn handle_read_post(address: Address) -> ZomeApiResult<Option<Entry>> {
-    api::get_entry(&address)
+fn handle_read_post(address: Address) -> ZomeApiResult<Post> {
+    utils::get_as_type(address)
 }
 
 /// Update a post at address `old_address` with the entry `new_entry`
@@ -342,28 +343,24 @@ fn post_anchor_link_valid(
 ) -> Result<(), String> {
     // TODO: Better way to find if post is in source chain
     match ctx.package.source_chain_headers {
-        Some(headers) => match !must_be_author
-            || headers
-                .iter()
-                .map(|header| header.entry_address())
-                .any(|entry_address| entry_address == &post_address)
-        {
-            true => match api::get_entry(&anchor_address) {
-                Ok(Some(Entry::App(_, entry))) => {
-                    match serde_json::from_str::<Anchor>(&Into::<String>::into(entry)) {
-                        Ok(anchor) => match serde_json::from_str::<Tag>(&anchor.anchor_text) {
-                            Ok(_) => Ok(()),
-                            Err(_) => Err("`anchor_text` is not a valid tag.".to_owned()),
-                        },
-                        Err(_) => Err("Error deserializing anchor".to_owned()),
-                    }
+        Some(headers) => {
+            if !must_be_author
+                || headers
+                    .iter()
+                    .map(|header| header.entry_address())
+                    .any(|entry_address| entry_address == &post_address)
+            {
+                match utils::get_as_type::<Anchor>(anchor_address) {
+                    Ok(anchor) => match serde_json::from_str::<Tag>(&anchor.anchor_text) {
+                        Ok(_) => Ok(()),
+                        Err(_) => Err("`anchor_text` is not a valid tag.".to_owned()),
+                    },
+                    Err(_) => Err("Error getting link entry.".to_owned()),
                 }
-                Ok(Some(_)) => Err("Link entry was not App entry.".to_owned()),
-                Ok(None) => Err("Link entry doesn't exist.".to_owned()),
-                Err(_) => Err("Error getting link entry.".to_owned()),
-            },
-            false => Err("Could not find post in chain.".to_owned()),
-        },
+            } else {
+                Err("Could not find post in chain.".to_owned())
+            }
+        }
         None => Err("Internal error: Invalid validation package.".to_owned()),
     }
 }
@@ -373,9 +370,7 @@ fn post_anchor_link_valid(
 fn handle_crosspost(post_address: Address, tags: Vec<Tag>) -> ZomeApiResult<()> {
     for tag in tags {
         let tag_anchor = anchor("tag".to_owned(), tag.to_string())?;
-        api::link_entries(&tag_anchor, &post_address, "crosspost_tag")?;
-        api::link_entries(&post_address, &tag_anchor, "crosspost_tag")?;
-        // assert!(api::get_links(&post_address, "crosspost_tag")?.addresses().len() > 0);
+        utils::link_entries_bidir(&tag_anchor, &post_address, "crosspost_tag", "crosspost_tag")?;
     }
     Ok(())
 }
@@ -393,16 +388,12 @@ fn handle_post_tags(address: Address) -> ZomeApiResult<PostTags> {
         links
             .addresses()
             .iter()
-            .filter_map(|address| match api::get_entry(&address) {
-                Ok(Some(Entry::App(_, entry))) => {
-                    match serde_json::from_str::<Anchor>(&Into::<String>::into(entry)) {
-                        Ok(anchor) => match serde_json::from_str::<Tag>(&anchor.anchor_text) {
-                            Ok(tag) => Some(tag),
-                            Err(_) => None,
-                        },
-                        Err(_) => None,
-                    }
-                }
+            .cloned()
+            .filter_map(|address| match utils::get_as_type::<Anchor>(address) {
+                Ok(anchor) => match serde_json::from_str::<Tag>(&anchor.anchor_text) {
+                    Ok(tag) => Some(tag),
+                    Err(_) => None,
+                },
                 _ => None,
             })
             .collect()
@@ -435,9 +426,10 @@ define_zome! {
             native_type: Post,
             validation_package: || ValidationPackageDefinition::Entry,
             validation: |post: Post, ctx: hdk::ValidationData| {
-                match HashString::from(post.key_hash) == ctx.sources()[0] {
-                    true => Ok(()),
-                    false => Err(format!("Cannot alter post that is not yours. Your agent address is {}", *api::AGENT_ADDRESS)),
+                if HashString::from(post.key_hash) == ctx.sources()[0] {
+                    Ok(())
+                } else {
+                    Err(format!("Cannot alter post that is not yours. Your agent address is {}", *api::AGENT_ADDRESS))
                 }
             },
             links: [
@@ -506,7 +498,7 @@ define_zome! {
         }
         read_post: {
             inputs: |address: Address|,
-            outputs: |post: ZomeApiResult<Option<Entry>>|,
+            outputs: |post: ZomeApiResult<Post>|,
             handler: handle_read_post
         }
         update_post: {

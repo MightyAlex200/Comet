@@ -248,29 +248,18 @@ scenario.runTape('Test posts zome', async (t, { alice }) => {
         t.ok(ok, 'Post tags are valid with crosspost tags');
     })();
 
-    (() => {
-        const read_post = alice.call('posts', 'read_post', {
+    t.deepEqual(
+        alice.call('posts', 'read_post', {
             address: testPost.Ok,
-        });
-        const ok =
-            read_post.Ok &&
-            read_post.Ok.App &&
-            read_post.Ok.App[0] == 'post' &&
-            read_post.Ok.App[1];
-        t.ok(ok, 'Posts can be read');
-        if (ok) {
-            t.deepEqual(
-                JSON.parse(read_post.Ok.App[1]),
-                {
-                    title: 'This is a test post',
-                    content: 'This is the content of the post',
-                    key_hash: 'HcScjwO9ji9633ZYxa6IYubHJHW6ctfoufv5eq4F7ZOxay8wR76FP4xeG9pY3ui',
-                    timestamp: '1970-01-01T00:00:00+00:00'
-                }
-                , 'Posts are read correctly'
-            );
-        }
-    })();
+        }).Ok,
+        {
+            title: 'This is a test post',
+            content: 'This is the content of the post',
+            key_hash: 'HcScjwO9ji9633ZYxa6IYubHJHW6ctfoufv5eq4F7ZOxay8wR76FP4xeG9pY3ui',
+            timestamp: '1970-01-01T00:00:00+00:00'
+        },
+        'Posts are read correctly',
+    );
 
     const updatedTestPostEntry = { ...testPostEntry, content: 'Updated test post' };
 
@@ -283,29 +272,18 @@ scenario.runTape('Test posts zome', async (t, { alice }) => {
         'Posts can be updated',
     );
 
-    (() => {
-        const read_post = alice.call('posts', 'read_post', {
+    t.deepEqual(
+        alice.call('posts', 'read_post', {
             address: testPost.Ok,
-        });
-        const ok =
-            read_post.Ok &&
-            read_post.Ok.App &&
-            read_post.Ok.App[0] == 'post' &&
-            read_post.Ok.App[1];
-        t.ok(ok, 'Updated posts can be read');
-        if (ok) {
-            t.deepEqual(
-                JSON.parse(read_post.Ok.App[1]),
-                {
-                    title: 'This is a test post',
-                    content: 'Updated test post',
-                    key_hash: 'HcScjwO9ji9633ZYxa6IYubHJHW6ctfoufv5eq4F7ZOxay8wR76FP4xeG9pY3ui',
-                    timestamp: '1970-01-01T00:00:00+00:00'
-                },
-                'Updated posts are read correctly'
-            );
-        }
-    })();
+        }).Ok,
+        {
+            title: 'This is a test post',
+            content: 'Updated test post',
+            key_hash: 'HcScjwO9ji9633ZYxa6IYubHJHW6ctfoufv5eq4F7ZOxay8wR76FP4xeG9pY3ui',
+            timestamp: '1970-01-01T00:00:00+00:00'
+        },
+        'Updated posts are read correctly'
+    );
 
     t.deepEqual(
         alice.call('posts', 'delete_post', {
@@ -366,28 +344,17 @@ scenario.runTape('Test comments zome', async (t, { alice }) => {
         'Address is correct, comments can be made on other comments'
     );
 
-    (() => {
-        const read_comment = alice.call('comments', 'read_comment', {
+    t.deepEqual(
+        alice.call('comments', 'read_comment', {
             address: commentAddress.Ok,
-        });
-        const ok =
-            read_comment.Ok &&
-            read_comment.Ok.App &&
-            read_comment.Ok.App[0] == 'comment' &&
-            read_comment.Ok.App[1];
-        t.ok(ok, 'Comments can be read');
-        if (ok) {
-            t.deepEqual(
-                JSON.parse(read_comment.Ok.App[1]),
-                {
-                    content: 'This is a comment!',
-                    key_hash: 'HcScjwO9ji9633ZYxa6IYubHJHW6ctfoufv5eq4F7ZOxay8wR76FP4xeG9pY3ui',
-                    timestamp: '1970-01-01T00:00:00+00:00'
-                },
-                'Comments are read correctly'
-            );
-        }
-    })();
+        }).Ok,
+        {
+            content: 'This is a comment!',
+            key_hash: 'HcScjwO9ji9633ZYxa6IYubHJHW6ctfoufv5eq4F7ZOxay8wR76FP4xeG9pY3ui',
+            timestamp: '1970-01-01T00:00:00+00:00'
+        },
+        'Comments are read correctly'
+    );
 
     const updatedCommentEntry = { ...commentEntry, content: 'This is an updated comment.' };
 
@@ -402,28 +369,17 @@ scenario.runTape('Test comments zome', async (t, { alice }) => {
         'Comments can be updated',
     );
 
-    (() => {
-        const readComment = alice.call('comments', 'read_comment', {
+    t.deepEqual(
+        alice.call('comments', 'read_comment', {
             address: commentAddress.Ok,
-        });
-        const ok =
-            readComment.Ok &&
-            readComment.Ok.App &&
-            readComment.Ok.App[0] == 'comment' &&
-            readComment.Ok.App[1];
-        t.ok(ok, 'Updated comments can be read');
-        if (ok) {
-            t.deepEqual(
-                JSON.parse(readComment.Ok.App[1]),
-                {
-                    content: 'This is an updated comment.',
-                    key_hash: 'HcScjwO9ji9633ZYxa6IYubHJHW6ctfoufv5eq4F7ZOxay8wR76FP4xeG9pY3ui',
-                    timestamp: '1970-01-01T00:00:00+00:00'
-                }
-                , 'Updated comments are read correctly'
-            );
+        }).Ok,
+        {
+            content: 'This is an updated comment.',
+            key_hash: 'HcScjwO9ji9633ZYxa6IYubHJHW6ctfoufv5eq4F7ZOxay8wR76FP4xeG9pY3ui',
+            timestamp: '1970-01-01T00:00:00+00:00'
         }
-    })();
+        , 'Updated comments are read correctly'
+    );
 
     t.deepEqual(
         alice.call('comments', 'delete_comment', {

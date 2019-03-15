@@ -9,6 +9,7 @@ extern crate serde_json;
 #[macro_use]
 extern crate holochain_core_types_derive;
 
+use hdk::utils;
 use hdk::{
     api,
     error::ZomeApiResult,
@@ -68,14 +69,13 @@ fn handle_create_comment(comment: CommentContent, target: Address) -> ZomeApiRes
 fn handle_create_comment_raw(comment: Comment, target: Address) -> ZomeApiResult<Address> {
     let comment_entry = Entry::App("comment".into(), comment.into());
     let comment_address = api::commit_entry(&comment_entry)?;
-    api::link_entries(&target, &comment_address, "comment")?;
-    api::link_entries(&comment_address, &target, "child_of")?;
+    utils::link_entries_bidir(&target, &comment_address, "comment", "child_of")?;
     Ok(comment_address)
 }
 
 /// Read a comment
-fn handle_read_comment(address: Address) -> ZomeApiResult<Option<Entry>> {
-    api::get_entry(&address)
+fn handle_read_comment(address: Address) -> ZomeApiResult<Comment> {
+    utils::get_as_type(address)
 }
 
 /// Update a comment at address `old_address` with the entry `new_entry`
@@ -107,9 +107,10 @@ define_zome! {
             native_type: Comment,
             validation_package: || ValidationPackageDefinition::Entry,
             validation: |comment: Comment, ctx: hdk::ValidationData| {
-                match HashString::from(comment.key_hash) == ctx.sources()[0] {
-                    true => Ok(()),
-                    false => Err(format!("Cannot alter comment that is not yours. Your agent address is {}", *api::AGENT_ADDRESS)),
+                if HashString::from(comment.key_hash) == ctx.sources()[0] {
+                    Ok(())
+                } else {
+                    Err(format!("Cannot alter comment that is not yours. Your agent address is {}", *api::AGENT_ADDRESS))
                 }
             },
             links: [
@@ -169,7 +170,7 @@ define_zome! {
         }
         read_comment: {
             inputs: |address: Address|,
-            outputs: |comment: ZomeApiResult<Option<Entry>>|,
+            outputs: |comment: ZomeApiResult<Comment>|,
             handler: handle_read_comment
         }
         update_comment: {
