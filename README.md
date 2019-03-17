@@ -20,7 +20,7 @@ lawless space.
 - [x] Posts
 - [x] Tags
 - [x] Comments
-- [ ] Voting
+- [x] Voting
 - [ ] Polls
     - Bridge to other poll holochain?
 - [ ] Migration plan
@@ -92,11 +92,28 @@ lawless space.
         - [x] Get comments from post or another comment
           - [x] Positive
           - [x] Negative
-    - [ ] Votes
-        - [ ] Voting
-        - [ ] Revoting
-        - [ ] Going back to original vote
-        - [ ] Get votes from post/comment
+    - [x] Votes
+        - [x] Voting
+          - [x] Positive
+            - [x] Post
+            - [x] Comment
+          - [x] Negative
+            - [x] Post
+            - [x] Comment
+        - [x] Revoting
+          - [x] Positive
+            - [x] Post
+            - [x] Comment
+          - [x] Negative
+            - [x] Post
+            - [x] Comment
+        - [x] Get votes from post/comment
+          - [x] Positive
+            - [x] Post
+            - [x] Comment
+          - [x] Negative
+            - [x] Post
+            - [x] Comment
 - [ ] Comments (in the code)
     - [x] Backend
         - [x] Posts
@@ -106,4 +123,4 @@ lawless space.
     - [ ] Tests
       - [ ] Posts
       - [ ] Comments
-      - [ ] Votes
+      - [x] Votes

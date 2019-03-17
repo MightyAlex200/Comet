@@ -14,6 +14,183 @@ const testAnchor = { anchor_type: 'type', anchor_text: 'text' };
 let anchorAddress;
 let testPost;
 
+scenario.runTape('Test votes zome', async (t, { alice }) => {
+    const postAddress = alice.call('posts', 'create_post', {
+        post: {
+            title: 'Testing post',
+            content: 'This post is used for testing the votes zome',
+            utc_unix_time: 0,
+        },
+        tags: [0],
+    });
+
+    const commentAddress = alice.call('comments', 'create_comment', {
+        comment: {
+            content: 'This comment is used for testing the votes zome',
+            utc_unix_time: 0,
+        },
+        target: postAddress.Ok,
+    });
+
+    /// GETTING VOTES ///
+    // NEGATIVE //
+    // ON POST //
+    t.deepEquals(
+        alice.call('votes', 'votes_from_address', {
+            address: postAddress.Ok,
+        }),
+        { Ok: [] },
+        'Getting votes of unvoted on post returns the empty list',
+    );
+    // ON COMMENT //
+    t.deepEquals(
+        alice.call('votes', 'votes_from_address', {
+            address: commentAddress.Ok,
+        }),
+        { Ok: [] },
+        'Getting votes of unvoted on comment returns the empty list',
+    );
+
+    /// VOTING ///
+    // NEGATIVE //
+    // ON POST //
+    t.deepEquals(
+        JSON.parse(alice.call('votes', 'vote', {
+            fraction: 1000,
+            in_terms_of: [1],
+            utc_unix_time: 0,
+            target: postAddress.Ok,
+        }).Err.Internal).kind,
+        { ValidationFailed: 'Vote fraction must be between 1 and -1' },
+        'Cannot vote on post with invalid fraction',
+    );
+
+    // ON COMMENT //
+    t.deepEquals(
+        JSON.parse(alice.call('votes', 'vote', {
+            fraction: 1000,
+            in_terms_of: [1],
+            utc_unix_time: 0,
+            target: commentAddress.Ok,
+        }).Err.Internal).kind,
+        { ValidationFailed: 'Vote fraction must be between 1 and -1' },
+        'Cannot vote on comment with invalid fraction',
+    );
+
+    // POSITIVE //
+    // ON POST //
+    t.deepEquals(
+        alice.call('votes', 'vote', {
+            fraction: 1,
+            in_terms_of: [1],
+            utc_unix_time: 0,
+            target: postAddress.Ok,
+        }),
+        { Ok: 'Qmedhx72FQQZorSNZpNxUBoiYttmKqdakyT9vCS2h8pXFS' },
+        'Can vote on posts',
+    );
+
+    // ON COMMENT //
+    t.deepEquals(
+        alice.call('votes', 'vote', {
+            fraction: 1,
+            in_terms_of: [1],
+            utc_unix_time: 0,
+            target: commentAddress.Ok,
+        }),
+        { Ok: 'QmSXAFbsqUEyjABf1H1x1CvfM4eAyVwS1AX1d1w9nKMypY' },
+        'Can vote on comments',
+    );
+
+
+    /// REVOTING ///
+    // POSITIVE //
+    // ON POST //
+    t.deepEquals(
+        alice.call('votes', 'vote', {
+            fraction: 0.5,
+            in_terms_of: [1],
+            utc_unix_time: 1,
+            target: postAddress.Ok,
+        }),
+        { Ok: 'QmR1WyyzsELNnftDUAc5DH9GASfLnVWFNN1wH2CCirupqY' },
+        'Can revote on posts',
+    );
+
+    // ON COMMENT //
+    t.deepEquals(
+        alice.call('votes', 'vote', {
+            fraction: 0.5,
+            in_terms_of: [1],
+            utc_unix_time: 1,
+            target: commentAddress.Ok,
+        }),
+        { Ok: 'QmddykFErZ3Qs86Afj2TLZjDm6RFVmYrfRMiineDgp4qUo' },
+        'Can revote on comments',
+    );
+
+    // NEGATIVE //
+    // ON POST //
+    t.deepEquals(
+        JSON.parse(alice.call('votes', 'vote', {
+            fraction: 5,
+            in_terms_of: [1],
+            utc_unix_time: 1,
+            target: postAddress.Ok,
+        }).Err.Internal).kind,
+        { ValidationFailed: 'Vote fraction must be between 1 and -1' },
+        'Cannot recast invalid vote on posts',
+    );
+
+    // ON COMMENT //
+    t.deepEquals(
+        JSON.parse(alice.call('votes', 'vote', {
+            fraction: 5,
+            in_terms_of: [1],
+            utc_unix_time: 1,
+            target: commentAddress.Ok,
+        }).Err.Internal).kind,
+        { ValidationFailed: 'Vote fraction must be between 1 and -1' },
+        'Cannot recast invalid vote on comments',
+    );
+
+    /// GETTING VOTES ///
+    // POSITIVE //
+    // ON POST //
+    t.deepEquals(
+        alice.call('votes', 'votes_from_address', {
+            address: postAddress.Ok,
+        }),
+        {
+            Ok: [{
+                fraction: 0.5,
+                in_terms_of: [1],
+                target_hash: postAddress.Ok,
+                key_hash: 'HcScjwO9ji9633ZYxa6IYubHJHW6ctfoufv5eq4F7ZOxay8wR76FP4xeG9pY3ui',
+                timestamp: '1970-01-01T00:00:01+00:00',
+            }]
+        },
+        'Can get votes from post',
+    );
+
+    // ON COMMENT //
+    t.deepEquals(
+        alice.call('votes', 'votes_from_address', {
+            address: commentAddress.Ok,
+        }),
+        {
+            Ok: [{
+                fraction: 0.5,
+                in_terms_of: [1],
+                target_hash: commentAddress.Ok,
+                key_hash: 'HcScjwO9ji9633ZYxa6IYubHJHW6ctfoufv5eq4F7ZOxay8wR76FP4xeG9pY3ui',
+                timestamp: '1970-01-01T00:00:01+00:00',
+            }]
+        },
+        'Can get votes from post',
+    );
+});
+
 scenario.runTape('Test anchors zome', async (t, { alice }) => {
     anchorAddress = alice.call('anchors', 'anchor', { anchor: testAnchor });
     t.deepEquals(anchorAddress, { Ok: 'QmaSQL21LjUj67aieoVyzwyUj36kbuCCsAyuScX5kXFMdB' }, 'Address is correct')
