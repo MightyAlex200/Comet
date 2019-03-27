@@ -20,10 +20,12 @@ pub struct Anchor {
 use hdk::utils;
 use hdk::{
     api,
+    {EntryValidationData, LinkValidationData},
     error::{ZomeApiError, ZomeApiResult},
     holochain_core_types::{
         cas::content::Address, dna::entry_types::Sharing, entry::Entry, error::HolochainError,
         hash::HashString, json::JsonString, time::Iso8601,
+        chain_header::ChainHeader
     },
     holochain_wasm_utils::api_serialization::get_links::GetLinksResult,
     ValidationPackageDefinition,
@@ -338,11 +340,11 @@ fn handle_delete_post(address: Address) -> ZomeApiResult<()> {
 fn post_anchor_link_valid(
     post_address: Address,
     anchor_address: Address,
-    ctx: hdk::ValidationData,
+    source_chain_headers: Option<Vec<ChainHeader>>,
     must_be_author: bool,
 ) -> Result<(), String> {
     // TODO: Better way to find if post is in source chain
-    match ctx.package.source_chain_headers {
+    match source_chain_headers {
         Some(headers) => {
             if !must_be_author
                 || headers
@@ -423,13 +425,54 @@ define_zome! {
             name: "post",
             description: "User post",
             sharing: Sharing::Public,
-            native_type: Post,
+            
             validation_package: || ValidationPackageDefinition::Entry,
-            validation: |post: Post, ctx: hdk::ValidationData| {
-                if HashString::from(post.key_hash) == ctx.sources()[0] {
-                    Ok(())
-                } else {
-                    Err(format!("Cannot alter post that is not yours. Your agent address is {}", *api::AGENT_ADDRESS))
+            validation: |entry_validation_data: hdk::EntryValidationData<Post>| {
+                let not_ok = Err(format!("Cannot alter post that is not yours. Your agent address is {}", *api::AGENT_ADDRESS));
+                match entry_validation_data {
+                    EntryValidationData::Create {
+                        entry: post,
+                        validation_data,
+                    } => {
+                        let provenances = validation_data.package.chain_header.provenances();
+                        if provenances.into_iter().all(|provenance| provenance.0 == post.key_hash) {
+                            Ok(())
+                        } else {
+                            not_ok
+                        }
+                    }
+                    EntryValidationData::Modify {
+                        new_entry: new_post,
+                        old_entry: old_post,
+                        old_entry_header,
+                        validation_data,
+                    } => {
+                        let mut provenances = validation_data.package.chain_header.provenances()
+                            .into_iter()
+                            .chain(old_entry_header.provenances());
+                        if old_post.key_hash == new_post.key_hash
+                            && provenances.all(|provenance| provenance.0 == old_post.key_hash)
+                        {
+                            Ok(())
+                        } else {
+                            not_ok
+                        }
+                    }
+                    EntryValidationData::Delete {
+                        old_entry: old_post,
+                        old_entry_header,
+                        validation_data,
+                    } => {
+                        let mut provenances = validation_data.package.chain_header.provenances()
+                            .into_iter()
+                            .chain(old_entry_header.provenances());
+                        if provenances.all(|provenance| provenance.0 == old_post.key_hash)
+                        {
+                            Ok(())
+                        } else {
+                            not_ok
+                        }
+                    }
                 }
             },
             links: [
@@ -438,16 +481,46 @@ define_zome! {
                     "anchor",
                     tag: "original_tag",
                     validation_package: || hdk::ValidationPackageDefinition::ChainHeaders,
-                    validation: |base: Address, link: Address, ctx: hdk::ValidationData| {
-                        post_anchor_link_valid(base, link, ctx, true)
+                    validation: |link_validation_data: hdk::LinkValidationData| {
+                        let (link, validation_data) = match link_validation_data {
+                            LinkValidationData::LinkAdd {
+                                link,
+                                validation_data,
+                            } => (link, validation_data),
+                            LinkValidationData::LinkRemove {
+                                link,
+                                validation_data,
+                            } => (link, validation_data),
+                        };
+                        post_anchor_link_valid(
+                            link.link().base().clone(),
+                            link.link().target().clone(),
+                            validation_data.package.source_chain_headers,
+                            true,
+                        )
                     }
                 ),
                 from!(
                     "anchor",
                     tag: "original_tag",
                     validation_package: || hdk::ValidationPackageDefinition::ChainHeaders,
-                    validation: |base: Address, link: Address, ctx: hdk::ValidationData| {
-                        post_anchor_link_valid(link, base, ctx, true)
+                    validation: |link_validation_data: hdk::LinkValidationData| {
+                        let (link, validation_data) = match link_validation_data {
+                            LinkValidationData::LinkAdd {
+                                link,
+                                validation_data,
+                            } => (link, validation_data),
+                            LinkValidationData::LinkRemove {
+                                link,
+                                validation_data,
+                            } => (link, validation_data),
+                        };
+                        post_anchor_link_valid(
+                            link.link().target().clone(),
+                            link.link().base().clone(),
+                            validation_data.package.source_chain_headers,
+                            true,
+                        )
                     }
                 ),
                 // Posts link to and from crossposted tags
@@ -455,16 +528,46 @@ define_zome! {
                     "anchor",
                     tag: "crosspost_tag",
                     validation_package: || hdk::ValidationPackageDefinition::ChainHeaders,
-                    validation: |base: Address, link: Address, ctx: hdk::ValidationData| {
-                        post_anchor_link_valid(base, link, ctx, false)
+                    validation: |link_validation_data: hdk::LinkValidationData| {
+                        let (link, validation_data) = match link_validation_data {
+                            LinkValidationData::LinkAdd {
+                                link,
+                                validation_data,
+                            } => (link, validation_data),
+                            LinkValidationData::LinkRemove {
+                                link,
+                                validation_data,
+                            } => (link, validation_data),
+                        };
+                        post_anchor_link_valid(
+                            link.link().base().clone(),
+                            link.link().target().clone(),
+                            validation_data.package.source_chain_headers,
+                            false,
+                        )
                     }
                 ),
                 from!(
                     "anchor",
                     tag: "crosspost_tag",
                     validation_package: || hdk::ValidationPackageDefinition::ChainHeaders,
-                    validation: |base: Address, link: Address, ctx: hdk::ValidationData| {
-                        post_anchor_link_valid(link, base, ctx, false)
+                    validation: |link_validation_data: hdk::LinkValidationData| {
+                        let (link, validation_data) = match link_validation_data {
+                            LinkValidationData::LinkAdd {
+                                link,
+                                validation_data,
+                            } => (link, validation_data),
+                            LinkValidationData::LinkRemove {
+                                link,
+                                validation_data,
+                            } => (link, validation_data),
+                        };
+                        post_anchor_link_valid(
+                            link.link().target().clone(),
+                            link.link().base().clone(),
+                            validation_data.package.source_chain_headers,
+                            false,
+                        )
                     }
                 ),
                 // Posts links from (to implicit by `key_hash` field) their author's key hash
@@ -472,10 +575,20 @@ define_zome! {
                     "%agent_id",
                     tag: "author",
                     validation_package: || hdk::ValidationPackageDefinition::Entry,
-                    validation: |base: Address, link: Address, ctx: hdk::ValidationData| {
-                        match utils::get_as_type::<Post>(link) {
+                    validation: |link_validation_data: hdk::LinkValidationData| {
+                        let link = match link_validation_data {
+                            LinkValidationData::LinkAdd {
+                                link,
+                                validation_data,
+                            } => link,
+                            LinkValidationData::LinkRemove {
+                                link,
+                                validation_data,
+                            } => link,
+                        };
+                        match utils::get_as_type::<Post>(link.link().target().clone()) {
                             Ok(post) => {
-                                if post.key_hash == base {
+                                if &post.key_hash == link.link().base() {
                                     Ok(())
                                 } else {
                                     Err("Cannot link to post from author not in `key_hash`".to_owned())

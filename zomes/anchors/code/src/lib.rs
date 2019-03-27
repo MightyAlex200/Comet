@@ -19,7 +19,7 @@ use hdk::{
         error::HolochainError,
         json::JsonString,
     },
-    EntryAction,
+    EntryValidationData,
 };
 use holochain_wasm_utils::api_serialization::get_links::GetLinksResult;
 
@@ -93,12 +93,12 @@ define_zome! {
             name: "anchor",
             description: "An object which can be located on the network by anybody and linked from",
             sharing: Sharing::Public,
-            native_type: Anchor,
+
             validation_package: || hdk::ValidationPackageDefinition::Entry,
-            validation: |entry: Anchor, ctx: hdk::ValidationData| {
-                match ctx.action {
-                    EntryAction::Create => Ok(()),
-                    _ => Err("Anchors are read only.".to_owned()),
+            validation: |entry_validation_data: hdk::EntryValidationData<Anchor>| {
+                match entry_validation_data {
+                    EntryValidationData::Create { .. } => Ok(()),
+                    _ => Err("Anchors are read-only".to_owned()),
                 }
             },
             links: [
@@ -106,7 +106,7 @@ define_zome! {
                     "anchor",
                     tag: "",
                     validation_package: || hdk::ValidationPackageDefinition::Entry,
-                    validation: |base: Address, target: Address, _ctx: hdk::ValidationData| Ok(())
+                    validation: |_link_validation_data: hdk::LinkValidationData| Ok(())
                 )
             ]
         )

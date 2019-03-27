@@ -9,6 +9,7 @@ extern crate serde_json;
 extern crate holochain_core_types_derive;
 
 use hdk::api;
+use hdk::{EntryValidationData, LinkValidationData};
 use hdk::error::{ZomeApiError, ZomeApiResult};
 use hdk::holochain_core_types::{
     cas::content::Address, dna::entry_types::Sharing, entry::Entry, error::HolochainError,
@@ -152,9 +153,9 @@ fn handle_get_my_vote(address: Address, in_terms_of: Vec<Tag>) -> ZomeApiResult<
     }
 }
 
-fn validate_vote_link(from: Address, to: Address, _ctx: hdk::ValidationData) -> Result<(), String> {
+fn validate_vote_link(from: &Address, to: &Address) -> Result<(), String> {
     let vote: Vote =
-        utils::get_as_type(to).map_err(|_| "Failed to get vote for link validation".to_string())?;
+        utils::get_as_type(to.clone()).map_err(|_| "Failed to get vote for link validation".to_string())?;
 
     fn get_votes(exclude: &Vote, target_hash: &Address) -> Result<Vec<Vote>, String> {
         let all_votes = api::query_result(
@@ -187,7 +188,7 @@ fn validate_vote_link(from: Address, to: Address, _ctx: hdk::ValidationData) -> 
         }
     }
 
-    if get_votes(&vote, &from)?.into_iter().any(|query_vote| {
+    if get_votes(&vote, from)?.into_iter().any(|query_vote| {
         for tag_query in &query_vote.in_terms_of {
             for tag_vote in &vote.in_terms_of {
                 if tag_vote == tag_query {
@@ -209,17 +210,62 @@ define_zome! {
             name: "vote",
             description: "User vote on post/comment",
             sharing: Sharing::Public,
-            native_type: Vote,
+            
             validation_package: || ValidationPackageDefinition::Entry,
-            validation: |vote: Vote, ctx: hdk::ValidationData| {
-                if vote.key_hash == ctx.sources()[0] {
-                    if vote.fraction <= 1.0 && vote.fraction >= -1.0 {
-                        Ok(())
-                    } else {
-                        Err("Vote fraction must be between 1 and -1".to_string())
+            validation: |entry_validation_data: hdk::EntryValidationData<Vote>| {
+                let not_ok = Err(format!("Cannot alter vote that is not yours. Your agent address is {}", *api::AGENT_ADDRESS));
+                match entry_validation_data {
+                    EntryValidationData::Create {
+                        entry: vote,
+                        validation_data,
+                    } => {
+                        let provenances = validation_data.package.chain_header.provenances();
+                        if provenances.into_iter().all(|provenance| provenance.0 == vote.key_hash) {
+                            if vote.fraction <= 1.0 && vote.fraction >= -1.0 {
+                                Ok(())
+                            } else {
+                                Err("Vote fraction must be between 1 and -1".to_string())
+                            }
+                        } else {
+                            not_ok
+                        }
                     }
-                } else {
-                    Err(format!("Cannot alter vote that is not yours. Your agent address is {}", *api::AGENT_ADDRESS))
+                    EntryValidationData::Modify {
+                        new_entry: new_vote,
+                        old_entry: old_vote,
+                        old_entry_header,
+                        validation_data,
+                    } => {
+                        let mut provenances = validation_data.package.chain_header.provenances()
+                            .into_iter()
+                            .chain(old_entry_header.provenances());
+                        if old_vote.key_hash == new_vote.key_hash
+                            && provenances.all(|provenance| provenance.0 == old_vote.key_hash)
+                        {
+                            if new_vote.fraction <= 1.0 && new_vote.fraction >= -1.0 {
+                                Ok(())
+                            } else {
+                                Err("Vote fraction must be between 1 and -1".to_string())
+                            }
+                        } else {
+                            not_ok
+                        }
+                    }
+                    EntryValidationData::Delete {
+                        old_entry: old_vote,
+                        old_entry_header,
+                        validation_data,
+                    } => {
+                        let mut provenances = validation_data.package.chain_header.provenances()
+                            .into_iter()
+                            .chain(old_entry_header.provenances());
+                        if provenances.all(|provenance| provenance.0 == old_vote.key_hash)
+                        {
+                            Ok(())
+                        } else {
+                            not_ok
+                        }
+                    }
                 }
             },
             links: [
@@ -227,16 +273,36 @@ define_zome! {
                     "post",
                     tag: "vote",
                     validation_package: || ValidationPackageDefinition::Entry,
-                    validation: |from: Address, to: Address, ctx: hdk::ValidationData| {
-                        validate_vote_link(from, to, ctx)
+                    validation: |link_validation_data: hdk::LinkValidationData| {
+                        let link = match link_validation_data {
+                            LinkValidationData::LinkAdd {
+                                link,
+                                validation_data,
+                            } => link,
+                            LinkValidationData::LinkRemove {
+                                link,
+                                validation_data,
+                            } => link,
+                        };
+                        validate_vote_link(link.link().base(), link.link().target())
                     }
                 ),
                 from!(
                     "comment",
                     tag: "vote",
                     validation_package: || ValidationPackageDefinition::Entry,
-                    validation: |from: Address, to: Address, ctx: hdk::ValidationData| {
-                        validate_vote_link(from, to, ctx)
+                    validation: |link_validation_data: hdk::LinkValidationData| {
+                        let link = match link_validation_data {
+                            LinkValidationData::LinkAdd {
+                                link,
+                                validation_data,
+                            } => link,
+                            LinkValidationData::LinkRemove {
+                                link,
+                                validation_data,
+                            } => link,
+                        };
+                        validate_vote_link(link.link().base(), link.link().target())
                     }
                 )
             ]

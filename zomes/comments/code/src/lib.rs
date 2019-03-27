@@ -13,6 +13,8 @@ use hdk::utils;
 use hdk::{
     api,
     error::ZomeApiResult,
+    EntryValidationData,
+    LinkValidationData,
     holochain_core_types::{
         cas::content::Address, dna::entry_types::Sharing, entry::Entry, error::HolochainError,
         hash::HashString, json::JsonString, time::Iso8601, validation::ValidationPackageDefinition,
@@ -20,7 +22,7 @@ use hdk::{
 };
 
 /// Represents a users comment
-#[derive(Serialize, Deserialize, Debug, DefaultJson)]
+#[derive(Serialize, Deserialize, Debug, DefaultJson, Clone)]
 struct Comment {
     /// The content of the comment
     content: String,
@@ -54,7 +56,7 @@ impl Into<Comment> for CommentContent {
 
 /// Returns `Ok(())` if these comments can be linked in a parent/child
 /// relationship without causing problems
-fn validate_comment_link(_parent: Address, _child: Address) -> Result<(), String> {
+fn validate_comment_link(_parent: &Address, _child: &Address) -> Result<(), String> {
     // TODO: Cycle detection
     Ok(())
 }
@@ -106,13 +108,54 @@ define_zome! {
             name: "comment",
             description: "User comment",
             sharing: Sharing::Public,
-            native_type: Comment,
+
             validation_package: || ValidationPackageDefinition::Entry,
-            validation: |comment: Comment, ctx: hdk::ValidationData| {
-                if HashString::from(comment.key_hash) == ctx.sources()[0] {
-                    Ok(())
-                } else {
-                    Err(format!("Cannot alter comment that is not yours. Your agent address is {}", *api::AGENT_ADDRESS))
+            validation: |entry_validation_data: hdk::EntryValidationData<Comment>| {
+                let not_ok = Err(format!("Cannot alter comment that is not yours. Your agent address is {}", *api::AGENT_ADDRESS));
+                match entry_validation_data {
+                    EntryValidationData::Create {
+                        entry: comment,
+                        validation_data,
+                    } => {
+                        let provenances = validation_data.package.chain_header.provenances();
+                        if provenances.into_iter().all(|provenance| provenance.0 == comment.key_hash) {
+                            Ok(())
+                        } else {
+                            not_ok
+                        }
+                    }
+                    EntryValidationData::Modify {
+                        new_entry: new_comment,
+                        old_entry: old_comment,
+                        old_entry_header,
+                        validation_data,
+                    } => {
+                        let mut provenances = validation_data.package.chain_header.provenances()
+                            .into_iter()
+                            .chain(old_entry_header.provenances());
+                        if old_comment.key_hash == new_comment.key_hash
+                            && provenances.all(|provenance| provenance.0 == old_comment.key_hash)
+                        {
+                            Ok(())
+                        } else {
+                            not_ok
+                        }
+                    }
+                    EntryValidationData::Delete {
+                        old_entry: old_comment,
+                        old_entry_header,
+                        validation_data,
+                    } => {
+                        let mut provenances = validation_data.package.chain_header.provenances()
+                            .into_iter()
+                            .chain(old_entry_header.provenances());
+                        if provenances.all(|provenance| provenance.0 == old_comment.key_hash)
+                        {
+                            Ok(())
+                        } else {
+                            not_ok
+                        }
+                    }
                 }
             },
             links: [
@@ -122,16 +165,36 @@ define_zome! {
                     "comment",
                     tag: "comment",
                     validation_package: || ValidationPackageDefinition::Entry,
-                    validation: |base: Address, link: Address, _ctx: hdk::ValidationData| {
-                        validate_comment_link(base, link)
+                    validation: |link_validation_data: hdk::LinkValidationData| {
+                        let link = match link_validation_data {
+                            LinkValidationData::LinkAdd {
+                                link,
+                                validation_data,
+                            } => link,
+                            LinkValidationData::LinkRemove {
+                                link,
+                                validation_data,
+                            } => link,
+                        };
+                        validate_comment_link(link.link().base(), link.link().target())
                     }
                 ),
                 to!(
                     "comment",
                     tag: "child_of",
                     validation_package: || ValidationPackageDefinition::Entry,
-                    validation: |base: Address, link: Address, _ctx: hdk::ValidationData| {
-                        validate_comment_link(link, base)
+                    validation: |link_validation_data: hdk::LinkValidationData| {
+                        let link = match link_validation_data {
+                            LinkValidationData::LinkAdd {
+                                link,
+                                validation_data,
+                            } => link,
+                            LinkValidationData::LinkRemove {
+                                link,
+                                validation_data,
+                            } => link,
+                        };
+                        validate_comment_link(link.link().target(), link.link().base())
                     }
                 ),
                 // Comments can be made on posts
@@ -139,7 +202,7 @@ define_zome! {
                     "post",
                     tag: "comment",
                     validation_package: || ValidationPackageDefinition::Entry,
-                    validation: |base: Address, link: Address, _ctx: hdk::ValidationData| {
+                    validation: |link_validation_data: hdk::LinkValidationData| {
                         // TODO: Should linking to the same comment from
                         // different posts be disallowed?
                         Ok(())
@@ -149,8 +212,18 @@ define_zome! {
                     "post",
                     tag: "child_of",
                     validation_package: || ValidationPackageDefinition::Entry,
-                    validation: |base: Address, link: Address, _ctx: hdk::ValidationData| {
-                        validate_comment_link(link, base)
+                    validation: |link_validation_data: hdk::LinkValidationData| {
+                        let link = match link_validation_data {
+                            LinkValidationData::LinkAdd {
+                                link,
+                                validation_data,
+                            } => link,
+                            LinkValidationData::LinkRemove {
+                                link,
+                                validation_data,
+                            } => link,
+                        };
+                        validate_comment_link(link.link().target(), link.link().base())
                     }
                 ),
                 // Comments links from (to implicit by `key_hash` field) their author's key hash
@@ -158,10 +231,20 @@ define_zome! {
                     "%agent_id",
                     tag: "author",
                     validation_package: || hdk::ValidationPackageDefinition::Entry,
-                    validation: |base: Address, link: Address, ctx: hdk::ValidationData| {
-                        match utils::get_as_type::<Comment>(link) {
+                    validation: |link_validation_data: hdk::LinkValidationData| {
+                        let link = match link_validation_data {
+                            LinkValidationData::LinkAdd {
+                                link,
+                                validation_data,
+                            } => link,
+                            LinkValidationData::LinkRemove {
+                                link,
+                                validation_data,
+                            } => link,
+                        };
+                        match utils::get_as_type::<Comment>(link.link().target().clone()) {
                             Ok(comment) => {
-                                if comment.key_hash == base {
+                                if &comment.key_hash == link.link().base() {
                                     Ok(())
                                 } else {
                                     Err("Cannot link to comment from author not in `key_hash`".to_owned())
