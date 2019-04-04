@@ -24,7 +24,7 @@ use hdk::{
     error::{ZomeApiError, ZomeApiResult},
     holochain_core_types::{
         cas::content::Address, dna::entry_types::Sharing, entry::Entry, error::HolochainError,
-        hash::HashString, json::JsonString, time::Iso8601,
+        json::JsonString, time::Iso8601,
         chain_header::ChainHeader
     },
     holochain_wasm_utils::api_serialization::get_links::GetLinksResult,
