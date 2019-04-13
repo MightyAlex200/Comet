@@ -60,7 +60,7 @@ struct PossibleVote(Option<Vote>);
 
 impl Into<JsonString> for PossibleVote {
     fn into(self) -> JsonString {
-        JsonString::from(serde_json::to_string(&self).expect("Failed to encode Option<Vote>"))
+        JsonString::from_json(&serde_json::to_string(&self).expect("Failed to encode Option<Vote>"))
     }
 }
 

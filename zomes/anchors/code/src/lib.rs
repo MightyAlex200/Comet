@@ -71,8 +71,8 @@ fn handle_anchor(anchor: Anchor) -> ZomeApiResult<Address> {
 
 fn handle_anchor_exists(anchor_address: Address) -> ZomeApiResult<JsonString> {
     match api::get_entry(&anchor_address) {
-        Ok(Some(_)) => Ok(true.to_string().into()),
-        Ok(None) => Ok(false.to_string().into()),
+        Ok(Some(_)) => Ok(JsonString::from_json(&true.to_string())),
+        Ok(None) => Ok(JsonString::from_json(&false.to_string())),
         Err(e) => Err(e),
     }
 }
