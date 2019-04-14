@@ -1,4 +1,4 @@
-module Comet.Types.Load exposing (Load(..), fromResult)
+module Comet.Types.Load exposing (Load(..), fromResult, map)
 
 
 type Load x a

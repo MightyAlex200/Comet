@@ -1,4 +1,12 @@
-port module Comet.Port exposing (FunctionInformation, FunctionParameters, FunctionReturn, Id, callFunction, functionReturned)
+port module Comet.Port exposing
+    ( FunctionInformation
+    , FunctionParameters
+    , FunctionReturn
+    , Id
+    , callFunction
+    , functionReturned
+    , getNewId
+    )
 
 import Dict exposing (Dict)
 import Json.Encode as Encode
@@ -7,6 +15,11 @@ import Task
 
 type alias Id =
     Int
+
+
+getNewId : Id -> Id
+getNewId id =
+    id + 1
 
 
 type alias FunctionInformation =
