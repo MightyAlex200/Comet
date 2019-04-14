@@ -1,0 +1,30 @@
+<html>
+
+<head>
+    <title>Comet</title>
+</head>
+
+<body>
+    <div id="elm"></div>
+    <script src="index.js"></script>
+    <script src="hc-web-client-0.4.0.browser.min.js"></script>
+    <script>
+        const app = Elm.Main.init();
+        function getFuncPath({ zome, functionName }) {
+            return "test-instance/" + zome + "/" + functionName;
+        }
+        holochainclient.connect("ws://localhost:8888/").then(({ callZome, close }) => {
+            app.ports.callFunction.subscribe(msg => {
+                callZome('test-instance', msg.functionInfo.zome, msg.functionInfo.functionName)(msg.value).then(response => {
+                    app.ports.functionReturned.send({
+                        "functionInfo": msg.functionInfo,
+                        "return": JSON.parse(response),
+                        "id": msg.id,
+                    });
+                });
+            });
+        });
+    </script>
+</body>
+
+</html>
