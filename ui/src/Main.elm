@@ -27,7 +27,7 @@ import Url.Parser as Parser exposing ((</>), Parser)
 type alias CommentModel =
     { address : Address
     , comment : Load ZomeApiError Comment
-    , readId : Comet.Port.Id
+    , readId : Id
     , treeModel : CommentTreeModel
     }
 
@@ -36,21 +36,18 @@ type CommentTreeModel
     = CommentTreeModel
         { address : Address
         , subcomments : Load ZomeApiError (List CommentModel)
-        , readId : Comet.Port.Id
+        , readId : Id
         }
 
 
-initCommentModel : Model -> Address -> ( Model, CommentModel, Cmd msg )
-initCommentModel model address =
+initCommentModel : Id -> Address -> ( Id, CommentModel, Cmd msg )
+initCommentModel oldId address =
     let
         newReadId =
-            getNewId model.lastUsedFunctionId
+            getNewId oldId
 
-        halfUpdatedModel =
-            { model | lastUsedFunctionId = newReadId }
-
-        ( newModel, commentTreeModel, ctmCmds ) =
-            initCommentTreeModel halfUpdatedModel address
+        ( newId, commentTreeModel, ctmCmds ) =
+            initCommentTreeModel newReadId address
 
         commentModel =
             { address = address
@@ -59,7 +56,7 @@ initCommentModel model address =
             , treeModel = commentTreeModel
             }
     in
-    ( newModel
+    ( newId
     , commentModel
     , Cmd.batch
         [ ctmCmds
@@ -68,11 +65,11 @@ initCommentModel model address =
     )
 
 
-initCommentTreeModel : Model -> Address -> ( Model, CommentTreeModel, Cmd msg )
-initCommentTreeModel model address =
+initCommentTreeModel : Id -> Address -> ( Id, CommentTreeModel, Cmd msg )
+initCommentTreeModel oldId address =
     let
         newReadId =
-            getNewId model.lastUsedFunctionId
+            getNewId oldId
 
         commentTreeModel =
             CommentTreeModel
@@ -81,7 +78,7 @@ initCommentTreeModel model address =
                 , readId = newReadId
                 }
     in
-    ( { model | lastUsedFunctionId = newReadId }
+    ( newReadId
     , commentTreeModel
     , Comet.Comments.commentsFromAddress newReadId address
     )
@@ -91,21 +88,18 @@ type alias PostPageModel =
     { address : Address
     , post : Load ZomeApiError Post
     , comments : CommentTreeModel
-    , readId : Comet.Port.Id
+    , readId : Id
     }
 
 
-initPostPageModel : Model -> Address -> ( Model, Cmd msg )
-initPostPageModel model address =
+initPostPageModel : Id -> Address -> ( Id, PostPageModel, Cmd msg )
+initPostPageModel oldId address =
     let
         newReadId =
-            getNewId model.lastUsedFunctionId
+            getNewId oldId
 
-        halfUpdatedModel =
-            { model | lastUsedFunctionId = newReadId }
-
-        ( updatedModel, ctm, ctmCmds ) =
-            initCommentTreeModel halfUpdatedModel address
+        ( newId, ctm, ctmCmds ) =
+            initCommentTreeModel newReadId address
 
         postPageModel =
             { address = address
@@ -114,9 +108,8 @@ initPostPageModel model address =
             , readId = newReadId
             }
     in
-    ( { updatedModel
-        | page = PostPage postPageModel
-      }
+    ( newId
+    , postPageModel
     , Cmd.batch
         [ Comet.Posts.readPost newReadId address
         , ctmCmds
@@ -125,11 +118,11 @@ initPostPageModel model address =
 
 
 updateCommentModel :
-    Model
+    Id
     -> Comet.Port.FunctionReturn
     -> CommentModel
-    -> ( Model, CommentModel, Cmd msg )
-updateCommentModel model ret commentModel =
+    -> ( Id, CommentModel, Cmd msg )
+updateCommentModel oldId ret commentModel =
     if ret.id == commentModel.readId then
         let
             decoder =
@@ -139,7 +132,7 @@ updateCommentModel model ret commentModel =
                 Decode.decodeValue decoder ret.return
 
             updateComment comment =
-                ( model
+                ( oldId
                 , { commentModel | comment = comment }
                 , Cmd.none
                 )
@@ -157,50 +150,50 @@ updateCommentModel model ret commentModel =
 
     else
         let
-            ( updatedModel, treeModel, cmds ) =
-                updateCommentTreeModel model ret commentModel.treeModel
+            ( newId, treeModel, cmds ) =
+                updateCommentTreeModel oldId ret commentModel.treeModel
         in
-        ( updatedModel
+        ( newId
         , { commentModel | treeModel = treeModel }
         , cmds
         )
 
 
 commentsFromAddresses :
-    Model
+    Id
     -> CommentTreeModel
     -> List Address
-    -> ( Model, CommentTreeModel, Cmd msg )
-commentsFromAddresses model treeModel addresses =
+    -> ( Id, CommentTreeModel, Cmd msg )
+commentsFromAddresses oldId treeModel addresses =
     let
         treeModelRecord =
             case treeModel of
                 CommentTreeModel r ->
                     r
 
-        fold address ( m, cs, cmds ) =
+        fold address ( i, cs, cmds ) =
             let
-                ( m2, c, cmd ) =
-                    initCommentModel m address
+                ( i2, c, cmd ) =
+                    initCommentModel i address
             in
-            ( m2, c :: cs, cmd :: cmds )
+            ( i2, c :: cs, cmd :: cmds )
 
-        ( updatedModel, comments, newCmds ) =
+        ( newId, comments, newCmds ) =
             addresses
-                |> List.foldl fold ( model, [], [] )
+                |> List.foldl fold ( oldId, [], [] )
     in
-    ( updatedModel
+    ( newId
     , CommentTreeModel { treeModelRecord | subcomments = Loaded comments }
     , Cmd.batch newCmds
     )
 
 
 updateCommentTreeModel :
-    Model
+    Id
     -> Comet.Port.FunctionReturn
     -> CommentTreeModel
-    -> ( Model, CommentTreeModel, Cmd msg )
-updateCommentTreeModel model ret treeModel =
+    -> ( Id, CommentTreeModel, Cmd msg )
+updateCommentTreeModel oldId ret treeModel =
     let
         treeModelRecord =
             case treeModel of
@@ -216,14 +209,14 @@ updateCommentTreeModel model ret treeModel =
                 Decode.decodeValue decoder ret.return
 
             updateSubcomments subcomments =
-                ( model
+                ( oldId
                 , CommentTreeModel { treeModelRecord | subcomments = subcomments }
                 , Cmd.none
                 )
         in
         case decodeResult of
             Ok (Ok addresses) ->
-                commentsFromAddresses model treeModel addresses
+                commentsFromAddresses oldId treeModel addresses
 
             Ok (Err apiError) ->
                 updateSubcomments (Failed apiError)
@@ -235,18 +228,18 @@ updateCommentTreeModel model ret treeModel =
         case treeModelRecord.subcomments of
             Loaded subcomments ->
                 let
-                    fold subcomment ( m, cs, cmds ) =
+                    fold subcomment ( i, cs, cmds ) =
                         let
-                            ( m2, c, cmd ) =
-                                updateCommentModel m ret subcomment
+                            ( i2, c, cmd ) =
+                                updateCommentModel i ret subcomment
                         in
-                        ( m2, c :: cs, cmd :: cmds )
+                        ( i2, c :: cs, cmd :: cmds )
 
-                    ( updatedModel, newSubcomments, newCmds ) =
+                    ( newId, newSubcomments, newCmds ) =
                         subcomments
-                            |> List.foldl fold ( model, [], [] )
+                            |> List.foldl fold ( oldId, [], [] )
                 in
-                ( updatedModel
+                ( newId
                 , CommentTreeModel
                     { treeModelRecord
                         | subcomments = Loaded newSubcomments
@@ -255,15 +248,15 @@ updateCommentTreeModel model ret treeModel =
                 )
 
             _ ->
-                ( model, treeModel, Cmd.none )
+                ( oldId, treeModel, Cmd.none )
 
 
 updatePostPageModel :
-    Model
+    Id
     -> Comet.Port.FunctionReturn
     -> PostPageModel
-    -> ( Model, Cmd msg )
-updatePostPageModel model ret pageModel =
+    -> ( Id, PostPageModel, Cmd msg )
+updatePostPageModel oldId ret pageModel =
     if ret.id == pageModel.readId then
         let
             decoder =
@@ -273,12 +266,9 @@ updatePostPageModel model ret pageModel =
                 Decode.decodeValue decoder ret.return
 
             updatePost post =
-                ( { model
-                    | page =
-                        PostPage
-                            { pageModel
-                                | post = post
-                            }
+                ( oldId
+                , { pageModel
+                    | post = post
                   }
                 , Cmd.none
                 )
@@ -292,12 +282,11 @@ updatePostPageModel model ret pageModel =
 
     else
         let
-            ( updatedModel, treeModel, cmd ) =
-                updateCommentTreeModel model ret pageModel.comments
+            ( newId, treeModel, cmd ) =
+                updateCommentTreeModel oldId ret pageModel.comments
         in
-        ( { updatedModel
-            | page = PostPage { pageModel | comments = treeModel }
-          }
+        ( newId
+        , { pageModel | comments = treeModel }
         , cmd
         )
 
@@ -327,7 +316,7 @@ type Route
     | DebugScreenRoute
 
 
-getNewId : Comet.Port.Id -> Comet.Port.Id
+getNewId : Id -> Id
 getNewId id =
     id + 1
 
@@ -335,7 +324,7 @@ getNewId id =
 type alias Model =
     { page : Page
     , key : Navigation.Key
-    , lastUsedFunctionId : Comet.Port.Id
+    , lastUsedFunctionId : Id
     }
 
 
@@ -370,7 +359,17 @@ pageFromRoute : Model -> Route -> ( Model, Cmd Msg )
 pageFromRoute model route =
     case route of
         PostRoute address ->
-            initPostPageModel model address
+            let
+                ( newId, postPage, cmd ) =
+                    initPostPageModel model.lastUsedFunctionId address
+            in
+            ( { model
+                | page =
+                    PostPage postPage
+                , lastUsedFunctionId = newId
+              }
+            , cmd
+            )
 
         TagViewRoute tag ->
             Debug.todo "TagViewRoute"
@@ -419,7 +418,20 @@ update msg model =
         FunctionReturned functionReturn ->
             case model.page of
                 PostPage postPageModel ->
-                    updatePostPageModel model functionReturn postPageModel
+                    let
+                        ( newId, postPage, cmd ) =
+                            updatePostPageModel
+                                model.lastUsedFunctionId
+                                functionReturn
+                                postPageModel
+                    in
+                    ( { model
+                        | page =
+                            PostPage postPage
+                        , lastUsedFunctionId = newId
+                      }
+                    , cmd
+                    )
 
                 TagView tagViewModel ->
                     --TODO
