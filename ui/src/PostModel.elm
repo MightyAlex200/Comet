@@ -14,6 +14,14 @@ import Comet.Types.Load as Load exposing (Load(..))
 import Comet.Types.Post as Post exposing (Post)
 import Comet.Types.ZomeApiError as ZomeApiError exposing (ZomeApiError)
 import Comet.Types.ZomeApiResult as ZomeApiResult
+import CommentCompose
+    exposing
+        ( CommentCompose
+        , CommentComposeMsg
+        , initCommentCompose
+        , updateCommentCompose
+        , viewCommentCompose
+        )
 import CommentModel
     exposing
         ( CommentTreeModel
@@ -31,6 +39,7 @@ type alias PostPageModel =
     { address : Address
     , post : Load ZomeApiError Post
     , comments : CommentTreeModel
+    , commentCompose : CommentCompose
     , readId : Id
     }
 
@@ -38,6 +47,7 @@ type alias PostPageModel =
 type PostPageMsg
     = FunctionReturned Comet.Port.FunctionReturn
     | TreeModelMsg CommentTreeMsg
+    | ComposeMsg CommentComposeMsg
 
 
 initPostPageModel : Id -> Address -> ( Id, PostPageModel, Cmd msg )
@@ -53,6 +63,7 @@ initPostPageModel oldId address =
             { address = address
             , post = Unloaded
             , comments = ctm
+            , commentCompose = initCommentCompose address
             , readId = newReadId
             }
     in
@@ -83,6 +94,19 @@ updatePostPageModel oldId msg pageModel =
             ( newId
             , { pageModel | comments = treeModel }
             , Cmd.map TreeModelMsg cmd
+            )
+
+        ComposeMsg composeMsg ->
+            let
+                ( newId, composeModel, cmd ) =
+                    updateCommentCompose
+                        oldId
+                        composeMsg
+                        pageModel.commentCompose
+            in
+            ( newId
+            , { pageModel | commentCompose = composeModel }
+            , Cmd.map ComposeMsg cmd
             )
 
 
@@ -117,19 +141,28 @@ handleFunctionReturn oldId ret pageModel =
 
     else
         let
-            ( newId, treeModel, cmd ) =
+            ( newId1, treeModel, treeCmd ) =
                 handleCommentTreeFunctionReturn
                     oldId
                     ret
                     pageModel.comments
+
+            ( newId2, composeModel, composeCmd ) =
+                CommentCompose.handleFunctionReturn
+                    newId1
+                    ret
+                    pageModel.commentCompose
         in
-        ( newId
-        , { pageModel | comments = treeModel }
-        , cmd
+        ( newId2
+        , { pageModel
+            | comments = treeModel
+            , commentCompose = composeModel
+          }
+        , Cmd.batch [ treeCmd, composeCmd ]
         )
 
 
-viewPostPage : PostPageModel -> Html msg
+viewPostPage : PostPageModel -> Html PostPageMsg
 viewPostPage postPageModel =
     let
         postHtml =
@@ -148,7 +181,10 @@ viewPostPage postPageModel =
         []
         [ postHtml
         , Html.br [] []
+        , viewCommentCompose postPageModel.commentCompose
+            |> Html.map ComposeMsg
         , viewCommentTree postPageModel.comments
+            |> Html.map TreeModelMsg
         ]
 
 

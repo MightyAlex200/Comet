@@ -238,7 +238,9 @@ view model =
         body =
             case model.page of
                 PostPage postPageModel ->
-                    viewPostPage postPageModel
+                    Html.map
+                        PostPageMsg
+                        (viewPostPage postPageModel)
 
                 TagView tagViewModel ->
                     viewTagView tagViewModel

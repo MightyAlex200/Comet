@@ -20,16 +20,24 @@ import Comet.Types.Comment as Comment exposing (Comment)
 import Comet.Types.Load as Load exposing (Load(..))
 import Comet.Types.ZomeApiError as ZomeApiError exposing (ZomeApiError)
 import Comet.Types.ZomeApiResult as ZomeApiResult
+import CommentCompose
+    exposing
+        ( CommentCompose
+        , CommentComposeMsg
+        , initCommentCompose
+        , updateCommentCompose
+        , viewCommentCompose
+        )
 import Html exposing (Html)
 import Html.Attributes
 import Json.Decode as Decode
-import Utils exposing (unorderedList)
 
 
 type alias CommentModel =
     { address : Address
     , comment : Load ZomeApiError Comment
     , readId : Id
+    , commentCompose : CommentCompose
     , treeModel : CommentTreeModel
     }
 
@@ -37,6 +45,7 @@ type alias CommentModel =
 type CommentModelMsg
     = CommentFunctionReturn Comet.Port.FunctionReturn
     | TreeModelMsg CommentTreeMsg
+    | ComposeMsg CommentComposeMsg
 
 
 initCommentModel : Id -> Address -> ( Id, CommentModel, Cmd msg )
@@ -52,6 +61,7 @@ initCommentModel oldId address =
             { address = address
             , comment = Unloaded
             , readId = newReadId
+            , commentCompose = initCommentCompose address
             , treeModel = commentTreeModel
             }
     in
@@ -85,7 +95,7 @@ commentsFromAddresses oldId treeModel addresses =
 
         ( newId, comments, newCmds ) =
             addresses
-                |> List.foldl fold ( oldId, [], [] )
+                |> List.foldr fold ( oldId, [], [] )
     in
     ( newId
     , CommentTreeModel { treeModelRecord | subcomments = Loaded comments }
@@ -111,6 +121,19 @@ updateCommentModel oldId msg commentModel =
             ( newId
             , { commentModel | treeModel = treeModel }
             , Cmd.map TreeModelMsg cmd
+            )
+
+        ComposeMsg composeMsg ->
+            let
+                ( newId, composeModel, cmd ) =
+                    updateCommentCompose
+                        oldId
+                        composeMsg
+                        commentModel.commentCompose
+            in
+            ( newId
+            , { commentModel | commentCompose = composeModel }
+            , Cmd.map ComposeMsg cmd
             )
 
 
@@ -147,19 +170,28 @@ handleCommentModelFunctionReturn oldId ret commentModel =
 
     else
         let
-            ( newId, treeModel, cmds ) =
+            ( newId1, treeModel, treeCmd ) =
                 handleCommentTreeFunctionReturn
                     oldId
                     ret
                     commentModel.treeModel
+
+            ( newId2, composeModel, composeCmd ) =
+                CommentCompose.handleFunctionReturn
+                    newId1
+                    ret
+                    commentModel.commentCompose
         in
-        ( newId
-        , { commentModel | treeModel = treeModel }
-        , cmds
+        ( newId2
+        , { commentModel
+            | treeModel = treeModel
+            , commentCompose = composeModel
+          }
+        , Cmd.batch [ treeCmd, composeCmd ]
         )
 
 
-viewCommentModel : CommentModel -> Html msg
+viewCommentModel : CommentModel -> Html CommentModelMsg
 viewCommentModel commentModel =
     let
         commentHtml =
@@ -178,9 +210,14 @@ viewCommentModel commentModel =
         []
         [ commentHtml
         , Html.br [] []
+        , Html.map
+            ComposeMsg
+            (viewCommentCompose commentModel.commentCompose)
         , Html.div
             [ Html.Attributes.style "margin" "32px" ]
-            [ viewCommentTree commentModel.treeModel ]
+            [ viewCommentTree commentModel.treeModel
+                |> Html.map TreeModelMsg
+            ]
         ]
 
 
@@ -255,7 +292,7 @@ updateCommentTreeModel oldId msg treeModel =
 
                         ( newId, newSubcomments, newCmds ) =
                             subcomments
-                                |> List.foldl fold ( oldId, [], [] )
+                                |> List.foldr fold ( oldId, [], [] )
                     in
                     ( newId
                     , CommentTreeModel
@@ -318,7 +355,7 @@ handleCommentTreeFunctionReturn oldId ret treeModel =
 
                     ( newId, newSubcomments, newCmds ) =
                         subcomments
-                            |> List.foldl fold ( oldId, [], [] )
+                            |> List.foldr fold ( oldId, [], [] )
                 in
                 ( newId
                 , CommentTreeModel
@@ -332,7 +369,7 @@ handleCommentTreeFunctionReturn oldId ret treeModel =
                 ( oldId, treeModel, Cmd.none )
 
 
-viewCommentTree : CommentTreeModel -> Html msg
+viewCommentTree : CommentTreeModel -> Html CommentTreeMsg
 viewCommentTree ctm =
     let
         ctmRecord =
@@ -350,5 +387,11 @@ viewCommentTree ctm =
 
         Loaded comments ->
             comments
-                |> List.map viewCommentModel
-                |> unorderedList
+                |> List.map
+                    (\comment ->
+                        viewCommentModel comment
+                            |> Html.map (CommentMsg comment)
+                    )
+                |> List.map List.singleton
+                |> List.map (Html.li [])
+                |> Html.ul []
