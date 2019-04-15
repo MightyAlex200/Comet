@@ -27,8 +27,7 @@ type alias CommentCompose =
 
 
 type CommentComposeMsg
-    = FunctionReturn Comet.Port.FunctionReturn
-    | UpdateInput String
+    = UpdateInput String
     | SetHidden Bool
     | SubmitNow
     | Submit CommentContent
@@ -50,17 +49,33 @@ commentContent compose =
         |> Task.map (\seconds -> CommentContent compose.input seconds)
 
 
+type alias HandleReturnResult msg =
+    { newId : Id
+    , commentCompose : CommentCompose
+    , cmd : Cmd msg
+    , refresh : Bool
+    }
+
+
 handleFunctionReturn :
     Id
     -> Comet.Port.FunctionReturn
     -> CommentCompose
-    -> ( Id, CommentCompose, Cmd msg )
+    -> HandleReturnResult msg
 handleFunctionReturn oldId ret commentCompose =
     if Just ret.id == commentCompose.id then
-        ( oldId, { commentCompose | hidden = True }, Cmd.none )
+        { newId = oldId
+        , commentCompose = { commentCompose | hidden = True }
+        , cmd = Cmd.none
+        , refresh = True
+        }
 
     else
-        ( oldId, commentCompose, Cmd.none )
+        { newId = oldId
+        , commentCompose = commentCompose
+        , cmd = Cmd.none
+        , refresh = False
+        }
 
 
 updateCommentCompose :
@@ -70,9 +85,6 @@ updateCommentCompose :
     -> ( Id, CommentCompose, Cmd CommentComposeMsg )
 updateCommentCompose oldId msg commentCompose =
     case msg of
-        FunctionReturn ret ->
-            handleFunctionReturn oldId ret commentCompose
-
         UpdateInput input ->
             ( oldId, { commentCompose | input = input }, Cmd.none )
 

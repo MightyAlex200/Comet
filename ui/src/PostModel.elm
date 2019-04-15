@@ -1,6 +1,7 @@
 module PostModel exposing
     ( PostPageModel
     , PostPageMsg(..)
+    , handleFunctionReturn
     , initPostPageModel
     , updatePostPageModel
     , viewPost
@@ -45,8 +46,7 @@ type alias PostPageModel =
 
 
 type PostPageMsg
-    = FunctionReturned Comet.Port.FunctionReturn
-    | TreeModelMsg CommentTreeMsg
+    = TreeModelMsg CommentTreeMsg
     | ComposeMsg CommentComposeMsg
 
 
@@ -83,9 +83,6 @@ updatePostPageModel :
     -> ( Id, PostPageModel, Cmd PostPageMsg )
 updatePostPageModel oldId msg pageModel =
     case msg of
-        FunctionReturned ret ->
-            handleFunctionReturn oldId ret pageModel
-
         TreeModelMsg treeMsg ->
             let
                 ( newId, treeModel, cmd ) =
@@ -147,19 +144,38 @@ handleFunctionReturn oldId ret pageModel =
                     ret
                     pageModel.comments
 
-            ( newId2, composeModel, composeCmd ) =
+            composeReturnResult =
                 CommentCompose.handleFunctionReturn
                     newId1
                     ret
                     pageModel.commentCompose
         in
-        ( newId2
-        , { pageModel
-            | comments = treeModel
-            , commentCompose = composeModel
-          }
-        , Cmd.batch [ treeCmd, composeCmd ]
-        )
+        if composeReturnResult.refresh then
+            let
+                ( treeModelId, newTreeModel, newTreeCmd ) =
+                    initCommentTreeModel
+                        composeReturnResult.newId
+                        pageModel.address
+            in
+            ( treeModelId
+            , { pageModel
+                | comments = newTreeModel
+                , commentCompose = composeReturnResult.commentCompose
+              }
+            , Cmd.batch
+                [ newTreeCmd
+                , composeReturnResult.cmd
+                ]
+            )
+
+        else
+            ( composeReturnResult.newId
+            , { pageModel
+                | comments = treeModel
+                , commentCompose = composeReturnResult.commentCompose
+              }
+            , Cmd.batch [ treeCmd, composeReturnResult.cmd ]
+            )
 
 
 viewPostPage : PostPageModel -> Html PostPageMsg

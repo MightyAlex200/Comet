@@ -163,9 +163,9 @@ update msg model =
         ( PostPage postPageModel, FunctionReturned functionReturn ) ->
             let
                 ( newId, postPage, cmd ) =
-                    updatePostPageModel
+                    PostModel.handleFunctionReturn
                         model.lastUsedFunctionId
-                        (PostModel.FunctionReturned functionReturn)
+                        functionReturn
                         postPageModel
             in
             ( { model

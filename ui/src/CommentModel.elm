@@ -43,8 +43,7 @@ type alias CommentModel =
 
 
 type CommentModelMsg
-    = CommentFunctionReturn Comet.Port.FunctionReturn
-    | TreeModelMsg CommentTreeMsg
+    = TreeModelMsg CommentTreeMsg
     | ComposeMsg CommentComposeMsg
 
 
@@ -110,9 +109,6 @@ updateCommentModel :
     -> ( Id, CommentModel, Cmd CommentModelMsg )
 updateCommentModel oldId msg commentModel =
     case msg of
-        CommentFunctionReturn ret ->
-            handleCommentModelFunctionReturn oldId ret commentModel
-
         TreeModelMsg treeMsg ->
             let
                 ( newId, treeModel, cmd ) =
@@ -176,19 +172,38 @@ handleCommentModelFunctionReturn oldId ret commentModel =
                     ret
                     commentModel.treeModel
 
-            ( newId2, composeModel, composeCmd ) =
+            composeReturnResult =
                 CommentCompose.handleFunctionReturn
                     newId1
                     ret
                     commentModel.commentCompose
         in
-        ( newId2
-        , { commentModel
-            | treeModel = treeModel
-            , commentCompose = composeModel
-          }
-        , Cmd.batch [ treeCmd, composeCmd ]
-        )
+        if composeReturnResult.refresh then
+            let
+                ( treeModelId, newTreeModel, newTreeCmd ) =
+                    initCommentTreeModel
+                        composeReturnResult.newId
+                        commentModel.address
+            in
+            ( treeModelId
+            , { commentModel
+                | treeModel = newTreeModel
+                , commentCompose = composeReturnResult.commentCompose
+              }
+            , Cmd.batch
+                [ newTreeCmd
+                , composeReturnResult.cmd
+                ]
+            )
+
+        else
+            ( composeReturnResult.newId
+            , { commentModel
+                | treeModel = treeModel
+                , commentCompose = composeReturnResult.commentCompose
+              }
+            , Cmd.batch [ treeCmd, composeReturnResult.cmd ]
+            )
 
 
 viewCommentModel : CommentModel -> Html CommentModelMsg
@@ -230,8 +245,7 @@ type CommentTreeModel
 
 
 type CommentTreeMsg
-    = TreeFunctionReturn Comet.Port.FunctionReturn
-    | CommentMsg CommentModel CommentModelMsg
+    = CommentMsg CommentModel CommentModelMsg
 
 
 initCommentTreeModel : Id -> Address -> ( Id, CommentTreeModel, Cmd msg )
@@ -260,9 +274,6 @@ updateCommentTreeModel :
     -> ( Id, CommentTreeModel, Cmd CommentTreeMsg )
 updateCommentTreeModel oldId msg treeModel =
     case msg of
-        TreeFunctionReturn ret ->
-            handleCommentTreeFunctionReturn oldId ret treeModel
-
         CommentMsg commentModel commentMsg ->
             let
                 treeModelRecord =
