@@ -31,6 +31,7 @@ import CommentCompose
 import Html exposing (Html)
 import Html.Attributes
 import Json.Decode as Decode
+import Markdown
 
 
 type alias CommentModel =
@@ -212,7 +213,7 @@ viewCommentModel commentModel =
         commentHtml =
             case commentModel.comment of
                 Loaded comment ->
-                    Html.text comment.content
+                    Markdown.toHtml [] comment.content
 
                 Unloaded ->
                     Html.text "Loading comment"

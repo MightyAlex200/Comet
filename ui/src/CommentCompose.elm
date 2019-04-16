@@ -14,6 +14,7 @@ import Comet.Types.Address exposing (Address)
 import Comet.Types.CommentContent exposing (CommentContent)
 import Html exposing (Html)
 import Html.Events
+import Markdown
 import Task exposing (Task)
 import Time
 
@@ -122,6 +123,8 @@ viewCommentCompose compose =
             [ Html.textarea
                 [ Html.Events.onInput UpdateInput ]
                 []
+            , Markdown.toHtml [] compose.input
+            , Html.br [] []
             , Html.button
                 [ Html.Events.onClick SubmitNow ]
                 [ Html.text "Submit" ]

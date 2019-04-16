@@ -34,6 +34,7 @@ import CommentModel
         )
 import Html exposing (Html)
 import Json.Decode as Decode
+import Markdown
 
 
 type alias PostPageModel =
@@ -208,5 +209,5 @@ viewPost : Post -> Html msg
 viewPost post =
     Html.div []
         [ Html.h1 [] [ Html.text post.title ]
-        , Html.p [] [ Html.text post.content ]
+        , Markdown.toHtml [] post.content
         ]
