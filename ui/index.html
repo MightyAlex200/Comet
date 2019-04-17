@@ -13,6 +13,17 @@
         function getFuncPath({ zome, functionName }) {
             return "test-instance/" + zome + "/" + functionName;
         }
+
+        // Connect ports
+        app.ports.saveSettings.subscribe(settings =>
+            window.localStorage.setItem('settings', JSON.stringify(settings))
+        );
+
+        const settings = localStorage.getItem('settings');
+        if (settings) {
+            app.ports.settingsUpdated.send(JSON.parse(settings));
+        }
+
         holochainclient.connect("ws://localhost:8888/").then(({ callZome, close }) => {
             app.ports.callFunction.subscribe(msg => {
                 callZome('test-instance', msg.functionInfo.zome, msg.functionInfo.functionName)(msg.value).then(response => {

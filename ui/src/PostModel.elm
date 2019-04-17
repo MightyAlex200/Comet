@@ -35,6 +35,7 @@ import CommentModel
 import Html exposing (Html)
 import Json.Decode as Decode
 import Markdown
+import Settings exposing (Settings)
 
 
 type alias PostPageModel =
@@ -179,8 +180,8 @@ handleFunctionReturn oldId ret pageModel =
             )
 
 
-viewPostPage : PostPageModel -> Html PostPageMsg
-viewPostPage postPageModel =
+viewPostPage : Settings -> PostPageModel -> Html PostPageMsg
+viewPostPage settings postPageModel =
     let
         postHtml =
             case postPageModel.post of
@@ -192,22 +193,25 @@ viewPostPage postPageModel =
                         ("Failed loading post: " ++ ZomeApiError.describe x)
 
                 Loaded pageModel ->
-                    viewPost pageModel
+                    viewPost settings pageModel
     in
     Html.div
         []
         [ postHtml
         , Html.br [] []
-        , viewCommentCompose postPageModel.commentCompose
+        , viewCommentCompose settings postPageModel.commentCompose
             |> Html.map ComposeMsg
-        , viewCommentTree postPageModel.comments
+        , viewCommentTree settings postPageModel.comments
             |> Html.map TreeModelMsg
         ]
 
 
-viewPost : Post -> Html msg
-viewPost post =
+viewPost : Settings -> Post -> Html msg
+viewPost settings post =
     Html.div []
         [ Html.h1 [] [ Html.text post.title ]
-        , Markdown.toHtml [] post.content
+        , Markdown.toHtmlWith
+            (Settings.markdownOptions settings.markdownSettings)
+            []
+            post.content
         ]

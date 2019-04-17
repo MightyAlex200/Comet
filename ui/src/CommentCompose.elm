@@ -15,6 +15,7 @@ import Comet.Types.CommentContent exposing (CommentContent)
 import Html exposing (Html)
 import Html.Events
 import Markdown
+import Settings exposing (Settings)
 import Task exposing (Task)
 import Time
 
@@ -110,8 +111,8 @@ updateCommentCompose oldId msg commentCompose =
             )
 
 
-viewCommentCompose : CommentCompose -> Html CommentComposeMsg
-viewCommentCompose compose =
+viewCommentCompose : Settings -> CommentCompose -> Html CommentComposeMsg
+viewCommentCompose settings compose =
     if compose.hidden then
         Html.button
             [ Html.Events.onClick (SetHidden False) ]
@@ -123,7 +124,10 @@ viewCommentCompose compose =
             [ Html.textarea
                 [ Html.Events.onInput UpdateInput ]
                 []
-            , Markdown.toHtml [] compose.input
+            , Markdown.toHtmlWith
+                (Settings.markdownOptions settings.markdownSettings)
+                []
+                compose.input
             , Html.br [] []
             , Html.button
                 [ Html.Events.onClick SubmitNow ]

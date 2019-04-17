@@ -32,6 +32,7 @@ import Html exposing (Html)
 import Html.Attributes
 import Json.Decode as Decode
 import Markdown
+import Settings exposing (Settings)
 
 
 type alias CommentModel =
@@ -207,13 +208,16 @@ handleCommentModelFunctionReturn oldId ret commentModel =
             )
 
 
-viewCommentModel : CommentModel -> Html CommentModelMsg
-viewCommentModel commentModel =
+viewCommentModel : Settings -> CommentModel -> Html CommentModelMsg
+viewCommentModel settings commentModel =
     let
         commentHtml =
             case commentModel.comment of
                 Loaded comment ->
-                    Markdown.toHtml [] comment.content
+                    Markdown.toHtmlWith
+                        (Settings.markdownOptions settings.markdownSettings)
+                        []
+                        comment.content
 
                 Unloaded ->
                     Html.text "Loading comment"
@@ -226,12 +230,11 @@ viewCommentModel commentModel =
         []
         [ commentHtml
         , Html.br [] []
-        , Html.map
-            ComposeMsg
-            (viewCommentCompose commentModel.commentCompose)
+        , viewCommentCompose settings commentModel.commentCompose
+            |> Html.map ComposeMsg
         , Html.div
             [ Html.Attributes.style "margin" "32px" ]
-            [ viewCommentTree commentModel.treeModel
+            [ viewCommentTree settings commentModel.treeModel
                 |> Html.map TreeModelMsg
             ]
         ]
@@ -381,8 +384,8 @@ handleCommentTreeFunctionReturn oldId ret treeModel =
                 ( oldId, treeModel, Cmd.none )
 
 
-viewCommentTree : CommentTreeModel -> Html CommentTreeMsg
-viewCommentTree ctm =
+viewCommentTree : Settings -> CommentTreeModel -> Html CommentTreeMsg
+viewCommentTree settings ctm =
     let
         ctmRecord =
             case ctm of
@@ -401,7 +404,7 @@ viewCommentTree ctm =
             comments
                 |> List.map
                     (\comment ->
-                        viewCommentModel comment
+                        viewCommentModel settings comment
                             |> Html.map (CommentMsg comment)
                     )
                 |> List.map List.singleton

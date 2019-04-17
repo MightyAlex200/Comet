@@ -23,6 +23,7 @@ import CommentModel
 import Dict exposing (Dict)
 import Html exposing (Html)
 import Html.Attributes
+import Html.Events
 import Json.Decode as Decode
 import PostModel
     exposing
@@ -32,6 +33,7 @@ import PostModel
         , updatePostPageModel
         , viewPostPage
         )
+import Settings exposing (Settings)
 import Url exposing (Url)
 import Url.Parser as Parser exposing ((</>), Parser)
 
@@ -52,10 +54,21 @@ type alias TagViewModel =
     }
 
 
+type alias DebugModel =
+    { postPageAddress : Address
+    }
+
+
+defaultDebugModel : DebugModel
+defaultDebugModel =
+    { postPageAddress = ""
+    }
+
+
 type Page
     = PostPage PostPageModel
     | TagView TagViewModel
-    | DebugScreen
+    | DebugScreen DebugModel
     | NotFound
 
 
@@ -69,6 +82,7 @@ type alias Model =
     { page : Page
     , key : Navigation.Key
     , lastUsedFunctionId : Id
+    , settings : Settings
     }
 
 
@@ -76,7 +90,9 @@ type Msg
     = UrlChange Url
     | UrlRequest UrlRequest
     | PostPageMsg PostPageMsg
+    | SetDebugModel DebugModel
     | FunctionReturned Comet.Port.FunctionReturn
+    | SettingsUpdated Settings
 
 
 init : () -> Url -> Navigation.Key -> ( Model, Cmd Msg )
@@ -84,8 +100,9 @@ init _ url key =
     let
         model =
             { key = key
-            , page = DebugScreen
+            , page = DebugScreen defaultDebugModel
             , lastUsedFunctionId = 0
+            , settings = Settings.defaultSettings
             }
     in
     ( model, Navigation.pushUrl key "/debug" )
@@ -120,7 +137,7 @@ pageFromRoute model route =
             Debug.todo "TagViewRoute"
 
         DebugScreenRoute ->
-            ( { model | page = DebugScreen }, Cmd.none )
+            ( { model | page = DebugScreen defaultDebugModel }, Cmd.none )
 
 
 
@@ -160,6 +177,11 @@ update msg model =
                     , Navigation.load string
                     )
 
+        ( _, SettingsUpdated settings ) ->
+            ( { model | settings = settings }
+            , Settings.saveSettings settings
+            )
+
         ( PostPage postPageModel, FunctionReturned functionReturn ) ->
             let
                 ( newId, postPage, cmd ) =
@@ -196,13 +218,19 @@ update msg model =
             , Cmd.map PostPageMsg cmd
             )
 
-        ( _, PostPageMsg _ ) ->
+        ( DebugScreen debugModel, SetDebugModel newDebugModel ) ->
+            ( { model | page = DebugScreen newDebugModel }, Cmd.none )
+
+        ( _, _ ) ->
             ( model, Cmd.none )
 
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-    Comet.Port.functionReturned FunctionReturned
+    Sub.batch
+        [ Comet.Port.functionReturned FunctionReturned
+        , Settings.settingsUpdated SettingsUpdated
+        ]
 
 
 
@@ -215,14 +243,41 @@ viewTagView tagViewModel =
     Html.text (Debug.toString tagViewModel)
 
 
-debugView : Html Msg
-debugView =
+debugView : Settings -> DebugModel -> Html Msg
+debugView settings debugModel =
     Html.ul []
         -- TODO
         [ Html.li []
             [ Html.a
-                [ Html.Attributes.href "/post/QmYdGWbHv723LDxBq5EpbJkwqDjHuC5V4XSmZ5mi58BXeP" ]
+                [ Html.Attributes.href ("/post/" ++ debugModel.postPageAddress) ]
                 [ Html.text "Test post view" ]
+            , Html.input
+                [ Html.Events.onInput
+                    (\input ->
+                        SetDebugModel { debugModel | postPageAddress = input }
+                    )
+                ]
+                []
+            , Html.br [] []
+            , Html.text "Smartypants: "
+            , Html.input
+                [ Html.Attributes.type_ "checkbox"
+                , Html.Events.onCheck
+                    (\checked ->
+                        let
+                            markdownSettings =
+                                settings.markdownSettings
+                        in
+                        SettingsUpdated
+                            { settings
+                                | markdownSettings =
+                                    { markdownSettings
+                                        | smartypants = checked
+                                    }
+                            }
+                    )
+                ]
+                []
             ]
         ]
 
@@ -240,13 +295,13 @@ view model =
                 PostPage postPageModel ->
                     Html.map
                         PostPageMsg
-                        (viewPostPage postPageModel)
+                        (viewPostPage model.settings postPageModel)
 
                 TagView tagViewModel ->
                     viewTagView tagViewModel
 
-                DebugScreen ->
-                    debugView
+                DebugScreen debugModel ->
+                    debugView model.settings debugModel
 
                 NotFound ->
                     notFound
