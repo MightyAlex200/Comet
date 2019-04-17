@@ -2,29 +2,15 @@ module Main exposing (main)
 
 import Browser exposing (Document, UrlRequest)
 import Browser.Navigation as Navigation
-import Comet.Comments
-import Comet.Port exposing (FunctionReturn, Id, getNewId)
-import Comet.Posts
+import Comet.Port exposing (Id)
 import Comet.Types.Address exposing (Address)
-import Comet.Types.Comment as Comment exposing (Comment)
-import Comet.Types.Load as Load exposing (Load(..))
-import Comet.Types.Post as Post exposing (Post)
+import Comet.Types.Load exposing (Load(..))
+import Comet.Types.Post exposing (Post)
 import Comet.Types.Tag exposing (Tag)
-import Comet.Types.ZomeApiError as ZomeApiError exposing (ZomeApiError)
-import Comet.Types.ZomeApiResult as ZomeApiResult exposing (ZomeApiResult)
-import CommentModel
-    exposing
-        ( CommentModel
-        , CommentTreeModel
-        , initCommentTreeModel
-        , updateCommentTreeModel
-        , viewCommentTree
-        )
-import Dict exposing (Dict)
+import Comet.Types.ZomeApiError exposing (ZomeApiError)
 import Html exposing (Html)
 import Html.Attributes
 import Html.Events
-import Json.Decode as Decode
 import PostModel
     exposing
         ( PostPageModel
@@ -96,7 +82,7 @@ type Msg
 
 
 init : () -> Url -> Navigation.Key -> ( Model, Cmd Msg )
-init _ url key =
+init _ _ key =
     let
         model =
             { key = key
@@ -218,7 +204,7 @@ update msg model =
             , Cmd.map PostPageMsg cmd
             )
 
-        ( DebugScreen debugModel, SetDebugModel newDebugModel ) ->
+        ( DebugScreen _, SetDebugModel newDebugModel ) ->
             ( { model | page = DebugScreen newDebugModel }, Cmd.none )
 
         ( _, _ ) ->
@@ -226,7 +212,7 @@ update msg model =
 
 
 subscriptions : Model -> Sub Msg
-subscriptions model =
+subscriptions _ =
     Sub.batch
         [ Comet.Port.functionReturned FunctionReturned
         , Settings.settingsUpdated SettingsUpdated
@@ -315,6 +301,7 @@ view model =
 -- Main
 
 
+main : Program () Model Msg
 main =
     Browser.application
         { init = init

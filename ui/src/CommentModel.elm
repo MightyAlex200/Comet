@@ -17,7 +17,7 @@ import Comet.Comments
 import Comet.Port exposing (Id, getNewId)
 import Comet.Types.Address exposing (Address)
 import Comet.Types.Comment as Comment exposing (Comment)
-import Comet.Types.Load as Load exposing (Load(..))
+import Comet.Types.Load exposing (Load(..))
 import Comet.Types.ZomeApiError as ZomeApiError exposing (ZomeApiError)
 import Comet.Types.ZomeApiResult as ZomeApiResult
 import CommentCompose
@@ -162,7 +162,7 @@ handleCommentModelFunctionReturn oldId ret commentModel =
             Ok (Err apiError) ->
                 updateComment (Failed apiError)
 
-            Err decodeError ->
+            Err _ ->
                 updateComment
                     (Failed (ZomeApiError.Internal "Invalid return"))
 
@@ -354,7 +354,7 @@ handleCommentTreeFunctionReturn oldId ret treeModel =
             Ok (Err apiError) ->
                 updateSubcomments (Failed apiError)
 
-            Err decodeError ->
+            Err _ ->
                 updateSubcomments (Failed (ZomeApiError.Internal "Invalid return"))
 
     else

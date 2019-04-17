@@ -135,7 +135,7 @@ handleFunctionReturn oldId ret pageModel =
             Ok apiResult ->
                 updatePost (Load.fromResult apiResult)
 
-            Err decodeError ->
+            Err _ ->
                 updatePost (Failed (ZomeApiError.Internal "Invalid return"))
 
     else

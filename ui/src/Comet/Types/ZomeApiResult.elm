@@ -2,7 +2,6 @@ module Comet.Types.ZomeApiResult exposing (ZomeApiResult, decode)
 
 import Comet.Types.ZomeApiError as ZomeApiError exposing (ZomeApiError)
 import Json.Decode as Decode exposing (Decoder)
-import Json.Encode as Encode
 
 
 type alias ZomeApiResult a =

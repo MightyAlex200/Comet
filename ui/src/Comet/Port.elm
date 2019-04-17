@@ -8,9 +8,7 @@ port module Comet.Port exposing
     , getNewId
     )
 
-import Dict exposing (Dict)
 import Json.Encode as Encode
-import Task
 
 
 type alias Id =

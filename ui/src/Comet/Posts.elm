@@ -11,16 +11,10 @@ module Comet.Posts exposing
 
 import Comet.Port exposing (FunctionInformation)
 import Comet.Types.Address exposing (Address)
-import Comet.Types.Entry exposing (Entry)
-import Comet.Types.GetLinksResult exposing (GetLinksResult)
 import Comet.Types.Post exposing (Post)
 import Comet.Types.PostContent exposing (PostContent)
-import Comet.Types.PostTags exposing (PostTags)
 import Comet.Types.Search exposing (Search)
-import Comet.Types.SearchResult exposing (SearchResult)
 import Comet.Types.Tag exposing (Tag)
-import Comet.Types.ZomeApiResult exposing (ZomeApiResult)
-import Json.Decode as Decode
 import Json.Encode as Encode
 
 
