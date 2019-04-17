@@ -1,11 +1,10 @@
 module CommentCompose exposing
     ( CommentCompose
     , CommentComposeMsg(..)
-    , commentContent
     , handleFunctionReturn
-    , initCommentCompose
-    , updateCommentCompose
-    , viewCommentCompose
+    , init
+    , update
+    , view
     )
 
 import Comet.Comments
@@ -35,8 +34,8 @@ type CommentComposeMsg
     | Submit CommentContent
 
 
-initCommentCompose : Address -> CommentCompose
-initCommentCompose address =
+init : Address -> CommentCompose
+init address =
     { address = address
     , input = ""
     , id = Nothing
@@ -80,12 +79,12 @@ handleFunctionReturn oldId ret commentCompose =
         }
 
 
-updateCommentCompose :
+update :
     Id
     -> CommentComposeMsg
     -> CommentCompose
     -> ( Id, CommentCompose, Cmd CommentComposeMsg )
-updateCommentCompose oldId msg commentCompose =
+update oldId msg commentCompose =
     case msg of
         UpdateInput input ->
             ( oldId, { commentCompose | input = input }, Cmd.none )
@@ -111,8 +110,8 @@ updateCommentCompose oldId msg commentCompose =
             )
 
 
-viewCommentCompose : Settings -> CommentCompose -> Html CommentComposeMsg
-viewCommentCompose settings compose =
+view : Settings -> CommentCompose -> Html CommentComposeMsg
+view settings compose =
     if compose.hidden then
         Html.button
             [ Html.Events.onClick (SetHidden False) ]

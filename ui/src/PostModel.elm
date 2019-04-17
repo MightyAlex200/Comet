@@ -1,11 +1,10 @@
 module PostModel exposing
-    ( PostPageModel
-    , PostPageMsg(..)
+    ( PostModel
+    , PostMsg(..)
     , handleFunctionReturn
-    , initPostPageModel
-    , updatePostPageModel
-    , viewPost
-    , viewPostPage
+    , init
+    , update
+    , view
     )
 
 import Comet.Port exposing (Id, getNewId)
@@ -19,9 +18,6 @@ import CommentCompose
     exposing
         ( CommentCompose
         , CommentComposeMsg
-        , initCommentCompose
-        , updateCommentCompose
-        , viewCommentCompose
         )
 import CommentModel
     exposing
@@ -38,7 +34,7 @@ import Markdown
 import Settings exposing (Settings)
 
 
-type alias PostPageModel =
+type alias PostModel =
     { address : Address
     , post : Load ZomeApiError Post
     , comments : CommentTreeModel
@@ -47,64 +43,64 @@ type alias PostPageModel =
     }
 
 
-type PostPageMsg
+type PostMsg
     = TreeModelMsg CommentTreeMsg
     | ComposeMsg CommentComposeMsg
 
 
-initPostPageModel : Id -> Address -> ( Id, PostPageModel, Cmd msg )
-initPostPageModel oldId address =
+init : Id -> Address -> ( Id, PostModel, Cmd msg )
+init oldId address =
     let
         newReadId =
             getNewId oldId
 
-        ( newId, ctm, ctmCmds ) =
+        ( newId, ctm, ctmCmd ) =
             initCommentTreeModel newReadId address
 
-        postPageModel =
+        postModel =
             { address = address
             , post = Unloaded
             , comments = ctm
-            , commentCompose = initCommentCompose address
+            , commentCompose = CommentCompose.init address
             , readId = newReadId
             }
     in
     ( newId
-    , postPageModel
+    , postModel
     , Cmd.batch
         [ Comet.Posts.readPost newReadId address
-        , ctmCmds
+        , ctmCmd
         ]
     )
 
 
-updatePostPageModel :
+update :
     Id
-    -> PostPageMsg
-    -> PostPageModel
-    -> ( Id, PostPageModel, Cmd PostPageMsg )
-updatePostPageModel oldId msg pageModel =
+    -> PostMsg
+    -> PostModel
+    -> ( Id, PostModel, Cmd PostMsg )
+update oldId msg postModel =
     case msg of
         TreeModelMsg treeMsg ->
             let
                 ( newId, treeModel, cmd ) =
-                    updateCommentTreeModel oldId treeMsg pageModel.comments
+                    updateCommentTreeModel oldId treeMsg postModel.comments
             in
             ( newId
-            , { pageModel | comments = treeModel }
+            , { postModel | comments = treeModel }
             , Cmd.map TreeModelMsg cmd
             )
 
         ComposeMsg composeMsg ->
             let
                 ( newId, composeModel, cmd ) =
-                    updateCommentCompose
+                    CommentCompose.update
                         oldId
                         composeMsg
-                        pageModel.commentCompose
+                        postModel.commentCompose
             in
             ( newId
-            , { pageModel | commentCompose = composeModel }
+            , { postModel | commentCompose = composeModel }
             , Cmd.map ComposeMsg cmd
             )
 
@@ -112,10 +108,10 @@ updatePostPageModel oldId msg pageModel =
 handleFunctionReturn :
     Id
     -> Comet.Port.FunctionReturn
-    -> PostPageModel
-    -> ( Id, PostPageModel, Cmd msg )
-handleFunctionReturn oldId ret pageModel =
-    if ret.id == pageModel.readId then
+    -> PostModel
+    -> ( Id, PostModel, Cmd msg )
+handleFunctionReturn oldId ret postModel =
+    if ret.id == postModel.readId then
         let
             decoder =
                 ZomeApiResult.decode Post.decode
@@ -125,7 +121,7 @@ handleFunctionReturn oldId ret pageModel =
 
             updatePost post =
                 ( oldId
-                , { pageModel
+                , { postModel
                     | post = post
                   }
                 , Cmd.none
@@ -144,23 +140,23 @@ handleFunctionReturn oldId ret pageModel =
                 handleCommentTreeFunctionReturn
                     oldId
                     ret
-                    pageModel.comments
+                    postModel.comments
 
             composeReturnResult =
                 CommentCompose.handleFunctionReturn
                     newId1
                     ret
-                    pageModel.commentCompose
+                    postModel.commentCompose
         in
         if composeReturnResult.refresh then
             let
                 ( treeModelId, newTreeModel, newTreeCmd ) =
                     initCommentTreeModel
                         composeReturnResult.newId
-                        pageModel.address
+                        postModel.address
             in
             ( treeModelId
-            , { pageModel
+            , { postModel
                 | comments = newTreeModel
                 , commentCompose = composeReturnResult.commentCompose
               }
@@ -172,7 +168,7 @@ handleFunctionReturn oldId ret pageModel =
 
         else
             ( composeReturnResult.newId
-            , { pageModel
+            , { postModel
                 | comments = treeModel
                 , commentCompose = composeReturnResult.commentCompose
               }
@@ -180,11 +176,11 @@ handleFunctionReturn oldId ret pageModel =
             )
 
 
-viewPostPage : Settings -> PostPageModel -> Html PostPageMsg
-viewPostPage settings postPageModel =
+view : Settings -> PostModel -> Html PostMsg
+view settings postModel =
     let
         postHtml =
-            case postPageModel.post of
+            case postModel.post of
                 Unloaded ->
                     Html.text "Loading post"
 
@@ -192,16 +188,16 @@ viewPostPage settings postPageModel =
                     Html.text
                         ("Failed loading post: " ++ ZomeApiError.describe x)
 
-                Loaded pageModel ->
-                    viewPost settings pageModel
+                Loaded post ->
+                    viewPost settings post
     in
     Html.div
         []
         [ postHtml
         , Html.br [] []
-        , viewCommentCompose settings postPageModel.commentCompose
+        , CommentCompose.view settings postModel.commentCompose
             |> Html.map ComposeMsg
-        , viewCommentTree settings postPageModel.comments
+        , viewCommentTree settings postModel.comments
             |> Html.map TreeModelMsg
         ]
 

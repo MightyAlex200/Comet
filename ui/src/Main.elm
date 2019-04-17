@@ -5,19 +5,13 @@ import Browser.Navigation as Navigation
 import Comet.Port exposing (Id)
 import Comet.Types.Address exposing (Address)
 import Comet.Types.Load exposing (Load(..))
-import Comet.Types.Post exposing (Post)
-import Comet.Types.Tag exposing (Tag)
-import Comet.Types.ZomeApiError exposing (ZomeApiError)
 import Html exposing (Html)
 import Html.Attributes
 import Html.Events
 import PostModel
     exposing
-        ( PostPageModel
-        , PostPageMsg
-        , initPostPageModel
-        , updatePostPageModel
-        , viewPostPage
+        ( PostModel
+        , PostMsg
         )
 import Settings exposing (Settings)
 import Url exposing (Url)
@@ -28,39 +22,25 @@ import Url.Parser as Parser exposing ((</>), Parser)
 -- Model
 
 
-type alias PostPreviewModel =
-    { address : Address
-    , post : Load ZomeApiError Post
-    }
-
-
-type alias TagViewModel =
-    { tag : Tag
-    , posts : Load ZomeApiError (List PostPreviewModel)
-    }
-
-
 type alias DebugModel =
     { postPageAddress : Address
     }
 
 
-defaultDebugModel : DebugModel
-defaultDebugModel =
+initDebugModel : DebugModel
+initDebugModel =
     { postPageAddress = ""
     }
 
 
 type Page
-    = PostPage PostPageModel
-    | TagView TagViewModel
+    = PostPage PostModel
     | DebugScreen DebugModel
     | NotFound
 
 
 type Route
     = PostRoute Address
-    | TagViewRoute Tag
     | DebugScreenRoute
 
 
@@ -75,7 +55,7 @@ type alias Model =
 type Msg
     = UrlChange Url
     | UrlRequest UrlRequest
-    | PostPageMsg PostPageMsg
+    | PostPageMsg PostMsg
     | SetDebugModel DebugModel
     | FunctionReturned Comet.Port.FunctionReturn
     | SettingsUpdated Settings
@@ -86,7 +66,7 @@ init _ _ key =
     let
         model =
             { key = key
-            , page = DebugScreen defaultDebugModel
+            , page = DebugScreen initDebugModel
             , lastUsedFunctionId = 0
             , settings = Settings.defaultSettings
             }
@@ -98,7 +78,6 @@ routeParser : Parser (Route -> a) a
 routeParser =
     Parser.oneOf
         [ Parser.map PostRoute (Parser.s "post" </> Parser.string)
-        , Parser.map TagViewRoute (Parser.s "tag" </> Parser.int)
         , Parser.map DebugScreenRoute (Parser.s "debug")
         ]
 
@@ -109,7 +88,7 @@ pageFromRoute model route =
         PostRoute address ->
             let
                 ( newId, postPage, cmd ) =
-                    initPostPageModel model.lastUsedFunctionId address
+                    PostModel.init model.lastUsedFunctionId address
             in
             ( { model
                 | page =
@@ -119,11 +98,8 @@ pageFromRoute model route =
             , cmd
             )
 
-        TagViewRoute tag ->
-            Debug.todo "TagViewRoute"
-
         DebugScreenRoute ->
-            ( { model | page = DebugScreen defaultDebugModel }, Cmd.none )
+            ( { model | page = DebugScreen initDebugModel }, Cmd.none )
 
 
 
@@ -184,14 +160,10 @@ update msg model =
             , Cmd.map PostPageMsg cmd
             )
 
-        ( _, FunctionReturned functionReturn ) ->
-            -- TODO
-            ( model, Cmd.none )
-
         ( PostPage postPageModel, PostPageMsg postPageMsg ) ->
             let
                 ( newId, postPage, cmd ) =
-                    updatePostPageModel
+                    PostModel.update
                         model.lastUsedFunctionId
                         postPageMsg
                         postPageModel
@@ -223,16 +195,9 @@ subscriptions _ =
 -- View
 
 
-viewTagView : TagViewModel -> Html Msg
-viewTagView tagViewModel =
-    -- TODO
-    Html.text (Debug.toString tagViewModel)
-
-
 debugView : Settings -> DebugModel -> Html Msg
 debugView settings debugModel =
     Html.ul []
-        -- TODO
         [ Html.li []
             [ Html.a
                 [ Html.Attributes.href ("/post/" ++ debugModel.postPageAddress) ]
@@ -281,10 +246,7 @@ view model =
                 PostPage postPageModel ->
                     Html.map
                         PostPageMsg
-                        (viewPostPage model.settings postPageModel)
-
-                TagView tagViewModel ->
-                    viewTagView tagViewModel
+                        (PostModel.view model.settings postPageModel)
 
                 DebugScreen debugModel ->
                     debugView model.settings debugModel

@@ -24,9 +24,6 @@ import CommentCompose
     exposing
         ( CommentCompose
         , CommentComposeMsg
-        , initCommentCompose
-        , updateCommentCompose
-        , viewCommentCompose
         )
 import Html exposing (Html)
 import Html.Attributes
@@ -55,22 +52,22 @@ initCommentModel oldId address =
         newReadId =
             getNewId oldId
 
-        ( newId, commentTreeModel, ctmCmds ) =
+        ( newId, commentTreeModel, ctmCmd ) =
             initCommentTreeModel newReadId address
 
         commentModel =
             { address = address
             , comment = Unloaded
             , readId = newReadId
-            , commentCompose = initCommentCompose address
+            , commentCompose = CommentCompose.init address
             , treeModel = commentTreeModel
             }
     in
     ( newId
     , commentModel
     , Cmd.batch
-        [ ctmCmds
-        , Comet.Comments.readComment newReadId address
+        [ Comet.Comments.readComment newReadId address
+        , ctmCmd
         ]
     )
 
@@ -124,7 +121,7 @@ updateCommentModel oldId msg commentModel =
         ComposeMsg composeMsg ->
             let
                 ( newId, composeModel, cmd ) =
-                    updateCommentCompose
+                    CommentCompose.update
                         oldId
                         composeMsg
                         commentModel.commentCompose
@@ -230,7 +227,7 @@ viewCommentModel settings commentModel =
         []
         [ commentHtml
         , Html.br [] []
-        , viewCommentCompose settings commentModel.commentCompose
+        , CommentCompose.view settings commentModel.commentCompose
             |> Html.map ComposeMsg
         , Html.div
             [ Html.Attributes.style "margin" "32px" ]
