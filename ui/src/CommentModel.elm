@@ -246,7 +246,7 @@ type CommentTreeModel
 
 
 type CommentTreeMsg
-    = CommentMsg CommentModel CommentModelMsg
+    = CommentMsg Address CommentModelMsg
 
 
 initCommentTreeModel : Id -> Address -> ( Id, CommentTreeModel, Cmd msg )
@@ -286,7 +286,7 @@ updateCommentTreeModel oldId msg treeModel =
                 Loaded subcomments ->
                     let
                         fold subcomment ( i, cs, cmds ) =
-                            if subcomment == commentModel then
+                            if subcomment.address == commentModel then
                                 let
                                     ( i2, newSubcomment, cmd ) =
                                         updateCommentModel
@@ -296,7 +296,10 @@ updateCommentTreeModel oldId msg treeModel =
                                 in
                                 ( i2
                                 , newSubcomment :: cs
-                                , Cmd.map (CommentMsg newSubcomment) cmd :: cmds
+                                , Cmd.map
+                                    (CommentMsg newSubcomment.address)
+                                    cmd
+                                    :: cmds
                                 )
 
                             else
@@ -402,7 +405,7 @@ viewCommentTree settings ctm =
                 |> List.map
                     (\comment ->
                         viewCommentModel settings comment
-                            |> Html.map (CommentMsg comment)
+                            |> Html.map (CommentMsg comment.address)
                     )
                 |> List.map List.singleton
                 |> List.map (Html.li [])
