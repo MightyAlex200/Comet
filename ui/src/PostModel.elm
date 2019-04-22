@@ -12,6 +12,8 @@ import Comet.Posts
 import Comet.Types.Address exposing (Address)
 import Comet.Types.Load as Load exposing (Load(..))
 import Comet.Types.Post as Post exposing (Post)
+import Comet.Types.PostTags as PostTags
+import Comet.Types.SearchResult exposing (InTermsOf)
 import Comet.Types.ZomeApiError as ZomeApiError exposing (ZomeApiError)
 import Comet.Types.ZomeApiResult as ZomeApiResult
 import CommentCompose
@@ -39,6 +41,8 @@ type alias PostModel =
     , post : Load ZomeApiError Post
     , comments : CommentTreeModel
     , commentCompose : CommentCompose
+    , inTermsOf : Load ZomeApiError InTermsOf
+    , tagId : Maybe Id
     , readId : Id
     }
 
@@ -48,8 +52,8 @@ type PostMsg
     | ComposeMsg CommentComposeMsg
 
 
-init : Id -> Address -> ( Id, PostModel, Cmd msg )
-init oldId address =
+init : Id -> Address -> Maybe InTermsOf -> ( Id, PostModel, Cmd msg )
+init oldId address inTermsOf =
     let
         newReadId =
             getNewId oldId
@@ -57,20 +61,42 @@ init oldId address =
         ( newId, ctm, ctmCmd ) =
             initCommentTreeModel newReadId address
 
+        requiredCmds =
+            [ Comet.Posts.readPost newReadId address
+            , ctmCmd
+            ]
+
+        ( newId2, cmds, tagId ) =
+            case inTermsOf of
+                Nothing ->
+                    let
+                        id =
+                            getNewId newId
+                    in
+                    ( id
+                    , Comet.Posts.postTags id address :: requiredCmds
+                    , Just id
+                    )
+
+                Just _ ->
+                    ( newId
+                    , requiredCmds
+                    , Nothing
+                    )
+
         postModel =
             { address = address
             , post = Unloaded
             , comments = ctm
             , commentCompose = CommentCompose.init address
+            , inTermsOf = Load.fromMaybe inTermsOf
+            , tagId = tagId
             , readId = newReadId
             }
     in
-    ( newId
+    ( newId2
     , postModel
-    , Cmd.batch
-        [ Comet.Posts.readPost newReadId address
-        , ctmCmd
-        ]
+    , Cmd.batch cmds
     )
 
 
@@ -133,6 +159,33 @@ handleFunctionReturn oldId ret postModel =
 
             Err _ ->
                 updatePost (Failed (ZomeApiError.Internal "Invalid return"))
+
+    else if Just ret.id == postModel.tagId then
+        let
+            decoder =
+                ZomeApiResult.decode PostTags.decode
+
+            decodeResult =
+                Decode.decodeValue decoder ret.return
+
+            updateInTermsOf inTermsOf =
+                ( oldId
+                , { postModel
+                    | inTermsOf = inTermsOf
+                  }
+                , Cmd.none
+                )
+        in
+        case decodeResult of
+            Ok apiResult ->
+                updateInTermsOf
+                    (apiResult
+                        |> Load.fromResult
+                        |> Load.map .originalTags
+                    )
+
+            Err _ ->
+                updateInTermsOf (Failed (ZomeApiError.Internal "Invalid return"))
 
     else
         let

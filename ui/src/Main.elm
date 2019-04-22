@@ -5,14 +5,17 @@ import Browser.Navigation as Navigation
 import Comet.Port exposing (Id)
 import Comet.Types.Address exposing (Address)
 import Comet.Types.Load exposing (Load(..))
+import Comet.Types.SearchResult exposing (InTermsOf)
 import Html exposing (Html)
 import Html.Attributes
 import Html.Events
+import Json.Decode as Decode
 import PostModel
     exposing
         ( PostModel
         , PostMsg
         )
+import Set
 import Settings exposing (Settings)
 import Url exposing (Url)
 import Url.Parser as Parser exposing ((</>), Parser)
@@ -40,7 +43,7 @@ type Page
 
 
 type Route
-    = PostRoute Address
+    = PostRoute Address (Maybe InTermsOf)
     | DebugScreenRoute
 
 
@@ -74,10 +77,34 @@ init _ _ key =
     ( model, Navigation.pushUrl key "/debug" )
 
 
+tagsParser : Parser (InTermsOf -> a) a
+tagsParser =
+    Parser.custom "TAGS"
+        (\s ->
+            s
+                |> String.split ","
+                |> List.filterMap
+                    (Decode.decodeString Decode.int >> Result.toMaybe)
+                |> Set.fromList
+                |> (\set ->
+                        if Set.isEmpty set then
+                            Nothing
+
+                        else
+                            Just set
+                   )
+        )
+
+
 routeParser : Parser (Route -> a) a
 routeParser =
     Parser.oneOf
-        [ Parser.map PostRoute (Parser.s "post" </> Parser.string)
+        [ Parser.map
+            (\address inTermsOf -> PostRoute address (Just inTermsOf))
+            (Parser.s "post" </> Parser.string </> tagsParser)
+        , Parser.map
+            (\address -> PostRoute address Nothing)
+            (Parser.s "post" </> Parser.string)
         , Parser.map DebugScreenRoute (Parser.s "debug")
         ]
 
@@ -85,10 +112,10 @@ routeParser =
 pageFromRoute : Model -> Route -> ( Model, Cmd Msg )
 pageFromRoute model route =
     case route of
-        PostRoute address ->
+        PostRoute address inTermsOf ->
             let
                 ( newId, postPage, cmd ) =
-                    PostModel.init model.lastUsedFunctionId address
+                    PostModel.init model.lastUsedFunctionId address inTermsOf
             in
             ( { model
                 | page =

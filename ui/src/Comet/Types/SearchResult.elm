@@ -1,4 +1,4 @@
-module Comet.Types.SearchResult exposing (SearchResult)
+module Comet.Types.SearchResult exposing (InTermsOf, SearchResult)
 
 import Comet.Types.Address exposing (Address)
 import Comet.Types.Tag exposing (Tag)
