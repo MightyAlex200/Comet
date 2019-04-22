@@ -18,6 +18,7 @@ import Comet.Port exposing (Id, getNewId)
 import Comet.Types.Address exposing (Address)
 import Comet.Types.Comment as Comment exposing (Comment)
 import Comet.Types.Load exposing (Load(..))
+import Comet.Types.SearchResult exposing (InTermsOf)
 import Comet.Types.ZomeApiError as ZomeApiError exposing (ZomeApiError)
 import Comet.Types.ZomeApiResult as ZomeApiResult
 import CommentCompose
@@ -30,6 +31,7 @@ import Html.Attributes
 import Json.Decode as Decode
 import Markdown
 import Settings exposing (Settings)
+import VoteModel exposing (VoteModel, VoteMsg)
 
 
 type alias CommentModel =
@@ -38,16 +40,18 @@ type alias CommentModel =
     , readId : Id
     , commentCompose : CommentCompose
     , treeModel : CommentTreeModel
+    , voteModel : VoteModel
     }
 
 
 type CommentModelMsg
     = TreeModelMsg CommentTreeMsg
     | ComposeMsg CommentComposeMsg
+    | VoteModelMsg VoteMsg
 
 
-initCommentModel : Id -> Address -> ( Id, CommentModel, Cmd msg )
-initCommentModel oldId address =
+initCommentModel : Id -> Address -> Maybe InTermsOf -> ( Id, CommentModel, Cmd msg )
+initCommentModel oldId address inTermsOf =
     let
         newReadId =
             getNewId oldId
@@ -55,19 +59,24 @@ initCommentModel oldId address =
         ( newId, commentTreeModel, ctmCmd ) =
             initCommentTreeModel newReadId address
 
+        ( newId2, voteModel, voteCmd ) =
+            VoteModel.init newId address inTermsOf
+
         commentModel =
             { address = address
             , comment = Unloaded
             , readId = newReadId
             , commentCompose = CommentCompose.init address
             , treeModel = commentTreeModel
+            , voteModel = voteModel
             }
     in
-    ( newId
+    ( newId2
     , commentModel
     , Cmd.batch
         [ Comet.Comments.readComment newReadId address
         , ctmCmd
+        , voteCmd
         ]
     )
 
@@ -76,8 +85,9 @@ commentsFromAddresses :
     Id
     -> CommentTreeModel
     -> List Address
+    -> Maybe InTermsOf
     -> ( Id, CommentTreeModel, Cmd msg )
-commentsFromAddresses oldId treeModel addresses =
+commentsFromAddresses oldId treeModel addresses inTermsOf =
     let
         treeModelRecord =
             case treeModel of
@@ -87,7 +97,7 @@ commentsFromAddresses oldId treeModel addresses =
         fold address ( i, cs, cmds ) =
             let
                 ( i2, c, cmd ) =
-                    initCommentModel i address
+                    initCommentModel i address inTermsOf
             in
             ( i2, c :: cs, cmd :: cmds )
 
@@ -131,13 +141,27 @@ updateCommentModel oldId msg commentModel =
             , Cmd.map ComposeMsg cmd
             )
 
+        VoteModelMsg voteMsg ->
+            let
+                ( newId, voteModel, cmd ) =
+                    VoteModel.update
+                        oldId
+                        voteMsg
+                        commentModel.voteModel
+            in
+            ( newId
+            , { commentModel | voteModel = voteModel }
+            , Cmd.map VoteModelMsg cmd
+            )
+
 
 handleCommentModelFunctionReturn :
     Id
     -> Comet.Port.FunctionReturn
     -> CommentModel
+    -> Maybe InTermsOf
     -> ( Id, CommentModel, Cmd msg )
-handleCommentModelFunctionReturn oldId ret commentModel =
+handleCommentModelFunctionReturn oldId ret commentModel inTermsOf =
     if ret.id == commentModel.readId then
         let
             decoder =
@@ -165,44 +189,68 @@ handleCommentModelFunctionReturn oldId ret commentModel =
 
     else
         let
-            ( newId1, treeModel, treeCmd ) =
-                handleCommentTreeFunctionReturn
-                    oldId
-                    ret
-                    commentModel.treeModel
+            ( newId, newCommentModel, newCmd ) =
+                commentModelReturnHelper oldId ret commentModel inTermsOf
 
-            composeReturnResult =
-                CommentCompose.handleFunctionReturn
-                    newId1
-                    ret
-                    commentModel.commentCompose
+            ( voteId, voteModel, voteCmd ) =
+                VoteModel.handleFunctionReturn newId ret commentModel.voteModel
         in
-        if composeReturnResult.refresh then
-            let
-                ( treeModelId, newTreeModel, newTreeCmd ) =
-                    initCommentTreeModel
-                        composeReturnResult.newId
-                        commentModel.address
-            in
-            ( treeModelId
-            , { commentModel
-                | treeModel = newTreeModel
-                , commentCompose = composeReturnResult.commentCompose
-              }
-            , Cmd.batch
-                [ newTreeCmd
-                , composeReturnResult.cmd
-                ]
-            )
+        ( voteId
+        , { newCommentModel | voteModel = voteModel }
+        , Cmd.batch
+            [ newCmd
+            , voteCmd
+            ]
+        )
 
-        else
-            ( composeReturnResult.newId
-            , { commentModel
-                | treeModel = treeModel
-                , commentCompose = composeReturnResult.commentCompose
-              }
-            , Cmd.batch [ treeCmd, composeReturnResult.cmd ]
-            )
+
+commentModelReturnHelper :
+    Id
+    -> Comet.Port.FunctionReturn
+    -> CommentModel
+    -> Maybe InTermsOf
+    -> ( Id, CommentModel, Cmd msg )
+commentModelReturnHelper oldId ret commentModel inTermsOf =
+    let
+        ( newId1, treeModel, treeCmd ) =
+            handleCommentTreeFunctionReturn
+                oldId
+                ret
+                commentModel.treeModel
+                inTermsOf
+
+        composeReturnResult =
+            CommentCompose.handleFunctionReturn
+                newId1
+                ret
+                commentModel.commentCompose
+    in
+    if composeReturnResult.refresh then
+        let
+            ( treeModelId, newTreeModel, newTreeCmd ) =
+                initCommentTreeModel
+                    composeReturnResult.newId
+                    commentModel.address
+        in
+        ( treeModelId
+        , { commentModel
+            | treeModel = newTreeModel
+            , commentCompose = composeReturnResult.commentCompose
+          }
+        , Cmd.batch
+            [ newTreeCmd
+            , composeReturnResult.cmd
+            ]
+        )
+
+    else
+        ( composeReturnResult.newId
+        , { commentModel
+            | treeModel = treeModel
+            , commentCompose = composeReturnResult.commentCompose
+          }
+        , Cmd.batch [ treeCmd, composeReturnResult.cmd ]
+        )
 
 
 viewCommentModel : Settings -> CommentModel -> Html CommentModelMsg
@@ -225,7 +273,9 @@ viewCommentModel settings commentModel =
     in
     Html.div
         []
-        [ commentHtml
+        [ VoteModel.view commentModel.voteModel
+            |> Html.map VoteModelMsg
+        , commentHtml
         , Html.br [] []
         , CommentCompose.view settings commentModel.commentCompose
             |> Html.map ComposeMsg
@@ -325,8 +375,9 @@ handleCommentTreeFunctionReturn :
     Id
     -> Comet.Port.FunctionReturn
     -> CommentTreeModel
+    -> Maybe InTermsOf
     -> ( Id, CommentTreeModel, Cmd msg )
-handleCommentTreeFunctionReturn oldId ret treeModel =
+handleCommentTreeFunctionReturn oldId ret treeModel inTermsOf =
     let
         treeModelRecord =
             case treeModel of
@@ -349,7 +400,7 @@ handleCommentTreeFunctionReturn oldId ret treeModel =
         in
         case decodeResult of
             Ok (Ok addresses) ->
-                commentsFromAddresses oldId treeModel addresses
+                commentsFromAddresses oldId treeModel addresses inTermsOf
 
             Ok (Err apiError) ->
                 updateSubcomments (Failed apiError)
@@ -364,7 +415,11 @@ handleCommentTreeFunctionReturn oldId ret treeModel =
                     fold subcomment ( i, cs, cmds ) =
                         let
                             ( i2, c, cmd ) =
-                                handleCommentModelFunctionReturn i ret subcomment
+                                handleCommentModelFunctionReturn
+                                    i
+                                    ret
+                                    subcomment
+                                    inTermsOf
                         in
                         ( i2, c :: cs, cmd :: cmds )
 

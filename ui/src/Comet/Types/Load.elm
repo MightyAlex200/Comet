@@ -1,4 +1,10 @@
-module Comet.Types.Load exposing (Load(..), fromMaybe, fromResult, map)
+module Comet.Types.Load exposing
+    ( Load(..)
+    , fromMaybe
+    , fromResult
+    , map
+    , toMaybe
+    )
 
 
 type Load x a
@@ -15,6 +21,19 @@ fromMaybe maybe =
 
         Nothing ->
             Unloaded
+
+
+toMaybe : Load x a -> Maybe a
+toMaybe load =
+    case load of
+        Loaded a ->
+            Just a
+
+        Failed _ ->
+            Nothing
+
+        Unloaded ->
+            Nothing
 
 
 fromResult : Result x a -> Load x a

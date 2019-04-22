@@ -34,11 +34,13 @@ import Html exposing (Html)
 import Json.Decode as Decode
 import Markdown
 import Settings exposing (Settings)
+import VoteModel exposing (VoteModel, VoteMsg)
 
 
 type alias PostModel =
     { address : Address
     , post : Load ZomeApiError Post
+    , voteModel : VoteModel
     , comments : CommentTreeModel
     , commentCompose : CommentCompose
     , inTermsOf : Load ZomeApiError InTermsOf
@@ -50,6 +52,7 @@ type alias PostModel =
 type PostMsg
     = TreeModelMsg CommentTreeMsg
     | ComposeMsg CommentComposeMsg
+    | VoteModelMsg VoteMsg
 
 
 init : Id -> Address -> Maybe InTermsOf -> ( Id, PostModel, Cmd msg )
@@ -84,6 +87,9 @@ init oldId address inTermsOf =
                     , Nothing
                     )
 
+        ( newId3, voteModel, voteModelCmd ) =
+            VoteModel.init newId2 address inTermsOf
+
         postModel =
             { address = address
             , post = Unloaded
@@ -91,10 +97,11 @@ init oldId address inTermsOf =
             , commentCompose = CommentCompose.init address
             , inTermsOf = Load.fromMaybe inTermsOf
             , tagId = tagId
+            , voteModel = voteModel
             , readId = newReadId
             }
     in
-    ( newId2
+    ( newId3
     , postModel
     , Cmd.batch cmds
     )
@@ -128,6 +135,19 @@ update oldId msg postModel =
             ( newId
             , { postModel | commentCompose = composeModel }
             , Cmd.map ComposeMsg cmd
+            )
+
+        VoteModelMsg voteMsg ->
+            let
+                ( newId, voteModel, cmd ) =
+                    VoteModel.update
+                        oldId
+                        voteMsg
+                        postModel.voteModel
+            in
+            ( newId
+            , { postModel | voteModel = voteModel }
+            , Cmd.map VoteModelMsg cmd
             )
 
 
@@ -167,66 +187,105 @@ handleFunctionReturn oldId ret postModel =
 
             decodeResult =
                 Decode.decodeValue decoder ret.return
+        in
+        case decodeResult of
+            Ok (Ok inTermsOf) ->
+                let
+                    ( newId, updatedVoteModel, cmd ) =
+                        VoteModel.updateInTermsOf
+                            oldId
+                            postModel.address
+                            inTermsOf.originalTags
+                            postModel.voteModel
+                in
+                ( newId
+                , { postModel
+                    | inTermsOf = Loaded inTermsOf.originalTags
+                    , voteModel = updatedVoteModel
+                  }
+                , cmd
+                )
 
-            updateInTermsOf inTermsOf =
+            Ok (Err apiError) ->
                 ( oldId
                 , { postModel
-                    | inTermsOf = inTermsOf
+                    | inTermsOf = Failed apiError
                   }
                 , Cmd.none
                 )
-        in
-        case decodeResult of
-            Ok apiResult ->
-                updateInTermsOf
-                    (apiResult
-                        |> Load.fromResult
-                        |> Load.map .originalTags
-                    )
 
             Err _ ->
-                updateInTermsOf (Failed (ZomeApiError.Internal "Invalid return"))
+                ( oldId
+                , { postModel
+                    | inTermsOf =
+                        Failed (ZomeApiError.Internal "Invalid return")
+                  }
+                , Cmd.none
+                )
 
     else
         let
-            ( newId1, treeModel, treeCmd ) =
-                handleCommentTreeFunctionReturn
-                    oldId
-                    ret
-                    postModel.comments
+            ( newId, newModel, treeCmd ) =
+                commentTreeReturn oldId ret postModel
 
-            composeReturnResult =
-                CommentCompose.handleFunctionReturn
-                    newId1
-                    ret
-                    postModel.commentCompose
+            ( voteId, voteModel, voteCmd ) =
+                VoteModel.handleFunctionReturn newId ret postModel.voteModel
         in
-        if composeReturnResult.refresh then
-            let
-                ( treeModelId, newTreeModel, newTreeCmd ) =
-                    initCommentTreeModel
-                        composeReturnResult.newId
-                        postModel.address
-            in
-            ( treeModelId
-            , { postModel
-                | comments = newTreeModel
-                , commentCompose = composeReturnResult.commentCompose
-              }
-            , Cmd.batch
-                [ newTreeCmd
-                , composeReturnResult.cmd
-                ]
-            )
+        ( voteId
+        , { newModel | voteModel = voteModel }
+        , Cmd.batch
+            [ treeCmd
+            , voteCmd
+            ]
+        )
 
-        else
-            ( composeReturnResult.newId
-            , { postModel
-                | comments = treeModel
-                , commentCompose = composeReturnResult.commentCompose
-              }
-            , Cmd.batch [ treeCmd, composeReturnResult.cmd ]
-            )
+
+commentTreeReturn :
+    Id
+    -> Comet.Port.FunctionReturn
+    -> PostModel
+    -> ( Id, PostModel, Cmd msg )
+commentTreeReturn oldId ret postModel =
+    let
+        ( newId1, treeModel, treeCmd ) =
+            handleCommentTreeFunctionReturn
+                oldId
+                ret
+                postModel.comments
+                (postModel.inTermsOf |> Load.toMaybe)
+
+        composeReturnResult =
+            CommentCompose.handleFunctionReturn
+                newId1
+                ret
+                postModel.commentCompose
+    in
+    if composeReturnResult.refresh then
+        let
+            ( treeModelId, newTreeModel, newTreeCmd ) =
+                initCommentTreeModel
+                    composeReturnResult.newId
+                    postModel.address
+        in
+        ( treeModelId
+        , { postModel
+            | comments = newTreeModel
+            , commentCompose = composeReturnResult.commentCompose
+          }
+        , Cmd.batch
+            [ newTreeCmd
+            , composeReturnResult.cmd
+            ]
+        )
+
+    else
+        ( composeReturnResult.newId
+        , { postModel
+            | comments = treeModel
+            , commentCompose = composeReturnResult.commentCompose
+          }
+        , Cmd.batch [ treeCmd, composeReturnResult.cmd ]
+        )
 
 
 view : Settings -> PostModel -> Html PostMsg
@@ -246,7 +305,9 @@ view settings postModel =
     in
     Html.div
         []
-        [ postHtml
+        [ VoteModel.view postModel.voteModel
+            |> Html.map VoteModelMsg
+        , postHtml
         , Html.br [] []
         , CommentCompose.view settings postModel.commentCompose
             |> Html.map ComposeMsg
