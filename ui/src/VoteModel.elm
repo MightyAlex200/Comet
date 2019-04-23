@@ -26,7 +26,6 @@ import Set
 type alias VoteModel =
     { myVote : Load ZomeApiError (Maybe Vote)
     , allVotes : Load ZomeApiError (List Vote)
-    , inTermsOf : Load ZomeApiError InTermsOf
     , myVoteId : Maybe Id
     , allVotesId : Maybe Id
     }
@@ -50,7 +49,6 @@ init oldId address inTermsOf =
             ( allVotesId
             , { myVote = Unloaded
               , allVotes = Unloaded
-              , inTermsOf = Loaded tags
               , myVoteId = Just myVoteId
               , allVotesId = Just allVotesId
               }
@@ -64,7 +62,6 @@ init oldId address inTermsOf =
             ( oldId
             , { myVote = Unloaded
               , allVotes = Unloaded
-              , inTermsOf = Unloaded
               , myVoteId = Nothing
               , allVotesId = Nothing
               }
@@ -99,8 +96,7 @@ updateInTermsOf oldId address inTermsOf voteModel =
     in
     ( allVotesId
     , { voteModel
-        | inTermsOf = Loaded inTermsOf
-        , myVoteId = Just myVoteId
+        | myVoteId = Just myVoteId
         , allVotesId = Just allVotesId
       }
     , Cmd.batch
