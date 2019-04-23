@@ -29,6 +29,7 @@ import CommentCompose
 import Html exposing (Html)
 import Html.Attributes
 import Json.Decode as Decode
+import KarmaMap exposing (KarmaMap)
 import Markdown
 import Settings exposing (Settings)
 import VoteModel exposing (VoteModel, VoteMsg)
@@ -253,8 +254,13 @@ commentModelReturnHelper oldId ret commentModel inTermsOf =
         )
 
 
-viewCommentModel : Settings -> CommentModel -> Html CommentModelMsg
-viewCommentModel settings commentModel =
+viewCommentModel :
+    KarmaMap
+    -> Maybe InTermsOf
+    -> Settings
+    -> CommentModel
+    -> Html CommentModelMsg
+viewCommentModel karmaMap inTermsOf settings commentModel =
     let
         commentHtml =
             case commentModel.comment of
@@ -273,7 +279,7 @@ viewCommentModel settings commentModel =
     in
     Html.div
         []
-        [ VoteModel.view commentModel.voteModel
+        [ VoteModel.view karmaMap inTermsOf commentModel.voteModel
             |> Html.map VoteModelMsg
         , commentHtml
         , Html.br [] []
@@ -281,7 +287,7 @@ viewCommentModel settings commentModel =
             |> Html.map ComposeMsg
         , Html.div
             [ Html.Attributes.style "margin" "32px" ]
-            [ viewCommentTree settings commentModel.treeModel
+            [ viewCommentTree karmaMap inTermsOf settings commentModel.treeModel
                 |> Html.map TreeModelMsg
             ]
         ]
@@ -439,8 +445,13 @@ handleCommentTreeFunctionReturn oldId ret treeModel inTermsOf =
                 ( oldId, treeModel, Cmd.none )
 
 
-viewCommentTree : Settings -> CommentTreeModel -> Html CommentTreeMsg
-viewCommentTree settings ctm =
+viewCommentTree :
+    KarmaMap
+    -> Maybe InTermsOf
+    -> Settings
+    -> CommentTreeModel
+    -> Html CommentTreeMsg
+viewCommentTree karmaMap inTermsOf settings ctm =
     let
         ctmRecord =
             case ctm of
@@ -459,7 +470,7 @@ viewCommentTree settings ctm =
             comments
                 |> List.map
                     (\comment ->
-                        viewCommentModel settings comment
+                        viewCommentModel karmaMap inTermsOf settings comment
                             |> Html.map (CommentMsg comment.address)
                     )
                 |> List.map List.singleton

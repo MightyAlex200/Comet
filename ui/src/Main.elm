@@ -10,6 +10,7 @@ import Html exposing (Html)
 import Html.Attributes
 import Html.Events
 import Json.Decode as Decode
+import KarmaMap exposing (KarmaMap)
 import PostModel
     exposing
         ( PostModel
@@ -52,6 +53,7 @@ type alias Model =
     , key : Navigation.Key
     , lastUsedFunctionId : Id
     , settings : Settings
+    , karmaMap : KarmaMap
     }
 
 
@@ -72,6 +74,7 @@ init _ _ key =
             , page = DebugScreen initDebugModel
             , lastUsedFunctionId = 0
             , settings = Settings.defaultSettings
+            , karmaMap = KarmaMap.empty
             }
     in
     ( model, Navigation.pushUrl key "/debug" )
@@ -273,7 +276,11 @@ view model =
                 PostPage postPageModel ->
                     Html.map
                         PostPageMsg
-                        (PostModel.view model.settings postPageModel)
+                        (PostModel.view
+                            model.karmaMap
+                            model.settings
+                            postPageModel
+                        )
 
                 DebugScreen debugModel ->
                     debugView model.settings debugModel

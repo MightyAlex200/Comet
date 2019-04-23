@@ -32,6 +32,7 @@ import CommentModel
         )
 import Html exposing (Html)
 import Json.Decode as Decode
+import KarmaMap exposing (KarmaMap)
 import Markdown
 import Settings exposing (Settings)
 import VoteModel exposing (VoteModel, VoteMsg)
@@ -288,9 +289,17 @@ commentTreeReturn oldId ret postModel =
         )
 
 
-view : Settings -> PostModel -> Html PostMsg
-view settings postModel =
+view :
+    KarmaMap
+    -> Settings
+    -> PostModel
+    -> Html PostMsg
+view karmaMap settings postModel =
     let
+        inTermsOf =
+            postModel.inTermsOf
+                |> Load.toMaybe
+
         postHtml =
             case postModel.post of
                 Unloaded ->
@@ -305,13 +314,13 @@ view settings postModel =
     in
     Html.div
         []
-        [ VoteModel.view postModel.voteModel
+        [ VoteModel.view karmaMap inTermsOf postModel.voteModel
             |> Html.map VoteModelMsg
         , postHtml
         , Html.br [] []
         , CommentCompose.view settings postModel.commentCompose
             |> Html.map ComposeMsg
-        , viewCommentTree settings postModel.comments
+        , viewCommentTree karmaMap inTermsOf settings postModel.comments
             |> Html.map TreeModelMsg
         ]
 

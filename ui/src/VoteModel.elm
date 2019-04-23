@@ -20,6 +20,7 @@ import Comet.Types.ZomeApiResult as ZomeApiResult
 import Comet.Votes
 import Html exposing (Html)
 import Json.Decode as Decode
+import KarmaMap exposing (KarmaMap, score)
 import Set
 
 
@@ -164,7 +165,21 @@ handleFunctionReturn oldId ret voteModel =
         ( oldId, voteModel, Cmd.none )
 
 
-view : VoteModel -> Html VoteMsg
-view voteModel =
+view : KarmaMap -> Maybe InTermsOf -> VoteModel -> Html VoteMsg
+view karmaMap inTermsOf voteModel =
     -- TODO
-    Html.text (Debug.toString voteModel)
+    Html.text
+        (case ( inTermsOf, voteModel.allVotes ) of
+            ( Just ito, Loaded votes ) ->
+                String.fromFloat
+                    (karmaMap |> score votes ito)
+
+            ( _, Loaded _ ) ->
+                "Loading Score"
+
+            ( _, Unloaded ) ->
+                "Loading Score"
+
+            ( _, Failed err ) ->
+                "Error " ++ Debug.toString err
+        )
