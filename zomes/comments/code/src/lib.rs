@@ -93,7 +93,7 @@ fn handle_update_comment(
 }
 
 /// Delete a comment
-fn handle_delete_comment(address: Address) -> ZomeApiResult<()> {
+fn handle_delete_comment(address: Address) -> ZomeApiResult<Address> {
     api::remove_entry(&address)
 }
 
@@ -111,7 +111,7 @@ define_zome! {
 
             validation_package: || ValidationPackageDefinition::Entry,
             validation: |entry_validation_data: hdk::EntryValidationData<Comment>| {
-                let not_ok = Err(format!("Cannot alter comment that is not yours. Your agent address is {}", *api::AGENT_ADDRESS));
+                let not_ok = Err("Cannot alter comment that is not yours.".to_string());
                 match entry_validation_data {
                     EntryValidationData::Create {
                         entry: comment,
@@ -283,7 +283,7 @@ define_zome! {
         }
         delete_comment: {
             inputs: |address: Address|,
-            outputs: |ok: ZomeApiResult<()>|,
+            outputs: |result: ZomeApiResult<Address>|,
             handler: handle_delete_comment
         }
         comments_from_address: {

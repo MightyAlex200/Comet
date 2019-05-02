@@ -215,7 +215,7 @@ scenario.runTape('Test anchors zome', async (t, { alice }) => {
         await alice.callSync('anchors', 'anchors', {
             anchor_type: 'type'
         }),
-        { Ok: { addresses: [anchorAddress.Ok] } },
+        { Ok: { links: [{ address: anchorAddress.Ok, headers: [] }] } },
         "Exactly 1 anchor with type 'type'"
     );
 
@@ -223,7 +223,7 @@ scenario.runTape('Test anchors zome', async (t, { alice }) => {
         await alice.callSync('anchors', 'anchors', {
             anchor_type: 'unused type'
         }),
-        { Ok: { addresses: [] } },
+        { Ok: { links: [] } },
         "No anchor with the type 'unused type'"
     );
 });
@@ -262,7 +262,7 @@ scenario.runTape('Test posts zome', async (t, { alice }) => {
         t.ok(ok);
         if (ok) {
             t.ok(
-                JSON.parse(invalidPostResponse.Err.Internal).kind.ValidationFailed.startsWith('Cannot alter post that is not yours. Your agent address is '),
+                JSON.parse(invalidPostResponse.Err.Internal).kind.ValidationFailed.startsWith('Cannot alter post that is not yours.'),
                 'Cannot create post with invalid key hash',
             );
         }
@@ -272,7 +272,7 @@ scenario.runTape('Test posts zome', async (t, { alice }) => {
         await alice.callSync('posts', 'user_posts', {
             author: 'HcScjwO9ji9633ZYxa6IYubHJHW6ctfoufv5eq4F7ZOxay8wR76FP4xeG9pY3ui'
         }),
-        { Ok: { addresses: [testPost.Ok] } },
+        { Ok: [testPost.Ok] },
         'Author has posts attributed to them'
     );
 
@@ -466,7 +466,7 @@ scenario.runTape('Test posts zome', async (t, { alice }) => {
         await alice.callSync('posts', 'delete_post', {
             address: testPost.Ok
         }),
-        { Ok: null },
+        { Ok: 'QmPRd5wyHCNvuQsHAR9PgYgRj4UhGQraToDf1dQUgBLyNn' },
         'Posts can be deleted',
     );
 
@@ -562,7 +562,7 @@ scenario.runTape('Test comments zome', async (t, { alice }) => {
         await alice.callSync('comments', 'delete_comment', {
             address: commentAddress.Ok
         }),
-        { Ok: null },
+        { Ok: 'QmZBTscKSa7AteGEcKaCSgkC1ZVYHKDfgJLxR3BxRobQNe' },
         'Comments can be deleted',
     );
 

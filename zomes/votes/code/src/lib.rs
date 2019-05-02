@@ -213,7 +213,7 @@ define_zome! {
             
             validation_package: || ValidationPackageDefinition::Entry,
             validation: |entry_validation_data: hdk::EntryValidationData<Vote>| {
-                let not_ok = Err(format!("Cannot alter vote that is not yours. Your agent address is {}", *api::AGENT_ADDRESS));
+                let not_ok = Err("Cannot alter vote that is not yours.".to_string());
                 match entry_validation_data {
                     EntryValidationData::Create {
                         entry: vote,
