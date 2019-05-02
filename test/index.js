@@ -33,7 +33,7 @@ scenario.runTape('Test votes zome', async (t, { alice }) => {
     });
 
     /// GETTING VOTES ///
-    // NEGATIVE //
+    // NEGATIVE - Invalid post //
     // ON POST //
     t.deepEquals(
         await alice.callSync('votes', 'votes_from_address', {
@@ -52,7 +52,7 @@ scenario.runTape('Test votes zome', async (t, { alice }) => {
     );
 
     /// VOTING ///
-    // NEGATIVE //
+    // NEGATIVE - Invalid fraction //
     // ON POST //
     t.deepEquals(
         JSON.parse((await alice.callSync('votes', 'vote', {
@@ -75,6 +75,17 @@ scenario.runTape('Test votes zome', async (t, { alice }) => {
         })).Err.Internal).kind,
         { ValidationFailed: 'Vote fraction must be between 1 and -1' },
         'Cannot vote on comment with invalid fraction',
+    );
+    // NEGATIVE - Invalid target //
+    t.deepEquals(
+        JSON.parse((await alice.callSync('votes', 'vote', {
+            fraction: 1,
+            in_terms_of: [1],
+            utc_unix_time: 0,
+            target: "invalid",
+        })).Err.Internal).kind,
+        { ErrorGeneric: 'Base for link not found' },
+        'Cannot vote on invalid target',
     );
 
     // POSITIVE //
@@ -129,7 +140,7 @@ scenario.runTape('Test votes zome', async (t, { alice }) => {
         'Can revote on comments',
     );
 
-    // NEGATIVE //
+    // NEGATIVE - Invalid fraction //
     // ON POST //
     t.deepEquals(
         JSON.parse((await alice.callSync('votes', 'vote', {
@@ -192,9 +203,12 @@ scenario.runTape('Test votes zome', async (t, { alice }) => {
 });
 
 scenario.runTape('Test anchors zome', async (t, { alice }) => {
+    /// ANCHORING ///
     anchorAddress = await alice.callSync('anchors', 'anchor', { anchor: testAnchor });
     t.deepEquals(anchorAddress, { Ok: 'QmaSQL21LjUj67aieoVyzwyUj36kbuCCsAyuScX5kXFMdB' }, 'Address is correct')
 
+    /// ANCHORS EXIST ///
+    // POSITIVE //
     t.deepEquals(
         await alice.callSync('anchors', 'exists', {
             anchor_address: anchorAddress.Ok
@@ -203,6 +217,7 @@ scenario.runTape('Test anchors zome', async (t, { alice }) => {
         'Anchor exists'
     )
 
+    // NEGATIVE //
     t.deepEquals(
         await alice.callSync('anchors', 'exists', {
             anchor_address: 'Garbage address'
@@ -211,6 +226,8 @@ scenario.runTape('Test anchors zome', async (t, { alice }) => {
         'Anchors not created do not exist'
     );
 
+    /// ANCHORS ///
+    // POSITIVE //
     t.deepEquals(
         await alice.callSync('anchors', 'anchors', {
             anchor_type: 'type'
@@ -219,6 +236,7 @@ scenario.runTape('Test anchors zome', async (t, { alice }) => {
         "Exactly 1 anchor with type 'type'"
     );
 
+    // NEGATIVE //
     t.deepEquals(
         await alice.callSync('anchors', 'anchors', {
             anchor_type: 'unused type'
@@ -235,6 +253,18 @@ scenario.runTape('Test posts zome', async (t, { alice }) => {
         utc_unix_time: 0,
     };
 
+    /// USER POSTS ///
+    // NEGATIVE //
+    t.deepEquals(
+        await alice.callSync('posts', 'user_posts', {
+            author: 'HcScjwO9ji9633ZYxa6IYubHJHW6ctfoufv5eq4F7ZOxay8wR76FP4xeG9pY3ui'
+        }),
+        { Ok: [] },
+        'User has no posts attributed to them'
+    );
+
+    /// CREATING POSTS ///
+    // POSITIVE //
     testPost = await alice.callSync('posts', 'create_post', {
         post: testPostEntry,
         tags: [1, 2],
@@ -242,6 +272,7 @@ scenario.runTape('Test posts zome', async (t, { alice }) => {
 
     t.deepEquals(testPost, { Ok: 'QmZznbVvtoWZ3PwsEKqJyRYRWpsW6kU5wpFsHWfCmX8xLk' }, 'Address is correct');
 
+    // NEGATIVE //
     const invalidTestPostEntry = {
         ...testPostEntry,
         timestamp: '1970-01-01T00:00:00+00:00',
@@ -268,6 +299,8 @@ scenario.runTape('Test posts zome', async (t, { alice }) => {
         }
     })();
 
+    /// USER POSTS ///
+    // POSITIVE //
     t.deepEquals(
         await alice.callSync('posts', 'user_posts', {
             author: 'HcScjwO9ji9633ZYxa6IYubHJHW6ctfoufv5eq4F7ZOxay8wR76FP4xeG9pY3ui'
@@ -276,6 +309,8 @@ scenario.runTape('Test posts zome', async (t, { alice }) => {
         'Author has posts attributed to them'
     );
 
+    /// POST TAGS ///
+    // POSITIVE & NEGATIVE //
     await (async () => {
         const post_tags = await alice.callSync('posts', 'post_tags', {
             address: testPost.Ok,
@@ -287,9 +322,14 @@ scenario.runTape('Test posts zome', async (t, { alice }) => {
             post_tags.Ok.original_tags.length == 2 &&
             post_tags.Ok.crosspost_tags.length == 0 &&
             post_tags.Ok.original_tags.includes(1) &&
-            post_tags.Ok.original_tags.includes(2);
+            post_tags.Ok.original_tags.includes(2) &&
+            !post_tags.Ok.original_tags.includes(3) &&
+            !post_tags.Ok.original_tags.includes(4);
         t.ok(ok, 'Post tags are valid');
     })();
+
+    /// SEARCH ///
+    // POSITIVE & NEGATIVE //
 
     t.deepEquals(
         await alice.callSync('posts', 'search', {
@@ -381,6 +421,8 @@ scenario.runTape('Test posts zome', async (t, { alice }) => {
         'Xor query finds no post'
     );
 
+    /// CROSSPOSTING ///
+    // POSITIVE //
     t.deepEquals(
         await alice.callSync('posts', 'crosspost', {
             post_address: testPost.Ok,
@@ -390,6 +432,23 @@ scenario.runTape('Test posts zome', async (t, { alice }) => {
         'Crossposting returns OK'
     );
 
+    // NEGATIVE //
+    t.deepEquals(
+        await alice.callSync('posts', 'crosspost', {
+            post_address: 'invalid',
+            tags: [3, 4],
+        }),
+        {
+            Err: {
+                Internal:
+                    '{"kind":{"ErrorGeneric":"Target for link not found"},"file":"/home/travis/build/holochain/holochain-rust/core/src/nucleus/ribosome/runtime.rs","line":"192"}'
+            }
+        },
+        'Cannot crosspost invalid target'
+    );
+
+    /// SEARCH ///
+    // POSITIVE //
     t.deepEquals(
         await alice.callSync('posts', 'search', {
             query: { type: 'and', values: [{ type: 'exactly', values: 3 }, { type: 'exactly', values: 4 }] },
@@ -399,6 +458,7 @@ scenario.runTape('Test posts zome', async (t, { alice }) => {
         'Crossposts can be found with search'
     );
 
+    // NEGATIVE //
     t.deepEquals(
         await alice.callSync('posts', 'search', {
             query: { type: 'and', values: [{ type: 'exactly', values: 3 }, { type: 'exactly', values: 4 }] },
@@ -408,6 +468,8 @@ scenario.runTape('Test posts zome', async (t, { alice }) => {
         'Crossposts can be excluded with search'
     );
 
+    /// POST TAGS ///
+    // POSITIVE //
     await (async () => {
         const post_tags = await alice.callSync('posts', 'post_tags', {
             address: testPost.Ok,
@@ -425,6 +487,8 @@ scenario.runTape('Test posts zome', async (t, { alice }) => {
         t.ok(ok, 'Post tags are valid with crosspost tags');
     })();
 
+    /// READING POST ///
+    // POSITIVE //
     t.deepEqual(
         (await alice.callSync('posts', 'read_post', {
             address: testPost.Ok,
@@ -438,6 +502,17 @@ scenario.runTape('Test posts zome', async (t, { alice }) => {
         'Posts are read correctly',
     );
 
+    // NEGATIVE //
+    t.deepEqual(
+        await alice.callSync('posts', 'read_post', {
+            address: 'invalid',
+        }),
+        { Err: { Internal: 'No entry at this address' } },
+        'Cannot read invalid posts',
+    );
+
+    /// UPDATE POSTS ///
+    // POSITIVE //
     const updatedTestPostEntry = { ...testPostEntry, content: 'Updated test post' };
 
     t.deepEqual(
@@ -449,6 +524,19 @@ scenario.runTape('Test posts zome', async (t, { alice }) => {
         'Posts can be updated',
     );
 
+    // NEGATIVE //
+    t.deepEqual(
+        await alice.callSync('posts', 'update_post', {
+            old_address: 'invalid',
+            new_entry: updatedTestPostEntry,
+        }),
+        { Err: { Internal: 'Entry Could Not Be Found' } },
+        'Invalid posts cannot be updated',
+    );
+
+
+    /// READING POSTS ///
+    // POSITIVE //
     t.deepEqual(
         (await alice.callSync('posts', 'read_post', {
             address: testPost.Ok,
@@ -462,6 +550,8 @@ scenario.runTape('Test posts zome', async (t, { alice }) => {
         'Updated posts are read correctly'
     );
 
+    /// DELETING POSTS ///
+    // POSITIVE //
     t.deepEqual(
         await alice.callSync('posts', 'delete_post', {
             address: testPost.Ok
@@ -470,6 +560,8 @@ scenario.runTape('Test posts zome', async (t, { alice }) => {
         'Posts can be deleted',
     );
 
+    /// READING POSTS ///
+    // NEGATIVE //
     t.deepEqual(
         await alice.callSync('posts', 'read_post', {
             address: testPost.Ok

@@ -51,31 +51,31 @@ lawless space.
       - [x] Anchors are linked to the empty anchors
           - [x] Positive
           - [x] Negative
-    - [ ] Posts
+    - [x] Posts
         - [x] Creating a post
           - [x] Positive
           - [x] Negative
         - [x] Reading a post
           - [x] Positive
-          - [ ] Negative
+          - [x] Negative
         - [x] Updating a post
           - [x] Positive
-          - [ ] Negative
+          - [x] Negative
         - [x] Deleting a post
           - [x] Positive
-          - [ ] Negative
+          - [x] Negative
         - [x] Searching
           - [x] Positive
           - [x] Negative
         - [x] Getting tags from post
           - [x] Positive
-          - [ ] Negative
+          - [x] Negative
         - [x] Crossposting
           - [x] Positive
-          - [ ] Negative
+          - [x] Negative
         - [x] Can find posts from user
           - [x] Positive
-          - [ ] Negative
+          - [x] Negative
     - [ ] Comments
         - [ ] Creating a comment
           - [x] Positive
