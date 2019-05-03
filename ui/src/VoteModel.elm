@@ -19,9 +19,12 @@ import Comet.Types.ZomeApiError as ZomeApiError exposing (ZomeApiError)
 import Comet.Types.ZomeApiResult as ZomeApiResult
 import Comet.Votes
 import Html exposing (Html)
+import Html.Events as Events
 import Json.Decode as Decode
 import KarmaMap exposing (KarmaMap, score)
 import Set
+import Task
+import Time
 
 
 type alias VoteModel =
@@ -29,11 +32,13 @@ type alias VoteModel =
     , allVotes : Load ZomeApiError (List Vote)
     , myVoteId : Maybe Id
     , allVotesId : Maybe Id
+    , voteId : Maybe Id
     }
 
 
 type VoteMsg
-    = NoOp
+    = VoteRequest Float InTermsOf
+    | VoteNow Float InTermsOf Int
 
 
 init : Id -> Address -> Maybe InTermsOf -> ( Id, VoteModel, Cmd msg )
@@ -52,6 +57,7 @@ init oldId address inTermsOf =
               , allVotes = Unloaded
               , myVoteId = Just myVoteId
               , allVotesId = Just allVotesId
+              , voteId = Nothing
               }
             , Cmd.batch
                 [ Comet.Votes.getMyVote myVoteId address (Set.toList tags)
@@ -65,6 +71,7 @@ init oldId address inTermsOf =
               , allVotes = Unloaded
               , myVoteId = Nothing
               , allVotesId = Nothing
+              , voteId = Nothing
               }
             , Cmd.none
             )
@@ -73,12 +80,34 @@ init oldId address inTermsOf =
 update :
     Id
     -> VoteMsg
+    -> Address
     -> VoteModel
     -> ( Id, VoteModel, Cmd VoteMsg )
-update oldId msg voteModel =
+update oldId msg address voteModel =
     case msg of
-        NoOp ->
-            ( oldId, voteModel, Cmd.none )
+        -- TODO: Update KarmaMap
+        VoteRequest fraction ito ->
+            ( oldId
+            , voteModel
+            , Time.now
+                -- TODO: Helper function for unix time task?
+                |> Task.map (\posix -> Time.posixToMillis posix // 1000)
+                |> Task.perform (VoteNow fraction ito)
+            )
+
+        VoteNow fraction ito time ->
+            let
+                voteId =
+                    getNewId oldId
+
+                itoList =
+                    ito
+                        |> Set.toList
+            in
+            ( voteId
+            , { voteModel | voteId = Just voteId }
+            , Comet.Votes.vote voteId time fraction itoList address
+            )
 
 
 updateInTermsOf :
@@ -168,18 +197,26 @@ handleFunctionReturn oldId ret voteModel =
 view : KarmaMap -> Maybe InTermsOf -> VoteModel -> Html VoteMsg
 view karmaMap inTermsOf voteModel =
     -- TODO
-    Html.text
-        (case ( inTermsOf, voteModel.allVotes ) of
-            ( Just ito, Loaded votes ) ->
-                String.fromFloat
+    case ( inTermsOf, voteModel.allVotes ) of
+        ( Just ito, Loaded votes ) ->
+            Html.div
+                []
+                [ String.fromFloat
                     (karmaMap |> score votes ito)
+                    |> Html.text
+                , Html.button
+                    [ Events.onClick (VoteRequest 1.0 ito) ]
+                    [ Html.text "+" ]
+                , Html.button
+                    [ Events.onClick (VoteRequest -1.0 ito) ]
+                    [ Html.text "-" ]
+                ]
 
-            ( _, Loaded _ ) ->
-                "Loading Score"
+        ( _, Loaded _ ) ->
+            Html.text "Loading Score"
 
-            ( _, Unloaded ) ->
-                "Loading Score"
+        ( _, Unloaded ) ->
+            Html.text "Loading Score"
 
-            ( _, Failed err ) ->
-                "Error " ++ Debug.toString err
-        )
+        ( _, Failed err ) ->
+            Html.text ("Error " ++ Debug.toString err)

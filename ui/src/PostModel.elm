@@ -144,6 +144,7 @@ update oldId msg postModel =
                     VoteModel.update
                         oldId
                         voteMsg
+                        postModel.address
                         postModel.voteModel
             in
             ( newId

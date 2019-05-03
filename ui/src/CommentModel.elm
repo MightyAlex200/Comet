@@ -148,6 +148,7 @@ updateCommentModel oldId msg commentModel =
                     VoteModel.update
                         oldId
                         voteMsg
+                        commentModel.address
                         commentModel.voteModel
             in
             ( newId
