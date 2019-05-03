@@ -64,6 +64,8 @@ impl Into<JsonString> for PossibleVote {
     }
 }
 
+/// Create and link a vote on a target if one does not exist, otherwise update
+/// the current one to reflect the new fractional value requested
 fn handle_vote(
     utc_unix_time: u64,
     fraction: f32,
@@ -88,6 +90,7 @@ fn handle_vote(
     }
 }
 
+/// Get all votes linked from a specific address
 fn handle_votes_from_address(address: Address) -> ZomeApiResult<Vec<Vote>> {
     Ok(api::get_links_and_load(&address, "vote")?
         .into_iter()
@@ -99,6 +102,7 @@ fn handle_votes_from_address(address: Address) -> ZomeApiResult<Vec<Vote>> {
         .collect())
 }
 
+/// Get the user's current vote on `address` in terms of `in_terms_of`
 fn find_my_vote(address: &Address, in_terms_of: &[Tag]) -> ZomeApiResult<Option<Address>> {
     match api::query_result(
         QueryArgsNames::QueryName("vote".to_string()),
@@ -124,6 +128,8 @@ fn find_my_vote(address: &Address, in_terms_of: &[Tag]) -> ZomeApiResult<Option<
     }
 }
 
+/// Find and return the user's vote on some address in terms of `in_terms_of`,
+/// if it exists
 fn handle_get_my_vote(address: Address, in_terms_of: Vec<Tag>) -> ZomeApiResult<PossibleVote> {
     let my_vote = find_my_vote(&address, &in_terms_of)?;
 
