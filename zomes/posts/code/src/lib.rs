@@ -166,8 +166,8 @@ struct SearchResult {
 impl From<(Address, InTermsOf)> for SearchResult {
     fn from((address, in_terms_of): (Address, InTermsOf)) -> Self {
         SearchResult {
-            address: address,
-            in_terms_of: in_terms_of,
+            address,
+            in_terms_of,
         }
     }
 }
@@ -180,15 +180,15 @@ fn anchor(anchor_type: String, anchor_text: String) -> ZomeApiResult<Address> {
         anchor: Anchor,
     }
     let anchor = Anchor {
-        anchor_type: anchor_type,
-        anchor_text: anchor_text,
+        anchor_type,
+        anchor_text,
     };
     let json_string: String = api::call(
         hdk::THIS_INSTANCE,
         "anchors",
         Address::from(api::PUBLIC_TOKEN.to_string()),
         "anchor",
-        (AnchorCallType { anchor: anchor }).into(),
+        (AnchorCallType { anchor }).into(),
     )?
     .into();
     serde_json::from_str::<ZomeApiResult<Address>>(&json_string)
@@ -266,7 +266,7 @@ fn handle_search(query: Search, exclude_crossposts: bool) -> ZomeApiResult<Vec<S
             Search::Exactly(tag) => {
                 let tag_anchor_address = anchor("tag".to_owned(), tag.to_string())?;
                 let original_links = api::get_links(&tag_anchor_address, "original_tag")?;
-                let original_tags = original_links.addresses().iter().cloned().map(|address| {
+                let original_tags = original_links.addresses().into_iter().map(|address| {
                     let mut in_terms_of = HashSet::new();
                     in_terms_of.insert(tag);
                     (address, in_terms_of)
@@ -276,7 +276,7 @@ fn handle_search(query: Search, exclude_crossposts: bool) -> ZomeApiResult<Vec<S
                 } else {
                     let crosspost_links = api::get_links(&tag_anchor_address, "crosspost_tag")?;
                     let crosspost_tags =
-                        crosspost_links.addresses().iter().cloned().map(|address| {
+                        crosspost_links.addresses().into_iter().map(|address| {
                             let mut in_terms_of = HashSet::new();
                             in_terms_of.insert(tag);
                             (address, in_terms_of)
@@ -330,7 +330,7 @@ fn handle_update_post(old_address: Address, new_entry: PostContent) -> ZomeApiRe
 }
 
 /// Delete a post
-fn handle_delete_post(address: Address) -> ZomeApiResult<()> {
+fn handle_delete_post(address: Address) -> ZomeApiResult<Address> {
     api::remove_entry(&address)
 }
 
@@ -415,8 +415,8 @@ fn handle_post_tags(address: Address) -> ZomeApiResult<PostTags> {
 }
 
 /// Return the addresses of posts a user has made by their key address
-fn handle_user_posts(author: Address) -> ZomeApiResult<GetLinksResult> {
-    api::get_links(&author, "author")
+fn handle_user_posts(author: Address) -> ZomeApiResult<Vec<Address>> {
+    api::get_links(&author, "author").map(|links| links.addresses())
 }
 
 define_zome! {
@@ -428,14 +428,14 @@ define_zome! {
             
             validation_package: || ValidationPackageDefinition::Entry,
             validation: |entry_validation_data: hdk::EntryValidationData<Post>| {
-                let not_ok = Err(format!("Cannot alter post that is not yours. Your agent address is {}", *api::AGENT_ADDRESS));
+                let not_ok = Err("Cannot alter post that is not yours.".to_string());
                 match entry_validation_data {
                     EntryValidationData::Create {
                         entry: post,
                         validation_data,
                     } => {
                         let provenances = validation_data.package.chain_header.provenances();
-                        if provenances.into_iter().all(|provenance| provenance.0 == post.key_hash) {
+                        if provenances.iter().all(|provenance| provenance.0 == post.key_hash) {
                             Ok(())
                         } else {
                             not_ok
@@ -448,7 +448,7 @@ define_zome! {
                         validation_data,
                     } => {
                         let mut provenances = validation_data.package.chain_header.provenances()
-                            .into_iter()
+                            .iter()
                             .chain(old_entry_header.provenances());
                         if old_post.key_hash == new_post.key_hash
                             && provenances.all(|provenance| provenance.0 == old_post.key_hash)
@@ -464,7 +464,7 @@ define_zome! {
                         validation_data,
                     } => {
                         let mut provenances = validation_data.package.chain_header.provenances()
-                            .into_iter()
+                            .iter()
                             .chain(old_entry_header.provenances());
                         if provenances.all(|provenance| provenance.0 == old_post.key_hash)
                         {
@@ -627,7 +627,7 @@ define_zome! {
         }
         delete_post: {
             inputs: |address: Address|,
-            outputs: |ok: ZomeApiResult<()>|,
+            outputs: |ok: ZomeApiResult<Address>|,
             handler: handle_delete_post
         }
         search: {
@@ -647,7 +647,7 @@ define_zome! {
         }
         user_posts: {
             inputs: |author: Address|,
-            outputs: |posts: ZomeApiResult<GetLinksResult>|,
+            outputs: |posts: ZomeApiResult<Vec<Address>>|,
             handler: handle_user_posts
         }
     ]

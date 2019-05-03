@@ -34,12 +34,12 @@ fn handle_anchor(anchor: Anchor) -> ZomeApiResult<Address> {
     let anchor_entry = Entry::App("anchor".into(), anchor.into());
     let anchor_address = api::entry_address(&anchor_entry)?;
     // if anchor exists:
-    if let Some(_) = api::get_entry(&anchor_address)? {
+    if api::get_entry(&anchor_address)?.is_some() {
         // return it
-        return Ok(anchor_address.into());
+        Ok(anchor_address)
     } else {
         let type_anchor = Anchor {
-            anchor_type: anchor_type,
+            anchor_type,
             anchor_text: "".to_owned(),
         };
         let type_anchor_entry = Entry::App("anchor".into(), type_anchor.into());
@@ -79,7 +79,7 @@ fn handle_anchor_exists(anchor_address: Address) -> ZomeApiResult<JsonString> {
 
 fn handle_anchors(anchor_type: String) -> ZomeApiResult<GetLinksResult> {
     let type_anchor = Anchor {
-        anchor_type: anchor_type,
+        anchor_type,
         anchor_text: "".to_owned(),
     };
     let type_anchor_entry = Entry::App("anchor".into(), type_anchor.into());

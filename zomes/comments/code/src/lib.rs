@@ -17,7 +17,7 @@ use hdk::{
     LinkValidationData,
     holochain_core_types::{
         cas::content::Address, dna::entry_types::Sharing, entry::Entry, error::HolochainError,
-        hash::HashString, json::JsonString, time::Iso8601, validation::ValidationPackageDefinition,
+        json::JsonString, time::Iso8601, validation::ValidationPackageDefinition,
     },
 };
 
@@ -93,7 +93,7 @@ fn handle_update_comment(
 }
 
 /// Delete a comment
-fn handle_delete_comment(address: Address) -> ZomeApiResult<()> {
+fn handle_delete_comment(address: Address) -> ZomeApiResult<Address> {
     api::remove_entry(&address)
 }
 
@@ -111,14 +111,14 @@ define_zome! {
 
             validation_package: || ValidationPackageDefinition::Entry,
             validation: |entry_validation_data: hdk::EntryValidationData<Comment>| {
-                let not_ok = Err(format!("Cannot alter comment that is not yours. Your agent address is {}", *api::AGENT_ADDRESS));
+                let not_ok = Err("Cannot alter comment that is not yours.".to_string());
                 match entry_validation_data {
                     EntryValidationData::Create {
                         entry: comment,
                         validation_data,
                     } => {
                         let provenances = validation_data.package.chain_header.provenances();
-                        if provenances.into_iter().all(|provenance| provenance.0 == comment.key_hash) {
+                        if provenances.iter().all(|provenance| provenance.0 == comment.key_hash) {
                             Ok(())
                         } else {
                             not_ok
@@ -131,7 +131,7 @@ define_zome! {
                         validation_data,
                     } => {
                         let mut provenances = validation_data.package.chain_header.provenances()
-                            .into_iter()
+                            .iter()
                             .chain(old_entry_header.provenances());
                         if old_comment.key_hash == new_comment.key_hash
                             && provenances.all(|provenance| provenance.0 == old_comment.key_hash)
@@ -147,7 +147,7 @@ define_zome! {
                         validation_data,
                     } => {
                         let mut provenances = validation_data.package.chain_header.provenances()
-                            .into_iter()
+                            .iter()
                             .chain(old_entry_header.provenances());
                         if provenances.all(|provenance| provenance.0 == old_comment.key_hash)
                         {
@@ -283,7 +283,7 @@ define_zome! {
         }
         delete_comment: {
             inputs: |address: Address|,
-            outputs: |ok: ZomeApiResult<()>|,
+            outputs: |result: ZomeApiResult<Address>|,
             handler: handle_delete_comment
         }
         comments_from_address: {
