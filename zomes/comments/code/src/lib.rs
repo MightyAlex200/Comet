@@ -17,7 +17,7 @@ use hdk::{
     LinkValidationData,
     holochain_core_types::{
         cas::content::Address, dna::entry_types::Sharing, entry::Entry, error::HolochainError,
-        hash::HashString, json::JsonString, time::Iso8601, validation::ValidationPackageDefinition,
+        json::JsonString, time::Iso8601, validation::ValidationPackageDefinition,
     },
 };
 
@@ -118,7 +118,7 @@ define_zome! {
                         validation_data,
                     } => {
                         let provenances = validation_data.package.chain_header.provenances();
-                        if provenances.into_iter().all(|provenance| provenance.0 == comment.key_hash) {
+                        if provenances.iter().all(|provenance| provenance.0 == comment.key_hash) {
                             Ok(())
                         } else {
                             not_ok
@@ -131,7 +131,7 @@ define_zome! {
                         validation_data,
                     } => {
                         let mut provenances = validation_data.package.chain_header.provenances()
-                            .into_iter()
+                            .iter()
                             .chain(old_entry_header.provenances());
                         if old_comment.key_hash == new_comment.key_hash
                             && provenances.all(|provenance| provenance.0 == old_comment.key_hash)
@@ -147,7 +147,7 @@ define_zome! {
                         validation_data,
                     } => {
                         let mut provenances = validation_data.package.chain_header.provenances()
-                            .into_iter()
+                            .iter()
                             .chain(old_entry_header.provenances());
                         if provenances.all(|provenance| provenance.0 == old_comment.key_hash)
                         {

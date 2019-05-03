@@ -166,8 +166,8 @@ struct SearchResult {
 impl From<(Address, InTermsOf)> for SearchResult {
     fn from((address, in_terms_of): (Address, InTermsOf)) -> Self {
         SearchResult {
-            address: address,
-            in_terms_of: in_terms_of,
+            address,
+            in_terms_of,
         }
     }
 }
@@ -180,15 +180,15 @@ fn anchor(anchor_type: String, anchor_text: String) -> ZomeApiResult<Address> {
         anchor: Anchor,
     }
     let anchor = Anchor {
-        anchor_type: anchor_type,
-        anchor_text: anchor_text,
+        anchor_type,
+        anchor_text,
     };
     let json_string: String = api::call(
         hdk::THIS_INSTANCE,
         "anchors",
         Address::from(api::PUBLIC_TOKEN.to_string()),
         "anchor",
-        (AnchorCallType { anchor: anchor }).into(),
+        (AnchorCallType { anchor }).into(),
     )?
     .into();
     serde_json::from_str::<ZomeApiResult<Address>>(&json_string)
@@ -435,7 +435,7 @@ define_zome! {
                         validation_data,
                     } => {
                         let provenances = validation_data.package.chain_header.provenances();
-                        if provenances.into_iter().all(|provenance| provenance.0 == post.key_hash) {
+                        if provenances.iter().all(|provenance| provenance.0 == post.key_hash) {
                             Ok(())
                         } else {
                             not_ok
@@ -448,7 +448,7 @@ define_zome! {
                         validation_data,
                     } => {
                         let mut provenances = validation_data.package.chain_header.provenances()
-                            .into_iter()
+                            .iter()
                             .chain(old_entry_header.provenances());
                         if old_post.key_hash == new_post.key_hash
                             && provenances.all(|provenance| provenance.0 == old_post.key_hash)
@@ -464,7 +464,7 @@ define_zome! {
                         validation_data,
                     } => {
                         let mut provenances = validation_data.package.chain_header.provenances()
-                            .into_iter()
+                            .iter()
                             .chain(old_entry_header.provenances());
                         if provenances.all(|provenance| provenance.0 == old_post.key_hash)
                         {

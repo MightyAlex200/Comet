@@ -71,7 +71,7 @@ fn handle_vote(
     target: Address,
 ) -> ZomeApiResult<Address> {
     let vote = Vote {
-        fraction: fraction,
+        fraction,
         in_terms_of: in_terms_of.clone(),
         target_hash: target.clone(),
         key_hash: api::AGENT_ADDRESS.clone(),
@@ -99,7 +99,7 @@ fn handle_votes_from_address(address: Address) -> ZomeApiResult<Vec<Vote>> {
         .collect())
 }
 
-fn find_my_vote(address: &Address, in_terms_of: &Vec<Tag>) -> ZomeApiResult<Option<Address>> {
+fn find_my_vote(address: &Address, in_terms_of: &[Tag]) -> ZomeApiResult<Option<Address>> {
     match api::query_result(
         QueryArgsNames::QueryName("vote".to_string()),
         QueryArgsOptions {
@@ -188,7 +188,7 @@ fn validate_vote_link(from: &Address, to: &Address) -> Result<(), String> {
         }
     }
 
-    if get_votes(&vote, from)?.into_iter().any(|query_vote| {
+    let already_voted = get_votes(&vote, from)?.into_iter().any(|query_vote| {
         for tag_query in &query_vote.in_terms_of {
             for tag_vote in &vote.in_terms_of {
                 if tag_vote == tag_query {
@@ -197,7 +197,9 @@ fn validate_vote_link(from: &Address, to: &Address) -> Result<(), String> {
             }
         }
         false
-    }) {
+    });
+
+    if already_voted {
         Err("You've already voted on this thing in that way".to_string())
     } else {
         Ok(())
@@ -220,7 +222,7 @@ define_zome! {
                         validation_data,
                     } => {
                         let provenances = validation_data.package.chain_header.provenances();
-                        if provenances.into_iter().all(|provenance| provenance.0 == vote.key_hash) {
+                        if provenances.iter().all(|provenance| provenance.0 == vote.key_hash) {
                             if vote.fraction <= 1.0 && vote.fraction >= -1.0 {
                                 Ok(())
                             } else {
@@ -237,7 +239,7 @@ define_zome! {
                         validation_data,
                     } => {
                         let mut provenances = validation_data.package.chain_header.provenances()
-                            .into_iter()
+                            .iter()
                             .chain(old_entry_header.provenances());
                         if old_vote.key_hash == new_vote.key_hash
                             && provenances.all(|provenance| provenance.0 == old_vote.key_hash)
@@ -257,7 +259,7 @@ define_zome! {
                         validation_data,
                     } => {
                         let mut provenances = validation_data.package.chain_header.provenances()
-                            .into_iter()
+                            .iter()
                             .chain(old_entry_header.provenances());
                         if provenances.all(|provenance| provenance.0 == old_vote.key_hash)
                         {
