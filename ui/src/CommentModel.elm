@@ -256,12 +256,11 @@ commentModelReturnHelper oldId ret commentModel inTermsOf =
 
 
 viewCommentModel :
-    KarmaMap
-    -> Maybe InTermsOf
+    Maybe InTermsOf
     -> Settings
     -> CommentModel
     -> Html CommentModelMsg
-viewCommentModel karmaMap inTermsOf settings commentModel =
+viewCommentModel inTermsOf settings commentModel =
     let
         commentHtml =
             case commentModel.comment of
@@ -277,18 +276,30 @@ viewCommentModel karmaMap inTermsOf settings commentModel =
                 Failed x ->
                     Html.text
                         ("Failed loading comment: " ++ ZomeApiError.describe x)
+
+        voteHtml =
+            case commentModel.comment of
+                Loaded comment ->
+                    VoteModel.view
+                        comment.keyHash
+                        settings
+                        inTermsOf
+                        commentModel.voteModel
+                        |> Html.map VoteModelMsg
+
+                _ ->
+                    Html.text "Loading votes"
     in
     Html.div
         []
-        [ VoteModel.view karmaMap inTermsOf commentModel.voteModel
-            |> Html.map VoteModelMsg
+        [ voteHtml
         , commentHtml
         , Html.br [] []
         , CommentCompose.view settings commentModel.commentCompose
             |> Html.map ComposeMsg
         , Html.div
             [ Html.Attributes.style "margin" "32px" ]
-            [ viewCommentTree karmaMap inTermsOf settings commentModel.treeModel
+            [ viewCommentTree inTermsOf settings commentModel.treeModel
                 |> Html.map TreeModelMsg
             ]
         ]
@@ -447,12 +458,11 @@ handleCommentTreeFunctionReturn oldId ret treeModel inTermsOf =
 
 
 viewCommentTree :
-    KarmaMap
-    -> Maybe InTermsOf
+    Maybe InTermsOf
     -> Settings
     -> CommentTreeModel
     -> Html CommentTreeMsg
-viewCommentTree karmaMap inTermsOf settings ctm =
+viewCommentTree inTermsOf settings ctm =
     let
         ctmRecord =
             case ctm of
@@ -471,7 +481,7 @@ viewCommentTree karmaMap inTermsOf settings ctm =
             comments
                 |> List.map
                     (\comment ->
-                        viewCommentModel karmaMap inTermsOf settings comment
+                        viewCommentModel inTermsOf settings comment
                             |> Html.map (CommentMsg comment.address)
                     )
                 |> List.map List.singleton

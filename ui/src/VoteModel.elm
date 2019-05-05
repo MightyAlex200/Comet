@@ -23,6 +23,7 @@ import Html.Events as Events
 import Json.Decode as Decode
 import KarmaMap exposing (KarmaMap, score)
 import Set
+import Settings exposing (Settings)
 import Task
 import Time
 
@@ -37,8 +38,8 @@ type alias VoteModel =
 
 
 type VoteMsg
-    = VoteRequest Float InTermsOf
-    | VoteNow Float InTermsOf Int
+    = VoteRequest Address Settings Float InTermsOf (Maybe Vote)
+    | VoteNow Address Settings Float InTermsOf (Maybe Vote) Int
 
 
 init : Id -> Address -> Maybe InTermsOf -> ( Id, VoteModel, Cmd msg )
@@ -85,17 +86,16 @@ update :
     -> ( Id, VoteModel, Cmd VoteMsg )
 update oldId msg address voteModel =
     case msg of
-        -- TODO: Update KarmaMap
-        VoteRequest fraction ito ->
+        VoteRequest author settings fraction ito myVote ->
             ( oldId
             , voteModel
             , Time.now
                 -- TODO: Helper function for unix time task?
                 |> Task.map (\posix -> Time.posixToMillis posix // 1000)
-                |> Task.perform (VoteNow fraction ito)
+                |> Task.perform (VoteNow author settings fraction ito myVote)
             )
 
-        VoteNow fraction ito time ->
+        VoteNow author settings fraction ito myVote time ->
             let
                 voteId =
                     getNewId oldId
@@ -103,10 +103,26 @@ update oldId msg address voteModel =
                 itoList =
                     ito
                         |> Set.toList
+
+                myFraction =
+                    myVote
+                        |> Maybe.map .fraction
+                        |> Maybe.withDefault 0
+
+                newSettings =
+                    { settings
+                        | karmaMap =
+                            settings.karmaMap
+                                |> KarmaMap.addWeight author ito -myFraction
+                                |> KarmaMap.addWeight author ito fraction
+                    }
             in
             ( voteId
             , { voteModel | voteId = Just voteId }
-            , Comet.Votes.vote voteId time fraction itoList address
+            , Cmd.batch
+                [ Comet.Votes.vote voteId time fraction itoList address
+                , Settings.saveSettings newSettings
+                ]
             )
 
 
@@ -194,29 +210,38 @@ handleFunctionReturn oldId ret voteModel =
         ( oldId, voteModel, Cmd.none )
 
 
-view : KarmaMap -> Maybe InTermsOf -> VoteModel -> Html VoteMsg
-view karmaMap inTermsOf voteModel =
+view :
+    Address
+    -> Settings
+    -> Maybe InTermsOf
+    -> VoteModel
+    -> Html VoteMsg
+view author settings inTermsOf voteModel =
     -- TODO
-    case ( inTermsOf, voteModel.allVotes ) of
-        ( Just ito, Loaded votes ) ->
+    case ( inTermsOf, voteModel.allVotes, voteModel.myVote ) of
+        ( Just ito, Loaded votes, Loaded myVote ) ->
             Html.div
                 []
                 [ String.fromFloat
-                    (karmaMap |> score votes ito)
+                    (settings.karmaMap |> score votes ito)
                     |> Html.text
                 , Html.button
-                    [ Events.onClick (VoteRequest 1.0 ito) ]
+                    [ Events.onClick
+                        (VoteRequest author settings 1.0 ito myVote)
+                    ]
                     [ Html.text "+" ]
                 , Html.button
-                    [ Events.onClick (VoteRequest -1.0 ito) ]
+                    [ Events.onClick
+                        (VoteRequest author settings -1.0 ito myVote)
+                    ]
                     [ Html.text "-" ]
                 ]
 
-        ( _, Loaded _ ) ->
-            Html.text "Loading Score"
+        ( _, Failed err, _ ) ->
+            Html.text ("Error getting votes: " ++ Debug.toString err)
 
-        ( _, Unloaded ) ->
-            Html.text "Loading Score"
+        ( _, _, Failed err ) ->
+            Html.text ("Error getting your vote: " ++ Debug.toString err)
 
-        ( _, Failed err ) ->
-            Html.text ("Error " ++ Debug.toString err)
+        ( _, _, _ ) ->
+            Html.text "Loading Score"

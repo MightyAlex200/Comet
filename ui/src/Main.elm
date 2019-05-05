@@ -9,7 +9,7 @@ import Comet.Types.SearchResult exposing (InTermsOf)
 import Html exposing (Html)
 import Html.Attributes
 import Html.Events
-import Json.Decode as Decode
+import Json.Decode as Decode exposing (Value)
 import KarmaMap exposing (KarmaMap)
 import PostModel
     exposing
@@ -53,7 +53,6 @@ type alias Model =
     , key : Navigation.Key
     , lastUsedFunctionId : Id
     , settings : Settings
-    , karmaMap : KarmaMap
     }
 
 
@@ -63,7 +62,8 @@ type Msg
     | PostPageMsg PostMsg
     | SetDebugModel DebugModel
     | FunctionReturned Comet.Port.FunctionReturn
-    | SettingsUpdated Settings
+    | UpdateSettings Settings
+    | SettingsUpdated Value
 
 
 init : () -> Url -> Navigation.Key -> ( Model, Cmd Msg )
@@ -74,7 +74,6 @@ init _ _ key =
             , page = DebugScreen initDebugModel
             , lastUsedFunctionId = 0
             , settings = Settings.defaultSettings
-            , karmaMap = KarmaMap.empty
             }
     in
     ( model, Navigation.pushUrl key "/debug" )
@@ -169,10 +168,18 @@ update msg model =
                     , Navigation.load string
                     )
 
-        ( _, SettingsUpdated settings ) ->
-            ( { model | settings = settings }
-            , Settings.saveSettings settings
-            )
+        ( _, UpdateSettings settings ) ->
+            ( model, Settings.saveSettings settings )
+
+        ( _, SettingsUpdated value ) ->
+            case value |> Decode.decodeValue Settings.decode of
+                Ok settings ->
+                    ( { model | settings = settings }
+                    , Cmd.none
+                    )
+
+                Err _ ->
+                    ( model, Cmd.none )
 
         ( PostPage postPageModel, FunctionReturned functionReturn ) ->
             let
@@ -249,7 +256,7 @@ debugView settings debugModel =
                             markdownSettings =
                                 settings.markdownSettings
                         in
-                        SettingsUpdated
+                        UpdateSettings
                             { settings
                                 | markdownSettings =
                                     { markdownSettings
@@ -277,7 +284,6 @@ view model =
                     Html.map
                         PostPageMsg
                         (PostModel.view
-                            model.karmaMap
                             model.settings
                             postPageModel
                         )

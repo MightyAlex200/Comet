@@ -291,11 +291,10 @@ commentTreeReturn oldId ret postModel =
 
 
 view :
-    KarmaMap
-    -> Settings
+    Settings
     -> PostModel
     -> Html PostMsg
-view karmaMap settings postModel =
+view settings postModel =
     let
         inTermsOf =
             postModel.inTermsOf
@@ -312,16 +311,28 @@ view karmaMap settings postModel =
 
                 Loaded post ->
                     viewPost settings post
+
+        voteHtml =
+            case postModel.post of
+                Loaded post ->
+                    VoteModel.view
+                        post.keyHash
+                        settings
+                        inTermsOf
+                        postModel.voteModel
+                        |> Html.map VoteModelMsg
+
+                _ ->
+                    Html.text "Loading votes"
     in
     Html.div
         []
-        [ VoteModel.view karmaMap inTermsOf postModel.voteModel
-            |> Html.map VoteModelMsg
+        [ voteHtml
         , postHtml
         , Html.br [] []
         , CommentCompose.view settings postModel.commentCompose
             |> Html.map ComposeMsg
-        , viewCommentTree karmaMap inTermsOf settings postModel.comments
+        , viewCommentTree inTermsOf settings postModel.comments
             |> Html.map TreeModelMsg
         ]
 

@@ -16,9 +16,10 @@
         }
 
         // Connect ports
-        app.ports.saveSettings.subscribe(settings =>
-            window.localStorage.setItem('settings', JSON.stringify(settings))
-        );
+        app.ports.saveSettingsPort.subscribe(settings => {
+            window.localStorage.setItem('settings', JSON.stringify(settings));
+            app.ports.settingsUpdated.send(settings);
+        });
 
         const settings = localStorage.getItem('settings');
         if (settings) {
