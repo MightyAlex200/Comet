@@ -266,6 +266,10 @@ debugView settings debugModel =
                     )
                 ]
                 []
+            , Html.br [] []
+            , Html.button
+                [ Html.Events.onClick (UpdateSettings Settings.defaultSettings) ]
+                [ Html.text "Reset settings" ]
             ]
         ]
 

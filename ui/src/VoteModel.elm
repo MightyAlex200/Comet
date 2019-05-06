@@ -10,7 +10,7 @@ module VoteModel exposing
 
 import Comet.Port exposing (Id, getNewId)
 import Comet.Types.Address exposing (Address)
-import Comet.Types.Load exposing (Load(..))
+import Comet.Types.Load as Load exposing (Load(..))
 import Comet.Types.Option as Option
 import Comet.Types.SearchResult exposing (InTermsOf)
 import Comet.Types.Tag exposing (Tag)
@@ -109,6 +109,14 @@ update oldId msg address voteModel =
                         |> Maybe.map .fraction
                         |> Maybe.withDefault 0
 
+                newVote =
+                    { fraction = fraction
+                    , inTermsOf = ito |> Set.toList
+                    , targetHash = address
+                    , keyHash = author
+                    , timestamp = "" -- TODO ?
+                    }
+
                 newSettings =
                     { settings
                         | karmaMap =
@@ -118,7 +126,30 @@ update oldId msg address voteModel =
                     }
             in
             ( voteId
-            , { voteModel | voteId = Just voteId }
+            , { voteModel
+                | voteId = Just voteId
+                , myVote = Loaded (Just newVote)
+                , allVotes =
+                    case myVote of
+                        Just prevVote ->
+                            voteModel.allVotes
+                                |> (Load.map << List.map)
+                                    (\vote ->
+                                        if vote == prevVote then
+                                            newVote
+
+                                        else
+                                            vote
+                                    )
+
+                        Nothing ->
+                            case voteModel.allVotes of
+                                Loaded allVotes ->
+                                    Loaded (newVote :: allVotes)
+
+                                _ ->
+                                    Loaded [ newVote ]
+              }
             , Cmd.batch
                 [ Comet.Votes.vote voteId time fraction itoList address
                 , Settings.saveSettings newSettings
