@@ -419,6 +419,22 @@ fn handle_user_posts(author: Address) -> ZomeApiResult<Vec<Address>> {
     api::get_links(&author, "author").map(|links| links.addresses())
 }
 
+/// Username of an agent. Used instead of string to get around issues of
+/// serialization with `ZomeApiResult<String>`
+#[derive(Debug, Clone, PartialEq, DefaultJson, Serialize, Deserialize)]
+struct Username(String);
+
+/// Get the username of an agent
+fn handle_get_username(agent_address: Address) -> ZomeApiResult<Username> {
+    let entry = hdk::get_entry(&agent_address)?;
+    match entry {
+        Some(Entry::AgentId(agent_id)) => Ok(Username(agent_id.nick)),
+        _ => Err(ZomeApiError::Internal(
+            "Address did not lead to agent id.".to_string()
+        )),
+    }
+}
+
 define_zome! {
     entries: [
         entry!(
@@ -650,6 +666,11 @@ define_zome! {
             outputs: |posts: ZomeApiResult<Vec<Address>>|,
             handler: handle_user_posts
         }
+        get_username: {
+            inputs: |agent_address: Address|,
+            outputs: |username: ZomeApiResult<Username>|,
+            handler: handle_get_username
+        }
     ]
 
     traits: {
@@ -662,7 +683,8 @@ define_zome! {
             search,
             crosspost,
             post_tags,
-            user_posts
+            user_posts,
+            get_username
         ]
     }
 }
