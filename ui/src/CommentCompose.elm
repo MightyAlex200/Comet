@@ -66,7 +66,11 @@ handleFunctionReturn :
 handleFunctionReturn oldId ret commentCompose =
     if Just ret.id == commentCompose.id then
         { newId = oldId
-        , commentCompose = { commentCompose | hidden = True }
+        , commentCompose =
+            { commentCompose
+                | hidden = True
+                , input = ""
+            }
         , cmd = Cmd.none
         , refresh = True
         }
