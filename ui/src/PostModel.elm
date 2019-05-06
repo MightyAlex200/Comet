@@ -27,6 +27,7 @@ import CommentModel
         , CommentTreeMsg
         , handleCommentTreeFunctionReturn
         , initCommentTreeModel
+        , updateCommentTreeInTermsOf
         , updateCommentTreeModel
         , viewCommentTree
         )
@@ -199,13 +200,23 @@ handleFunctionReturn oldId ret postModel =
                             postModel.address
                             inTermsOf.originalTags
                             postModel.voteModel
+
+                    ( ctmId, updatedCommentTree, ctmCmd ) =
+                        updateCommentTreeInTermsOf
+                            newId
+                            inTermsOf.originalTags
+                            postModel.comments
                 in
-                ( newId
+                ( ctmId
                 , { postModel
                     | inTermsOf = Loaded inTermsOf.originalTags
                     , voteModel = updatedVoteModel
+                    , comments = updatedCommentTree
                   }
-                , cmd
+                , Cmd.batch
+                    [ cmd
+                    , ctmCmd
+                    ]
                 )
 
             Ok (Err apiError) ->

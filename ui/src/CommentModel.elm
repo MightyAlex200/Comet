@@ -8,6 +8,8 @@ module CommentModel exposing
     , initCommentModel
     , initCommentTreeModel
     , updateCommentModel
+    , updateCommentModelInTermsOf
+    , updateCommentTreeInTermsOf
     , updateCommentTreeModel
     , viewCommentModel
     , viewCommentTree
@@ -155,6 +157,38 @@ updateCommentModel oldId msg commentModel =
             , { commentModel | voteModel = voteModel }
             , Cmd.map VoteModelMsg cmd
             )
+
+
+updateCommentModelInTermsOf :
+    Id
+    -> InTermsOf
+    -> CommentModel
+    -> ( Id, CommentModel, Cmd msg )
+updateCommentModelInTermsOf oldId inTermsOf commentModel =
+    let
+        ( voteModelId, updatedVoteModel, voteModelCmd ) =
+            VoteModel.updateInTermsOf
+                oldId
+                commentModel.address
+                inTermsOf
+                commentModel.voteModel
+
+        ( treeModelId, updatedTreeModel, treeModelCmd ) =
+            updateCommentTreeInTermsOf
+                voteModelId
+                inTermsOf
+                commentModel.treeModel
+    in
+    ( treeModelId
+    , { commentModel
+        | treeModel = updatedTreeModel
+        , voteModel = updatedVoteModel
+      }
+    , Cmd.batch
+        [ voteModelCmd
+        , treeModelCmd
+        ]
+    )
 
 
 handleCommentModelFunctionReturn :
@@ -387,6 +421,44 @@ updateCommentTreeModel oldId msg treeModel =
 
                 _ ->
                     ( oldId, treeModel, Cmd.none )
+
+
+updateCommentTreeInTermsOf :
+    Id
+    -> InTermsOf
+    -> CommentTreeModel
+    -> ( Id, CommentTreeModel, Cmd msg )
+updateCommentTreeInTermsOf oldId inTermsOf ctm =
+    let
+        ctmRecord =
+            case ctm of
+                CommentTreeModel r ->
+                    r
+
+        fold comment ( i, cs, cms ) =
+            let
+                ( i2, c, cm ) =
+                    updateCommentModelInTermsOf
+                        i
+                        inTermsOf
+                        comment
+            in
+            ( i2, c :: cs, cm :: cms )
+
+        ( newId, updatedComments, cmds ) =
+            case ctmRecord.subcomments of
+                Loaded subcomments ->
+                    subcomments
+                        |> List.foldr fold ( oldId, [], [] )
+                        |> (\( a, b, c ) -> ( a, Loaded b, c ))
+
+                _ ->
+                    ( oldId, ctmRecord.subcomments, [] )
+    in
+    ( newId
+    , CommentTreeModel { ctmRecord | subcomments = updatedComments }
+    , Cmd.batch cmds
+    )
 
 
 handleCommentTreeFunctionReturn :
