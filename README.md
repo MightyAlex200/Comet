@@ -76,6 +76,9 @@ lawless space.
         - [x] Can find posts from user
           - [x] Positive
           - [x] Negative
+        - [x] Can get usernames of users
+          - [x] Positive
+          - [x] Negative
     - [ ] Comments
         - [ ] Creating a comment
           - [x] Positive
@@ -121,6 +124,6 @@ lawless space.
         - [x] Votes
     - [ ] Frontend
     - [ ] Tests
-      - [ ] Posts
+      - [x] Posts
       - [ ] Comments
       - [x] Votes

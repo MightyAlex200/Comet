@@ -253,6 +253,25 @@ scenario.runTape('Test posts zome', async (t, { alice }) => {
         utc_unix_time: 0,
     };
 
+    /// GET USERNAME ///
+    // POSITIVE //
+    t.deepEquals(
+        await alice.callSync('posts', 'get_username', {
+            agent_address: 'HcScjwO9ji9633ZYxa6IYubHJHW6ctfoufv5eq4F7ZOxay8wR76FP4xeG9pY3ui',
+        }),
+        { Ok: 'alice' },
+        'Can get usernames of users',
+    );
+
+    // NEGATIVE //
+    t.deepEquals(
+        await alice.callSync('posts', 'get_username', {
+            agent_address: 'invalid',
+        }),
+        { Err: { Internal: 'Address did not lead to agent id.' } },
+        "Can't get usernames of non-users",
+    );
+
     /// USER POSTS ///
     // NEGATIVE //
     t.deepEquals(
