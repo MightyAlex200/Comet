@@ -33,6 +33,7 @@ import Html.Attributes
 import Json.Decode as Decode
 import KarmaMap exposing (KarmaMap)
 import Markdown
+import NameTag exposing (NameTag)
 import Settings exposing (Settings)
 import VoteModel exposing (VoteModel, VoteMsg)
 
@@ -44,6 +45,7 @@ type alias CommentModel =
     , commentCompose : CommentCompose
     , treeModel : CommentTreeModel
     , voteModel : VoteModel
+    , nameTag : NameTag
     }
 
 
@@ -65,6 +67,9 @@ initCommentModel oldId address inTermsOf =
         ( newId2, voteModel, voteCmd ) =
             VoteModel.init newId address inTermsOf
 
+        ( newId3, nameTag, nameCmd ) =
+            NameTag.init newId2 Nothing
+
         commentModel =
             { address = address
             , comment = Unloaded
@@ -72,14 +77,16 @@ initCommentModel oldId address inTermsOf =
             , commentCompose = CommentCompose.init address
             , treeModel = commentTreeModel
             , voteModel = voteModel
+            , nameTag = nameTag
             }
     in
-    ( newId2
+    ( newId3
     , commentModel
     , Cmd.batch
         [ Comet.Comments.readComment newReadId address
         , ctmCmd
         , voteCmd
+        , nameCmd
         ]
     )
 
@@ -214,7 +221,18 @@ handleCommentModelFunctionReturn oldId ret commentModel inTermsOf =
         in
         case decodeResult of
             Ok (Ok comment) ->
-                updateComment (Loaded comment)
+                let
+                    ( newId, nameTag, nameCmd ) =
+                        commentModel.nameTag
+                            |> NameTag.updateAgent oldId comment.keyHash
+                in
+                ( newId
+                , { commentModel
+                    | comment = Loaded comment
+                    , nameTag = nameTag
+                  }
+                , nameCmd
+                )
 
             Ok (Err apiError) ->
                 updateComment (Failed apiError)
@@ -230,12 +248,19 @@ handleCommentModelFunctionReturn oldId ret commentModel inTermsOf =
 
             ( voteId, voteModel, voteCmd ) =
                 VoteModel.handleFunctionReturn newId ret commentModel.voteModel
+
+            ( nameId, nameTag, nameCmd ) =
+                NameTag.handleFunctionReturn voteId ret commentModel.nameTag
         in
-        ( voteId
-        , { newCommentModel | voteModel = voteModel }
+        ( nameId
+        , { newCommentModel
+            | voteModel = voteModel
+            , nameTag = nameTag
+          }
         , Cmd.batch
             [ newCmd
             , voteCmd
+            , nameCmd
             ]
         )
 
@@ -311,6 +336,9 @@ viewCommentModel inTermsOf settings commentModel =
                     Html.text
                         ("Failed loading comment: " ++ ZomeApiError.describe x)
 
+        nameHtml =
+            NameTag.view commentModel.nameTag
+
         voteHtml =
             case commentModel.comment of
                 Loaded comment ->
@@ -326,7 +354,8 @@ viewCommentModel inTermsOf settings commentModel =
     in
     Html.div
         []
-        [ voteHtml
+        [ nameHtml
+        , voteHtml
         , commentHtml
         , Html.br [] []
         , CommentCompose.view settings commentModel.commentCompose

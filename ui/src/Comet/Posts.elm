@@ -2,6 +2,7 @@ module Comet.Posts exposing
     ( createPost
     , crosspost
     , deletePost
+    , getUsername
     , postTags
     , readPost
     , search
@@ -117,5 +118,16 @@ userPosts id author =
         , value =
             Encode.object
                 [ ( "address", Encode.string author ) ]
+        , id = id
+        }
+
+
+getUsername : Comet.Port.Id -> Address -> Cmd msg
+getUsername id agentAddress =
+    Comet.Port.callFunction
+        { functionInfo = funcInfo "get_username"
+        , value =
+            Encode.object
+                [ ( "agent_address", Encode.string agentAddress ) ]
         , id = id
         }

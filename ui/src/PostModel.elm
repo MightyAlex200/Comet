@@ -35,6 +35,7 @@ import Html exposing (Html)
 import Json.Decode as Decode
 import KarmaMap exposing (KarmaMap)
 import Markdown
+import NameTag exposing (NameTag)
 import Settings exposing (Settings)
 import VoteModel exposing (VoteModel, VoteMsg)
 
@@ -43,6 +44,7 @@ type alias PostModel =
     { address : Address
     , post : Load ZomeApiError Post
     , voteModel : VoteModel
+    , nameTag : NameTag
     , comments : CommentTreeModel
     , commentCompose : CommentCompose
     , inTermsOf : Load ZomeApiError InTermsOf
@@ -69,9 +71,17 @@ init oldId address inTermsOf =
         requiredCmds =
             [ Comet.Posts.readPost newReadId address
             , ctmCmd
+            , voteModelCmd
+            , nameTagCmd
             ]
 
-        ( newId2, cmds, tagId ) =
+        ( newId2, voteModel, voteModelCmd ) =
+            VoteModel.init newId address inTermsOf
+
+        ( newId3, nameTag, nameTagCmd ) =
+            NameTag.init newId2 Nothing
+
+        ( newId4, cmds, tagId ) =
             case inTermsOf of
                 Nothing ->
                     let
@@ -89,9 +99,6 @@ init oldId address inTermsOf =
                     , Nothing
                     )
 
-        ( newId3, voteModel, voteModelCmd ) =
-            VoteModel.init newId2 address inTermsOf
-
         postModel =
             { address = address
             , post = Unloaded
@@ -101,9 +108,10 @@ init oldId address inTermsOf =
             , tagId = tagId
             , voteModel = voteModel
             , readId = newReadId
+            , nameTag = nameTag
             }
     in
-    ( newId3
+    ( newId4
     , postModel
     , Cmd.batch cmds
     )
@@ -167,21 +175,37 @@ handleFunctionReturn oldId ret postModel =
 
             decodeResult =
                 Decode.decodeValue decoder ret.return
+        in
+        case decodeResult of
+            Ok (Ok post) ->
+                let
+                    ( newId, nameTag, nameCmd ) =
+                        postModel.nameTag
+                            |> NameTag.updateAgent oldId post.keyHash
+                in
+                ( newId
+                , { postModel
+                    | post = Loaded post
+                    , nameTag = nameTag
+                  }
+                , nameCmd
+                )
 
-            updatePost post =
+            Ok (Err e) ->
                 ( oldId
                 , { postModel
-                    | post = post
+                    | post = Failed e
                   }
                 , Cmd.none
                 )
-        in
-        case decodeResult of
-            Ok apiResult ->
-                updatePost (Load.fromResult apiResult)
 
             Err _ ->
-                updatePost (Failed (ZomeApiError.Internal "Invalid return"))
+                ( oldId
+                , { postModel
+                    | post = Failed (ZomeApiError.Internal "Invalid return")
+                  }
+                , Cmd.none
+                )
 
     else if Just ret.id == postModel.tagId then
         let
@@ -243,12 +267,19 @@ handleFunctionReturn oldId ret postModel =
 
             ( voteId, voteModel, voteCmd ) =
                 VoteModel.handleFunctionReturn newId ret postModel.voteModel
+
+            ( nameId, nameTag, nameCmd ) =
+                NameTag.handleFunctionReturn voteId ret postModel.nameTag
         in
-        ( voteId
-        , { newModel | voteModel = voteModel }
+        ( nameId
+        , { newModel
+            | voteModel = voteModel
+            , nameTag = nameTag
+          }
         , Cmd.batch
             [ treeCmd
             , voteCmd
+            , nameCmd
             ]
         )
 
@@ -311,6 +342,9 @@ view settings postModel =
             postModel.inTermsOf
                 |> Load.toMaybe
 
+        nameHtml =
+            NameTag.view postModel.nameTag
+
         postHtml =
             case postModel.post of
                 Unloaded ->
@@ -338,7 +372,8 @@ view settings postModel =
     in
     Html.div
         []
-        [ voteHtml
+        [ nameHtml
+        , voteHtml
         , postHtml
         , Html.br [] []
         , CommentCompose.view settings postModel.commentCompose
