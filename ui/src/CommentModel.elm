@@ -61,14 +61,14 @@ initCommentModel oldId address inTermsOf =
         newReadId =
             getNewId oldId
 
-        ( newId, commentTreeModel, ctmCmd ) =
+        ( ctmId, commentTreeModel, ctmCmd ) =
             initCommentTreeModel newReadId address
 
-        ( newId2, voteModel, voteCmd ) =
-            VoteModel.init newId address inTermsOf
+        ( voteId, voteModel, voteCmd ) =
+            VoteModel.init ctmId address inTermsOf
 
-        ( newId3, nameTag, nameCmd ) =
-            NameTag.init newId2 Nothing
+        ( nameId, nameTag, nameCmd ) =
+            NameTag.init voteId Nothing
 
         commentModel =
             { address = address
@@ -80,7 +80,7 @@ initCommentModel oldId address inTermsOf =
             , nameTag = nameTag
             }
     in
-    ( newId3
+    ( nameId
     , commentModel
     , Cmd.batch
         [ Comet.Comments.readComment newReadId address
@@ -273,7 +273,7 @@ commentModelReturnHelper :
     -> ( Id, CommentModel, Cmd msg )
 commentModelReturnHelper oldId ret commentModel inTermsOf =
     let
-        ( newId1, treeModel, treeCmd ) =
+        ( newId, treeModel, treeCmd ) =
             handleCommentTreeFunctionReturn
                 oldId
                 ret
@@ -282,7 +282,7 @@ commentModelReturnHelper oldId ret commentModel inTermsOf =
 
         composeReturnResult =
             CommentCompose.handleFunctionReturn
-                newId1
+                newId
                 ret
                 commentModel.commentCompose
     in

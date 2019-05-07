@@ -65,7 +65,7 @@ init oldId address inTermsOf =
         newReadId =
             getNewId oldId
 
-        ( newId, ctm, ctmCmd ) =
+        ( ctmId, ctm, ctmCmd ) =
             initCommentTreeModel newReadId address
 
         requiredCmds =
@@ -75,18 +75,18 @@ init oldId address inTermsOf =
             , nameTagCmd
             ]
 
-        ( newId2, voteModel, voteModelCmd ) =
-            VoteModel.init newId address inTermsOf
+        ( voteId, voteModel, voteModelCmd ) =
+            VoteModel.init ctmId address inTermsOf
 
-        ( newId3, nameTag, nameTagCmd ) =
-            NameTag.init newId2 Nothing
+        ( nameId, nameTag, nameTagCmd ) =
+            NameTag.init voteId Nothing
 
-        ( newId4, cmds, tagId ) =
+        ( newId, cmds, tagId ) =
             case inTermsOf of
                 Nothing ->
                     let
                         id =
-                            getNewId newId
+                            getNewId nameId
                     in
                     ( id
                     , Comet.Posts.postTags id address :: requiredCmds
@@ -94,7 +94,7 @@ init oldId address inTermsOf =
                     )
 
                 Just _ ->
-                    ( newId
+                    ( nameId
                     , requiredCmds
                     , Nothing
                     )
@@ -111,7 +111,7 @@ init oldId address inTermsOf =
             , nameTag = nameTag
             }
     in
-    ( newId4
+    ( newId
     , postModel
     , Cmd.batch cmds
     )
@@ -291,7 +291,7 @@ commentTreeReturn :
     -> ( Id, PostModel, Cmd msg )
 commentTreeReturn oldId ret postModel =
     let
-        ( newId1, treeModel, treeCmd ) =
+        ( newId, treeModel, treeCmd ) =
             handleCommentTreeFunctionReturn
                 oldId
                 ret
@@ -300,7 +300,7 @@ commentTreeReturn oldId ret postModel =
 
         composeReturnResult =
             CommentCompose.handleFunctionReturn
-                newId1
+                newId
                 ret
                 postModel.commentCompose
     in
