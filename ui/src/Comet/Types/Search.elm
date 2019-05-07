@@ -1,4 +1,4 @@
-module Comet.Types.Search exposing (Search, decode, encode)
+module Comet.Types.Search exposing (Search(..), decode, encode)
 
 import Comet.Types.Tag exposing (Tag)
 import Json.Decode as Decode exposing (Decoder)

@@ -5,18 +5,22 @@ import Browser.Navigation as Navigation
 import Comet.Port exposing (Id)
 import Comet.Types.Address exposing (Address)
 import Comet.Types.Load exposing (Load(..))
+import Comet.Types.Search exposing (Search)
 import Comet.Types.SearchResult exposing (InTermsOf)
 import Html exposing (Html)
 import Html.Attributes
 import Html.Events
 import Json.Decode as Decode exposing (Value)
 import KarmaMap exposing (KarmaMap)
+import Parser as Parse
 import PostCompose exposing (PostCompose)
 import PostModel
     exposing
         ( PostModel
         , PostMsg
         )
+import SearchParse
+import SearchView exposing (SearchView)
 import Set
 import Settings exposing (Settings)
 import Url exposing (Url)
@@ -29,18 +33,23 @@ import Url.Parser as Parser exposing ((</>), Parser)
 
 type alias DebugModel =
     { postPageAddress : Address
+    , searchQuery : String
+    , excludeCrossposts : Bool
     }
 
 
 initDebugModel : DebugModel
 initDebugModel =
     { postPageAddress = ""
+    , searchQuery = ""
+    , excludeCrossposts = False
     }
 
 
 type Page
     = PostPage PostModel
     | CreatePost PostCompose
+    | SearchPage SearchView
     | DebugScreen DebugModel
     | NotFound
 
@@ -48,6 +57,7 @@ type Page
 type Route
     = PostRoute Address (Maybe InTermsOf)
     | CreatePostRoute
+    | SearchViewRoute Search Bool
     | DebugScreenRoute
 
 
@@ -102,6 +112,31 @@ tagsParser =
         )
 
 
+searchParser : Parser (Search -> a) a
+searchParser =
+    Parser.custom "SEARCH"
+        (Url.percentDecode
+            >> Maybe.andThen
+                (Parse.run SearchParse.search >> Result.toMaybe)
+        )
+
+
+boolParser : Parser (Bool -> a) a
+boolParser =
+    Parser.custom "BOOL"
+        (\s ->
+            case s of
+                "true" ->
+                    Just True
+
+                "false" ->
+                    Just False
+
+                _ ->
+                    Nothing
+        )
+
+
 routeParser : Parser (Route -> a) a
 routeParser =
     Parser.oneOf
@@ -112,6 +147,8 @@ routeParser =
             (\address -> PostRoute address Nothing)
             (Parser.s "post" </> Parser.string)
         , Parser.map CreatePostRoute (Parser.s "createPost")
+        , Parser.map SearchViewRoute
+            (Parser.s "search" </> searchParser </> boolParser)
         , Parser.map DebugScreenRoute (Parser.s "debug")
         ]
 
@@ -134,6 +171,22 @@ pageFromRoute model route =
 
         CreatePostRoute ->
             ( { model | page = CreatePost PostCompose.init }, Cmd.none )
+
+        SearchViewRoute query excludeCrossposts ->
+            let
+                ( searchId, searchView, searchCmd ) =
+                    SearchView.init
+                        model.lastUsedFunctionId
+                        query
+                        excludeCrossposts
+            in
+            ( { model
+                | page =
+                    SearchPage searchView
+                , lastUsedFunctionId = searchId
+              }
+            , searchCmd
+            )
 
         DebugScreenRoute ->
             ( { model | page = DebugScreen initDebugModel }, Cmd.none )
@@ -221,6 +274,21 @@ update msg model =
             , Cmd.map PostPageMsg cmd
             )
 
+        ( SearchPage searchView, FunctionReturned functionReturn ) ->
+            let
+                ( newId, newSearchView, cmd ) =
+                    SearchView.handleFunctionReturn
+                        model.lastUsedFunctionId
+                        functionReturn
+                        searchView
+            in
+            ( { model
+                | page = SearchPage newSearchView
+                , lastUsedFunctionId = newId
+              }
+            , cmd
+            )
+
         ( CreatePost postCompose, FunctionReturned functionReturn ) ->
             let
                 ( newId, newPostCompose, cmd ) =
@@ -292,6 +360,37 @@ debugView settings debugModel =
                 [ Html.Attributes.href "/createPost/" ]
                 [ Html.text "Create post" ]
             , Html.br [] []
+            , Html.a
+                [ Html.Attributes.href
+                    ("/search/"
+                        ++ debugModel.searchQuery
+                        ++ "/"
+                        ++ (if debugModel.excludeCrossposts then
+                                "true"
+
+                            else
+                                "false"
+                           )
+                    )
+                ]
+                [ Html.text "Search" ]
+            , Html.input
+                [ Html.Events.onInput
+                    (\input ->
+                        SetDebugModel { debugModel | searchQuery = input }
+                    )
+                ]
+                []
+            , Html.text "Exclude crossposts: "
+            , Html.input
+                [ Html.Attributes.type_ "checkbox"
+                , Html.Events.onCheck
+                    (\checked ->
+                        SetDebugModel { debugModel | excludeCrossposts = checked }
+                    )
+                ]
+                []
+            , Html.br [] []
             , Html.text "Smartypants: "
             , Html.input
                 [ Html.Attributes.type_ "checkbox"
@@ -340,6 +439,9 @@ view model =
                 CreatePost postCompose ->
                     PostCompose.view postCompose
                         |> Html.map PostComposeMsg
+
+                SearchPage searchView ->
+                    SearchView.view searchView
 
                 DebugScreen debugModel ->
                     debugView model.settings debugModel
