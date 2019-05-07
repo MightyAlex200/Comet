@@ -11,6 +11,7 @@ import Html.Attributes
 import Html.Events
 import Json.Decode as Decode exposing (Value)
 import KarmaMap exposing (KarmaMap)
+import PostCompose exposing (PostCompose)
 import PostModel
     exposing
         ( PostModel
@@ -39,12 +40,14 @@ initDebugModel =
 
 type Page
     = PostPage PostModel
+    | CreatePost PostCompose
     | DebugScreen DebugModel
     | NotFound
 
 
 type Route
     = PostRoute Address (Maybe InTermsOf)
+    | CreatePostRoute
     | DebugScreenRoute
 
 
@@ -60,6 +63,7 @@ type Msg
     = UrlChange Url
     | UrlRequest UrlRequest
     | PostPageMsg PostMsg
+    | PostComposeMsg PostCompose.Msg
     | SetDebugModel DebugModel
     | FunctionReturned Comet.Port.FunctionReturn
     | UpdateSettings Settings
@@ -107,6 +111,7 @@ routeParser =
         , Parser.map
             (\address -> PostRoute address Nothing)
             (Parser.s "post" </> Parser.string)
+        , Parser.map CreatePostRoute (Parser.s "createPost")
         , Parser.map DebugScreenRoute (Parser.s "debug")
         ]
 
@@ -126,6 +131,9 @@ pageFromRoute model route =
               }
             , cmd
             )
+
+        CreatePostRoute ->
+            ( { model | page = CreatePost PostCompose.init }, Cmd.none )
 
         DebugScreenRoute ->
             ( { model | page = DebugScreen initDebugModel }, Cmd.none )
@@ -213,6 +221,39 @@ update msg model =
             , Cmd.map PostPageMsg cmd
             )
 
+        ( CreatePost postCompose, FunctionReturned functionReturn ) ->
+            let
+                ( newId, newPostCompose, cmd ) =
+                    PostCompose.handleFunctionReturn
+                        model.key
+                        model.lastUsedFunctionId
+                        functionReturn
+                        postCompose
+            in
+            ( { model
+                | page =
+                    CreatePost newPostCompose
+                , lastUsedFunctionId = newId
+              }
+            , cmd
+            )
+
+        ( CreatePost postCompose, PostComposeMsg composeMsg ) ->
+            let
+                ( newId, newPostCompose, composeCmd ) =
+                    PostCompose.update
+                        model.lastUsedFunctionId
+                        composeMsg
+                        postCompose
+            in
+            ( { model
+                | page =
+                    CreatePost newPostCompose
+                , lastUsedFunctionId = newId
+              }
+            , Cmd.map PostComposeMsg composeCmd
+            )
+
         ( DebugScreen _, SetDebugModel newDebugModel ) ->
             ( { model | page = DebugScreen newDebugModel }, Cmd.none )
 
@@ -246,6 +287,10 @@ debugView settings debugModel =
                     )
                 ]
                 []
+            , Html.br [] []
+            , Html.a
+                [ Html.Attributes.href "/createPost/" ]
+                [ Html.text "Create post" ]
             , Html.br [] []
             , Html.text "Smartypants: "
             , Html.input
@@ -291,6 +336,10 @@ view model =
                             model.settings
                             postPageModel
                         )
+
+                CreatePost postCompose ->
+                    PostCompose.view postCompose
+                        |> Html.map PostComposeMsg
 
                 DebugScreen debugModel ->
                     debugView model.settings debugModel

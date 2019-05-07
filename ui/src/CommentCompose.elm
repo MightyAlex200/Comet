@@ -16,7 +16,7 @@ import Html.Events
 import Markdown
 import Settings exposing (Settings)
 import Task exposing (Task)
-import Time
+import UnixTime exposing (currentUtcUnixTime)
 
 
 type alias CommentCompose =
@@ -45,8 +45,7 @@ init address =
 
 commentContent : CommentCompose -> Task x CommentContent
 commentContent compose =
-    Time.now
-        |> Task.map (\posix -> Time.posixToMillis posix // 1000)
+    currentUtcUnixTime
         |> Task.map (\seconds -> CommentContent compose.input seconds)
 
 

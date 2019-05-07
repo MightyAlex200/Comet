@@ -25,7 +25,7 @@ import KarmaMap exposing (KarmaMap, score)
 import Set
 import Settings exposing (Settings)
 import Task
-import Time
+import UnixTime exposing (currentUtcUnixTime)
 
 
 type alias VoteModel =
@@ -89,9 +89,7 @@ update oldId msg address voteModel =
         VoteRequest author settings fraction ito myVote ->
             ( oldId
             , voteModel
-            , Time.now
-                -- TODO: Helper function for unix time task?
-                |> Task.map (\posix -> Time.posixToMillis posix // 1000)
+            , currentUtcUnixTime
                 |> Task.perform (VoteNow author settings fraction ito myVote)
             )
 
