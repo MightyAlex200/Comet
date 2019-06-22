@@ -1,21 +1,25 @@
 // This test file uses the tape testing framework.
 // To learn more, go here: https://github.com/substack/tape
-const { Config, Scenario } = require("@holochain/holochain-nodejs");
-Scenario.setTape(require("tape"));
+const { Diorama, tapeExecutor } = require('@holochain/diorama');
+const path = require('path');
 
-const dnaPath = "./dist/Comet.dna.json"
-const agentAlice = Config.agent("alice");
-const dna = Config.dna(dnaPath);
-const instanceAlice = Config.instance(agentAlice, dna);
-const scenario = new Scenario([instanceAlice]);
+const dnaPath = path.join(__dirname, '../dist/Comet.dna.json');
+const dna = Diorama.dna(dnaPath, 'comet');
+const diorama = new Diorama({
+    instances: {
+        alice: dna
+    },
+    debugLog: false,
+    executor: tapeExecutor(require('tape')),
+});
 
 // Constants for testing
 const testAnchor = { anchor_type: 'type', anchor_text: 'text' };
 let anchorAddress;
 let testPost;
 
-scenario.runTape('Test votes zome', async (t, { alice }) => {
-    const postAddress = await alice.callSync('posts', 'create_post', {
+diorama.registerScenario('Test votes zome', async (s, t, { alice }) => {
+    const postAddress = await alice.call('posts', 'create_post', {
         post: {
             title: 'Testing post',
             content: 'This post is used for testing the votes zome',
@@ -24,7 +28,7 @@ scenario.runTape('Test votes zome', async (t, { alice }) => {
         tags: [0],
     });
 
-    const commentAddress = await alice.callSync('comments', 'create_comment', {
+    const commentAddress = await alice.call('comments', 'create_comment', {
         comment: {
             content: 'This comment is used for testing the votes zome',
             utc_unix_time: 0,
@@ -32,11 +36,13 @@ scenario.runTape('Test votes zome', async (t, { alice }) => {
         target: postAddress.Ok,
     });
 
+    await s.consistent();
+
     /// GETTING VOTES ///
     // NEGATIVE - Invalid post //
     // ON POST //
     t.deepEquals(
-        await alice.callSync('votes', 'votes_from_address', {
+        await alice.call('votes', 'votes_from_address', {
             address: postAddress.Ok,
         }),
         { Ok: [] },
@@ -44,7 +50,7 @@ scenario.runTape('Test votes zome', async (t, { alice }) => {
     );
     // ON COMMENT //
     t.deepEquals(
-        await alice.callSync('votes', 'votes_from_address', {
+        await alice.call('votes', 'votes_from_address', {
             address: commentAddress.Ok,
         }),
         { Ok: [] },
@@ -55,7 +61,7 @@ scenario.runTape('Test votes zome', async (t, { alice }) => {
     // NEGATIVE - Invalid fraction //
     // ON POST //
     t.deepEquals(
-        JSON.parse((await alice.callSync('votes', 'vote', {
+        JSON.parse((await alice.call('votes', 'vote', {
             fraction: 1000,
             in_terms_of: [1],
             utc_unix_time: 0,
@@ -67,7 +73,7 @@ scenario.runTape('Test votes zome', async (t, { alice }) => {
 
     // ON COMMENT //
     t.deepEquals(
-        JSON.parse((await alice.callSync('votes', 'vote', {
+        JSON.parse((await alice.call('votes', 'vote', {
             fraction: 1000,
             in_terms_of: [1],
             utc_unix_time: 0,
@@ -78,7 +84,7 @@ scenario.runTape('Test votes zome', async (t, { alice }) => {
     );
     // NEGATIVE - Invalid target //
     t.deepEquals(
-        JSON.parse((await alice.callSync('votes', 'vote', {
+        JSON.parse((await alice.call('votes', 'vote', {
             fraction: 1,
             in_terms_of: [1],
             utc_unix_time: 0,
@@ -91,7 +97,7 @@ scenario.runTape('Test votes zome', async (t, { alice }) => {
     // POSITIVE //
     // ON POST //
     t.deepEquals(
-        await alice.callSync('votes', 'vote', {
+        await alice.call('votes', 'vote', {
             fraction: 1,
             in_terms_of: [1],
             utc_unix_time: 0,
@@ -103,7 +109,7 @@ scenario.runTape('Test votes zome', async (t, { alice }) => {
 
     // ON COMMENT //
     t.deepEquals(
-        await alice.callSync('votes', 'vote', {
+        await alice.call('votes', 'vote', {
             fraction: 1,
             in_terms_of: [1],
             utc_unix_time: 0,
@@ -113,12 +119,13 @@ scenario.runTape('Test votes zome', async (t, { alice }) => {
         'Can vote on comments',
     );
 
+    await s.consistent();
 
     /// REVOTING ///
     // POSITIVE //
     // ON POST //
     t.deepEquals(
-        await alice.callSync('votes', 'vote', {
+        await alice.call('votes', 'vote', {
             fraction: 0.5,
             in_terms_of: [1],
             utc_unix_time: 1,
@@ -130,7 +137,7 @@ scenario.runTape('Test votes zome', async (t, { alice }) => {
 
     // ON COMMENT //
     t.deepEquals(
-        await alice.callSync('votes', 'vote', {
+        await alice.call('votes', 'vote', {
             fraction: 0.5,
             in_terms_of: [1],
             utc_unix_time: 1,
@@ -143,7 +150,7 @@ scenario.runTape('Test votes zome', async (t, { alice }) => {
     // NEGATIVE - Invalid fraction //
     // ON POST //
     t.deepEquals(
-        JSON.parse((await alice.callSync('votes', 'vote', {
+        JSON.parse((await alice.call('votes', 'vote', {
             fraction: 5,
             in_terms_of: [1],
             utc_unix_time: 1,
@@ -155,7 +162,7 @@ scenario.runTape('Test votes zome', async (t, { alice }) => {
 
     // ON COMMENT //
     t.deepEquals(
-        JSON.parse((await alice.callSync('votes', 'vote', {
+        JSON.parse((await alice.call('votes', 'vote', {
             fraction: 5,
             in_terms_of: [1],
             utc_unix_time: 1,
@@ -165,11 +172,13 @@ scenario.runTape('Test votes zome', async (t, { alice }) => {
         'Cannot recast invalid vote on comments',
     );
 
+    await s.consistent();
+
     /// GETTING VOTES ///
     // POSITIVE //
     // ON POST //
     t.deepEquals(
-        await alice.callSync('votes', 'votes_from_address', {
+        await alice.call('votes', 'votes_from_address', {
             address: postAddress.Ok,
         }),
         {
@@ -186,7 +195,7 @@ scenario.runTape('Test votes zome', async (t, { alice }) => {
 
     // ON COMMENT //
     t.deepEquals(
-        await alice.callSync('votes', 'votes_from_address', {
+        await alice.call('votes', 'votes_from_address', {
             address: commentAddress.Ok,
         }),
         {
@@ -202,15 +211,17 @@ scenario.runTape('Test votes zome', async (t, { alice }) => {
     );
 });
 
-scenario.runTape('Test anchors zome', async (t, { alice }) => {
+diorama.registerScenario('Test anchors zome', async (s, t, { alice }) => {
     /// ANCHORING ///
-    anchorAddress = await alice.callSync('anchors', 'anchor', { anchor: testAnchor });
+    anchorAddress = await alice.call('anchors', 'anchor', { anchor: testAnchor });
     t.deepEquals(anchorAddress, { Ok: 'QmaSQL21LjUj67aieoVyzwyUj36kbuCCsAyuScX5kXFMdB' }, 'Address is correct')
+
+    await s.consistent();
 
     /// ANCHORS EXIST ///
     // POSITIVE //
     t.deepEquals(
-        await alice.callSync('anchors', 'exists', {
+        await alice.call('anchors', 'exists', {
             anchor_address: anchorAddress.Ok
         }),
         { Ok: true },
@@ -219,7 +230,7 @@ scenario.runTape('Test anchors zome', async (t, { alice }) => {
 
     // NEGATIVE //
     t.deepEquals(
-        await alice.callSync('anchors', 'exists', {
+        await alice.call('anchors', 'exists', {
             anchor_address: 'Garbage address'
         }),
         { Ok: false },
@@ -229,16 +240,16 @@ scenario.runTape('Test anchors zome', async (t, { alice }) => {
     /// ANCHORS ///
     // POSITIVE //
     t.deepEquals(
-        await alice.callSync('anchors', 'anchors', {
+        await alice.call('anchors', 'anchors', {
             anchor_type: 'type'
         }),
-        { Ok: { links: [{ address: anchorAddress.Ok, headers: [] }] } },
+        { Ok: { links: [{ address: anchorAddress.Ok, headers: [], tag: '' }] } },
         "Exactly 1 anchor with type 'type'"
     );
 
     // NEGATIVE //
     t.deepEquals(
-        await alice.callSync('anchors', 'anchors', {
+        await alice.call('anchors', 'anchors', {
             anchor_type: 'unused type'
         }),
         { Ok: { links: [] } },
@@ -246,7 +257,7 @@ scenario.runTape('Test anchors zome', async (t, { alice }) => {
     );
 });
 
-scenario.runTape('Test posts zome', async (t, { alice }) => {
+diorama.registerScenario('Test posts zome', async (s, t, { alice }) => {
     const testPostEntry = {
         title: 'This is a test post',
         content: 'This is the content of the post',
@@ -256,7 +267,7 @@ scenario.runTape('Test posts zome', async (t, { alice }) => {
     /// GET USERNAME ///
     // POSITIVE //
     t.deepEquals(
-        await alice.callSync('posts', 'get_username', {
+        await alice.call('posts', 'get_username', {
             agent_address: 'HcScjwO9ji9633ZYxa6IYubHJHW6ctfoufv5eq4F7ZOxay8wR76FP4xeG9pY3ui',
         }),
         { Ok: 'alice' },
@@ -265,7 +276,7 @@ scenario.runTape('Test posts zome', async (t, { alice }) => {
 
     // NEGATIVE //
     t.deepEquals(
-        await alice.callSync('posts', 'get_username', {
+        await alice.call('posts', 'get_username', {
             agent_address: 'invalid',
         }),
         { Err: { Internal: 'Address did not lead to agent id.' } },
@@ -275,7 +286,7 @@ scenario.runTape('Test posts zome', async (t, { alice }) => {
     /// USER POSTS ///
     // NEGATIVE //
     t.deepEquals(
-        await alice.callSync('posts', 'user_posts', {
+        await alice.call('posts', 'user_posts', {
             author: 'HcScjwO9ji9633ZYxa6IYubHJHW6ctfoufv5eq4F7ZOxay8wR76FP4xeG9pY3ui'
         }),
         { Ok: [] },
@@ -284,7 +295,7 @@ scenario.runTape('Test posts zome', async (t, { alice }) => {
 
     /// CREATING POSTS ///
     // POSITIVE //
-    testPost = await alice.callSync('posts', 'create_post', {
+    testPost = await alice.call('posts', 'create_post', {
         post: testPostEntry,
         tags: [1, 2],
     });
@@ -300,7 +311,7 @@ scenario.runTape('Test posts zome', async (t, { alice }) => {
 
     await (async () => {
         const invalidPostResponse =
-            await alice.callSync(
+            await alice.call(
                 'posts',
                 'create_post_raw',
                 { post: invalidTestPostEntry, tags: [1, 2] },
@@ -318,10 +329,12 @@ scenario.runTape('Test posts zome', async (t, { alice }) => {
         }
     })();
 
+    await s.consistent();
+
     /// USER POSTS ///
     // POSITIVE //
     t.deepEquals(
-        await alice.callSync('posts', 'user_posts', {
+        await alice.call('posts', 'user_posts', {
             author: 'HcScjwO9ji9633ZYxa6IYubHJHW6ctfoufv5eq4F7ZOxay8wR76FP4xeG9pY3ui'
         }),
         { Ok: [testPost.Ok] },
@@ -331,7 +344,7 @@ scenario.runTape('Test posts zome', async (t, { alice }) => {
     /// POST TAGS ///
     // POSITIVE & NEGATIVE //
     await (async () => {
-        const post_tags = await alice.callSync('posts', 'post_tags', {
+        const post_tags = await alice.call('posts', 'post_tags', {
             address: testPost.Ok,
         });
         const ok =
@@ -351,7 +364,7 @@ scenario.runTape('Test posts zome', async (t, { alice }) => {
     // POSITIVE & NEGATIVE //
 
     t.deepEquals(
-        await alice.callSync('posts', 'search', {
+        await alice.call('posts', 'search', {
             query: { type: "exactly", values: 1 },
             exclude_crossposts: false,
         }),
@@ -360,7 +373,7 @@ scenario.runTape('Test posts zome', async (t, { alice }) => {
     );
 
     t.deepEquals(
-        await alice.callSync('posts', 'search', {
+        await alice.call('posts', 'search', {
             query: { type: "exactly", values: 5 },
             exclude_crossposts: false,
         }),
@@ -369,7 +382,7 @@ scenario.runTape('Test posts zome', async (t, { alice }) => {
     );
 
     t.deepEquals(
-        await alice.callSync('posts', 'search', {
+        await alice.call('posts', 'search', {
             query: { type: "or", values: [{ type: "exactly", values: 5 }, { type: "exactly", values: 1 }] },
             exclude_crossposts: false,
         }),
@@ -378,7 +391,7 @@ scenario.runTape('Test posts zome', async (t, { alice }) => {
     );
 
     t.deepEquals(
-        await alice.callSync('posts', 'search', {
+        await alice.call('posts', 'search', {
             query: { type: "or", values: [{ type: "exactly", values: 5 }, { type: "exactly", values: 8 }] },
             exclude_crossposts: false,
         }),
@@ -387,7 +400,7 @@ scenario.runTape('Test posts zome', async (t, { alice }) => {
     );
 
     t.deepEquals(
-        await alice.callSync('posts', 'search', {
+        await alice.call('posts', 'search', {
             query: { type: "and", values: [{ type: "exactly", values: 1 }, { type: "exactly", values: 2 }] },
             exclude_crossposts: false,
         }),
@@ -396,7 +409,7 @@ scenario.runTape('Test posts zome', async (t, { alice }) => {
     );
 
     t.deepEquals(
-        await alice.callSync('posts', 'search', {
+        await alice.call('posts', 'search', {
             query: { type: "and", values: [{ type: "exactly", values: 0 }, { type: "exactly", values: 3 }] },
             exclude_crossposts: false,
         }),
@@ -405,7 +418,7 @@ scenario.runTape('Test posts zome', async (t, { alice }) => {
     );
 
     t.deepEquals(
-        await alice.callSync('posts', 'search', {
+        await alice.call('posts', 'search', {
             query: { type: "not", values: [{ type: "exactly", values: 2 }, { type: "exactly", values: 5 }] },
             exclude_crossposts: false,
         }),
@@ -414,7 +427,7 @@ scenario.runTape('Test posts zome', async (t, { alice }) => {
     );
 
     t.deepEquals(
-        await alice.callSync('posts', 'search', {
+        await alice.call('posts', 'search', {
             query: { type: "not", values: [{ type: "exactly", values: 1 }, { type: "exactly", values: 2 }] },
             exclude_crossposts: false,
         }),
@@ -423,7 +436,7 @@ scenario.runTape('Test posts zome', async (t, { alice }) => {
     );
 
     t.deepEquals(
-        await alice.callSync('posts', 'search', {
+        await alice.call('posts', 'search', {
             query: { type: "xor", values: [{ type: "exactly", values: 5 }, { type: "exactly", values: 2 }] },
             exclude_crossposts: false,
         }),
@@ -432,7 +445,7 @@ scenario.runTape('Test posts zome', async (t, { alice }) => {
     );
 
     t.deepEquals(
-        await alice.callSync('posts', 'search', {
+        await alice.call('posts', 'search', {
             query: { type: "xor", values: [{ type: "exactly", values: 1 }, { type: "exactly", values: 2 }] },
             exclude_crossposts: false,
         }),
@@ -443,7 +456,7 @@ scenario.runTape('Test posts zome', async (t, { alice }) => {
     /// CROSSPOSTING ///
     // POSITIVE //
     t.deepEquals(
-        await alice.callSync('posts', 'crosspost', {
+        await alice.call('posts', 'crosspost', {
             post_address: testPost.Ok,
             tags: [3, 4],
         }),
@@ -453,33 +466,44 @@ scenario.runTape('Test posts zome', async (t, { alice }) => {
 
     // NEGATIVE //
     t.deepEquals(
-        await alice.callSync('posts', 'crosspost', {
+        await alice.call('posts', 'crosspost', {
             post_address: 'invalid',
             tags: [3, 4],
         }),
         {
             Err: {
                 Internal:
-                    '{"kind":{"ErrorGeneric":"Target for link not found"},"file":"/home/travis/build/holochain/holochain-rust/core/src/nucleus/ribosome/runtime.rs","line":"192"}'
+                    '{"kind":{"ErrorGeneric":"Target for link not found"},"file":"core/src/nucleus/ribosome/runtime.rs","line":"225"}'
             }
         },
         'Cannot crosspost invalid target'
     );
 
+    await s.consistent();
+
     /// SEARCH ///
     // POSITIVE //
-    t.deepEquals(
-        await alice.callSync('posts', 'search', {
-            query: { type: 'and', values: [{ type: 'exactly', values: 3 }, { type: 'exactly', values: 4 }] },
-            exclude_crossposts: false,
-        }),
-        { Ok: [{ address: testPost.Ok, in_terms_of: [3, 4] }] },
+    const searchResult = await alice.call('posts', 'search', {
+        query: { type: 'and', values: [{ type: 'exactly', values: 3 }, { type: 'exactly', values: 4 }] },
+        exclude_crossposts: false,
+    });
+    t.ok(
+        searchResult.Ok &&
+        searchResult.Ok.length == 1 &&
+        searchResult.Ok[0] &&
+        searchResult.Ok[0].address == testPost.Ok &&
+        searchResult.Ok[0].in_terms_of &&
+        searchResult.Ok[0].in_terms_of.length == 2 &&
+        searchResult.Ok[0].in_terms_of.includes(3) &&
+        searchResult.Ok[0].in_terms_of.includes(4),
+
+        // { Ok: [{ address: testPost.Ok, in_terms_of: [3, 4] }] },
         'Crossposts can be found with search'
     );
 
     // NEGATIVE //
     t.deepEquals(
-        await alice.callSync('posts', 'search', {
+        await alice.call('posts', 'search', {
             query: { type: 'and', values: [{ type: 'exactly', values: 3 }, { type: 'exactly', values: 4 }] },
             exclude_crossposts: true,
         }),
@@ -490,7 +514,7 @@ scenario.runTape('Test posts zome', async (t, { alice }) => {
     /// POST TAGS ///
     // POSITIVE //
     await (async () => {
-        const post_tags = await alice.callSync('posts', 'post_tags', {
+        const post_tags = await alice.call('posts', 'post_tags', {
             address: testPost.Ok,
         });
         const ok =
@@ -509,7 +533,7 @@ scenario.runTape('Test posts zome', async (t, { alice }) => {
     /// READING POST ///
     // POSITIVE //
     t.deepEqual(
-        (await alice.callSync('posts', 'read_post', {
+        (await alice.call('posts', 'read_post', {
             address: testPost.Ok,
         })).Ok,
         {
@@ -523,7 +547,7 @@ scenario.runTape('Test posts zome', async (t, { alice }) => {
 
     // NEGATIVE //
     t.deepEqual(
-        await alice.callSync('posts', 'read_post', {
+        await alice.call('posts', 'read_post', {
             address: 'invalid',
         }),
         { Err: { Internal: 'No entry at this address' } },
@@ -535,7 +559,7 @@ scenario.runTape('Test posts zome', async (t, { alice }) => {
     const updatedTestPostEntry = { ...testPostEntry, content: 'Updated test post' };
 
     t.deepEqual(
-        await alice.callSync('posts', 'update_post', {
+        await alice.call('posts', 'update_post', {
             old_address: testPost.Ok,
             new_entry: updatedTestPostEntry,
         }),
@@ -545,7 +569,7 @@ scenario.runTape('Test posts zome', async (t, { alice }) => {
 
     // NEGATIVE //
     t.deepEqual(
-        await alice.callSync('posts', 'update_post', {
+        await alice.call('posts', 'update_post', {
             old_address: 'invalid',
             new_entry: updatedTestPostEntry,
         }),
@@ -553,11 +577,12 @@ scenario.runTape('Test posts zome', async (t, { alice }) => {
         'Invalid posts cannot be updated',
     );
 
+    await s.consistent();
 
     /// READING POSTS ///
     // POSITIVE //
     t.deepEqual(
-        (await alice.callSync('posts', 'read_post', {
+        (await alice.call('posts', 'read_post', {
             address: testPost.Ok,
         })).Ok,
         {
@@ -572,17 +597,19 @@ scenario.runTape('Test posts zome', async (t, { alice }) => {
     /// DELETING POSTS ///
     // POSITIVE //
     t.deepEqual(
-        await alice.callSync('posts', 'delete_post', {
+        await alice.call('posts', 'delete_post', {
             address: testPost.Ok
         }),
         { Ok: 'QmPRd5wyHCNvuQsHAR9PgYgRj4UhGQraToDf1dQUgBLyNn' },
         'Posts can be deleted',
     );
 
+    await s.consistent();
+
     /// READING POSTS ///
     // NEGATIVE //
     t.deepEqual(
-        await alice.callSync('posts', 'read_post', {
+        await alice.call('posts', 'read_post', {
             address: testPost.Ok
         }),
         { Err: { Internal: 'No entry at this address' } },
@@ -590,8 +617,8 @@ scenario.runTape('Test posts zome', async (t, { alice }) => {
     );
 });
 
-scenario.runTape('Test comments zome', async (t, { alice }) => {
-    const postAddress = await alice.callSync('posts', 'create_post', {
+diorama.registerScenario('Test comments zome', async (s, t, { alice }) => {
+    const postAddress = await alice.call('posts', 'create_post', {
         post: {
             title: 'Testing post',
             content: 'This post is used for testing the comments zome',
@@ -610,12 +637,14 @@ scenario.runTape('Test comments zome', async (t, { alice }) => {
         utc_unix_time: 0,
     };
 
-    const commentAddress = await alice.callSync('comments', 'create_comment', {
+    const commentAddress = await alice.call('comments', 'create_comment', {
         comment: commentEntry,
         target: postAddress.Ok,
     });
 
-    const otherCommentAddress = await alice.callSync('comments', 'create_comment', {
+    await s.consistent();
+
+    const otherCommentAddress = await alice.call('comments', 'create_comment', {
         comment: otherCommentEntry,
         target: commentAddress.Ok,
     });
@@ -633,7 +662,7 @@ scenario.runTape('Test comments zome', async (t, { alice }) => {
     );
 
     t.deepEqual(
-        (await alice.callSync('comments', 'read_comment', {
+        (await alice.call('comments', 'read_comment', {
             address: commentAddress.Ok,
         })).Ok,
         {
@@ -646,7 +675,7 @@ scenario.runTape('Test comments zome', async (t, { alice }) => {
 
     const updatedCommentEntry = { ...commentEntry, content: 'This is an updated comment.' };
 
-    const updatedCommentAddress = await alice.callSync('comments', 'update_comment', {
+    const updatedCommentAddress = await alice.call('comments', 'update_comment', {
         old_address: commentAddress.Ok,
         new_entry: updatedCommentEntry,
     });
@@ -657,8 +686,10 @@ scenario.runTape('Test comments zome', async (t, { alice }) => {
         'Comments can be updated',
     );
 
+    await s.consistent();
+
     t.deepEqual(
-        (await alice.callSync('comments', 'read_comment', {
+        (await alice.call('comments', 'read_comment', {
             address: commentAddress.Ok,
         })).Ok,
         {
@@ -670,15 +701,17 @@ scenario.runTape('Test comments zome', async (t, { alice }) => {
     );
 
     t.deepEqual(
-        await alice.callSync('comments', 'delete_comment', {
+        await alice.call('comments', 'delete_comment', {
             address: commentAddress.Ok
         }),
         { Ok: 'QmZBTscKSa7AteGEcKaCSgkC1ZVYHKDfgJLxR3BxRobQNe' },
         'Comments can be deleted',
     );
 
+    await s.consistent();
+
     t.deepEqual(
-        await alice.callSync('comments', 'read_comment', {
+        await alice.call('comments', 'read_comment', {
             address: commentAddress.Ok
         }),
         { Err: { Internal: 'No entry at this address' } },
@@ -686,7 +719,7 @@ scenario.runTape('Test comments zome', async (t, { alice }) => {
     );
 
     t.deepEqual(
-        await alice.callSync('comments', 'comments_from_address', {
+        await alice.call('comments', 'comments_from_address', {
             address: postAddress.Ok,
         }),
         { Ok: [commentAddress.Ok] },
@@ -694,10 +727,12 @@ scenario.runTape('Test comments zome', async (t, { alice }) => {
     );
 
     t.deepEqual(
-        await alice.callSync('comments', 'comments_from_address', {
+        await alice.call('comments', 'comments_from_address', {
             address: commentAddress.Ok,
         }),
         { Ok: [otherCommentAddress.Ok] },
         'Comments can be retrieved from the address of a comment',
     );
 });
+
+diorama.run();

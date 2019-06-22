@@ -13,7 +13,7 @@ use hdk::{EntryValidationData, LinkValidationData};
 use hdk::error::{ZomeApiError, ZomeApiResult};
 use hdk::holochain_core_types::{
     cas::content::Address, dna::entry_types::Sharing, entry::Entry, error::HolochainError,
-    json::JsonString, time::Iso8601,
+    json::JsonString, time::Iso8601, link::LinkMatch
 };
 use hdk::utils;
 use hdk::ValidationPackageDefinition;
@@ -84,7 +84,7 @@ fn handle_vote(
         api::update_entry(Entry::App("vote".into(), vote.into()), &prev_vote)
     } else {
         let result = api::commit_entry(&Entry::App("vote".into(), vote.into()))?;
-        api::link_entries(&target, &result, "vote")?;
+        api::link_entries(&target, &result, "vote", "")?;
 
         Ok(result)
     }
@@ -92,7 +92,7 @@ fn handle_vote(
 
 /// Get all votes linked from a specific address
 fn handle_votes_from_address(address: Address) -> ZomeApiResult<Vec<Vote>> {
-    Ok(api::get_links_and_load(&address, "vote")?
+    Ok(api::get_links_and_load(&address, LinkMatch::Exactly("vote"), LinkMatch::Any)?
         .into_iter()
         .filter_map(|result| result.ok())
         .filter_map(|entry| match entry {
@@ -279,7 +279,7 @@ define_zome! {
             links: [
                 from!(
                     "post",
-                    tag: "vote",
+                    link_type: "vote",
                     validation_package: || ValidationPackageDefinition::Entry,
                     validation: |link_validation_data: hdk::LinkValidationData| {
                         let link = match link_validation_data {
@@ -297,7 +297,7 @@ define_zome! {
                 ),
                 from!(
                     "comment",
-                    tag: "vote",
+                    link_type: "vote",
                     validation_package: || ValidationPackageDefinition::Entry,
                     validation: |link_validation_data: hdk::LinkValidationData| {
                         let link = match link_validation_data {

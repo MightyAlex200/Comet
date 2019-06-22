@@ -17,7 +17,7 @@ use hdk::{
     LinkValidationData,
     holochain_core_types::{
         cas::content::Address, dna::entry_types::Sharing, entry::Entry, error::HolochainError,
-        json::JsonString, time::Iso8601, validation::ValidationPackageDefinition,
+        json::JsonString, time::Iso8601, validation::ValidationPackageDefinition, link::LinkMatch
     },
 };
 
@@ -71,9 +71,9 @@ fn handle_create_comment(comment: CommentContent, target: Address) -> ZomeApiRes
 fn handle_create_comment_raw(comment: Comment, target: Address) -> ZomeApiResult<Address> {
     let comment_entry = Entry::App("comment".into(), comment.into());
     let comment_address = api::commit_entry(&comment_entry)?;
-    utils::link_entries_bidir(&target, &comment_address, "comment", "child_of")?;
+    utils::link_entries_bidir(&target, &comment_address, "comment", "child_of", "", "")?;
     // Link from author
-    api::link_entries(&api::AGENT_ADDRESS, &comment_address, "author")?;
+    api::link_entries(&api::AGENT_ADDRESS, &comment_address, "author", "")?;
     Ok(comment_address)
 }
 
@@ -99,7 +99,7 @@ fn handle_delete_comment(address: Address) -> ZomeApiResult<Address> {
 
 /// Return the addresses of entries linked by "comment"
 fn handle_comments_from_address(address: Address) -> ZomeApiResult<Vec<Address>> {
-    Ok(api::get_links(&address, "comment")?.addresses().clone())
+    Ok(api::get_links(&address, LinkMatch::Exactly("comment"), LinkMatch::Any)?.addresses().clone())
 }
 
 define_zome! {
@@ -163,7 +163,7 @@ define_zome! {
                 // Comments can be made on other comments
                 from!(
                     "comment",
-                    tag: "comment",
+                    link_type: "comment",
                     validation_package: || ValidationPackageDefinition::Entry,
                     validation: |link_validation_data: hdk::LinkValidationData| {
                         let link = match link_validation_data {
@@ -181,7 +181,7 @@ define_zome! {
                 ),
                 to!(
                     "comment",
-                    tag: "child_of",
+                    link_type: "child_of",
                     validation_package: || ValidationPackageDefinition::Entry,
                     validation: |link_validation_data: hdk::LinkValidationData| {
                         let link = match link_validation_data {
@@ -200,7 +200,7 @@ define_zome! {
                 // Comments can be made on posts
                 from!(
                     "post",
-                    tag: "comment",
+                    link_type: "comment",
                     validation_package: || ValidationPackageDefinition::Entry,
                     validation: |link_validation_data: hdk::LinkValidationData| {
                         // TODO: Should linking to the same comment from
@@ -210,7 +210,7 @@ define_zome! {
                 ),
                 to!(
                     "post",
-                    tag: "child_of",
+                    link_type: "child_of",
                     validation_package: || ValidationPackageDefinition::Entry,
                     validation: |link_validation_data: hdk::LinkValidationData| {
                         let link = match link_validation_data {
@@ -229,7 +229,7 @@ define_zome! {
                 // Comments links from (to implicit by `key_hash` field) their author's key hash
                 from!(
                     "%agent_id",
-                    tag: "author",
+                    link_type: "author",
                     validation_package: || hdk::ValidationPackageDefinition::Entry,
                     validation: |link_validation_data: hdk::LinkValidationData| {
                         let link = match link_validation_data {

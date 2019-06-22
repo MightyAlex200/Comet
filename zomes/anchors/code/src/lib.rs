@@ -18,6 +18,7 @@ use hdk::{
         entry::Entry,
         error::HolochainError,
         json::JsonString,
+        link::LinkMatch,
     },
     EntryValidationData,
 };
@@ -60,11 +61,11 @@ fn handle_anchor(anchor: Anchor) -> ZomeApiResult<Address> {
             }
             // create, link type anchor
             let type_anchor_address = api::commit_entry(&type_anchor_entry)?;
-            api::link_entries(&root_anchor_address, &type_anchor_address, "")?;
+            api::link_entries(&root_anchor_address, &type_anchor_address, "", "")?;
         }
         // create, link, return anchor
         api::commit_entry(&anchor_entry)?;
-        api::link_entries(&type_anchor_address, &anchor_address, "")?;
+        api::link_entries(&type_anchor_address, &anchor_address, "", "")?;
         Ok(anchor_address)
     }
 }
@@ -84,7 +85,7 @@ fn handle_anchors(anchor_type: String) -> ZomeApiResult<GetLinksResult> {
     };
     let type_anchor_entry = Entry::App("anchor".into(), type_anchor.into());
     let type_anchor_address = api::entry_address(&type_anchor_entry)?;
-    api::get_links(&type_anchor_address, "")
+    api::get_links(&type_anchor_address, LinkMatch::Exactly(""), LinkMatch::Any)
 }
 
 define_zome! {
@@ -104,7 +105,7 @@ define_zome! {
             links: [
                 to!(
                     "anchor",
-                    tag: "",
+                    link_type: "",
                     validation_package: || hdk::ValidationPackageDefinition::Entry,
                     validation: |_link_validation_data: hdk::LinkValidationData| Ok(())
                 )
