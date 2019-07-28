@@ -1,4 +1,3 @@
-#![feature(try_from)]
 #[macro_use]
 extern crate hdk;
 extern crate serde;
@@ -6,15 +5,17 @@ extern crate serde;
 extern crate serde_derive;
 extern crate serde_json;
 #[macro_use]
-extern crate holochain_core_types_derive;
+extern crate holochain_json_derive;
 
 use hdk::api;
 use hdk::{EntryValidationData, LinkValidationData};
 use hdk::error::{ZomeApiError, ZomeApiResult};
 use hdk::holochain_core_types::{
-    cas::content::Address, dna::entry_types::Sharing, entry::Entry, error::HolochainError,
-    json::JsonString, time::Iso8601, link::LinkMatch
+    dna::entry_types::Sharing, entry::Entry,
+    time::Iso8601, link::LinkMatch
 };
+use hdk::holochain_persistence_api::cas::content::Address;
+use hdk::holochain_json_api::{ json::JsonString, error::JsonError };
 use hdk::utils;
 use hdk::ValidationPackageDefinition;
 use holochain_wasm_utils::api_serialization::query::{
@@ -80,11 +81,22 @@ fn handle_vote(
         timestamp: utc_unix_time.into(),
     };
 
+    let target_entry_type = match api::get_entry(&target)? {
+        Some(Entry::App(entry_type, _)) => entry_type,
+        _ => return Err(ZomeApiError::Internal("Vote target was not app entry.".to_string())),
+    };
+
+    let link_type = match Into::<String>::into(target_entry_type).as_ref() {
+        "post" => "post_vote",
+        "comment" => "comment_vote",
+        _ => return Err(ZomeApiError::Internal("Vote target was not post or comment.".to_string())),
+    };
+
     if let Some(prev_vote) = find_my_vote(&target, &in_terms_of)? {
         api::update_entry(Entry::App("vote".into(), vote.into()), &prev_vote)
     } else {
         let result = api::commit_entry(&Entry::App("vote".into(), vote.into()))?;
-        api::link_entries(&target, &result, "vote", "")?;
+        api::link_entries(&target, &result, link_type, "")?;
 
         Ok(result)
     }
@@ -92,7 +104,7 @@ fn handle_vote(
 
 /// Get all votes linked from a specific address
 fn handle_votes_from_address(address: Address) -> ZomeApiResult<Vec<Vote>> {
-    Ok(api::get_links_and_load(&address, LinkMatch::Exactly("vote"), LinkMatch::Any)?
+    Ok(api::get_links_and_load(&address, LinkMatch::Regex("\\w+?_vote"), LinkMatch::Any)?
         .into_iter()
         .filter_map(|result| result.ok())
         .filter_map(|entry| match entry {
@@ -279,7 +291,7 @@ define_zome! {
             links: [
                 from!(
                     "post",
-                    link_type: "vote",
+                    link_type: "post_vote",
                     validation_package: || ValidationPackageDefinition::Entry,
                     validation: |link_validation_data: hdk::LinkValidationData| {
                         let link = match link_validation_data {
@@ -297,7 +309,7 @@ define_zome! {
                 ),
                 from!(
                     "comment",
-                    link_type: "vote",
+                    link_type: "comment_vote",
                     validation_package: || ValidationPackageDefinition::Entry,
                     validation: |link_validation_data: hdk::LinkValidationData| {
                         let link = match link_validation_data {

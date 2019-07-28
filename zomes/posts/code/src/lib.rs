@@ -1,5 +1,3 @@
-#![feature(try_from)]
-
 #[macro_use]
 extern crate hdk;
 extern crate serde;
@@ -7,7 +5,7 @@ extern crate serde;
 extern crate serde_derive;
 extern crate serde_json;
 #[macro_use]
-extern crate holochain_core_types_derive;
+extern crate holochain_json_derive;
 // extern crate anchors;
 
 // use anchors::Anchor;
@@ -20,13 +18,15 @@ pub struct Anchor {
 use hdk::utils;
 use hdk::{
     api,
+    holochain_json_api::{ json::JsonString, error::JsonError },
     {EntryValidationData, LinkValidationData},
     error::{ZomeApiError, ZomeApiResult},
     holochain_core_types::{
-        cas::content::Address, dna::entry_types::Sharing, entry::Entry, error::HolochainError,
-        json::JsonString, time::Iso8601, link::LinkMatch,
+        dna::entry_types::Sharing, entry::Entry,
+        time::Iso8601, link::LinkMatch,
         chain_header::ChainHeader
     },
+    holochain_persistence_api::cas::content::Address,
     holochain_wasm_utils::api_serialization::get_links::GetLinksResult,
     ValidationPackageDefinition,
 };
@@ -265,7 +265,7 @@ fn handle_search(query: Search, exclude_crossposts: bool) -> ZomeApiResult<Vec<S
             }
             Search::Exactly(tag) => {
                 let tag_anchor_address = anchor("tag".to_owned(), tag.to_string())?;
-                let original_links = api::get_links(&tag_anchor_address, LinkMatch::Exactly("original_tag"), LinkMatch::Any)?;
+                let original_links = api::get_links(&tag_anchor_address, LinkMatch::Exactly("original_tag_to_post"), LinkMatch::Any)?;
                 let original_tags = original_links.addresses().into_iter().map(|address| {
                     let mut in_terms_of = HashSet::new();
                     in_terms_of.insert(tag);
@@ -274,7 +274,7 @@ fn handle_search(query: Search, exclude_crossposts: bool) -> ZomeApiResult<Vec<S
                 if exclude_crossposts {
                     Ok(original_tags.collect())
                 } else {
-                    let crosspost_links = api::get_links(&tag_anchor_address, LinkMatch::Exactly("crosspost_tag"), LinkMatch::Any)?;
+                    let crosspost_links = api::get_links(&tag_anchor_address, LinkMatch::Exactly("crosspost_tag_to_post"), LinkMatch::Any)?;
                     let crosspost_tags =
                         crosspost_links.addresses().into_iter().map(|address| {
                             let mut in_terms_of = HashSet::new();
@@ -304,15 +304,15 @@ fn handle_create_post_raw(post: Post, tags: Vec<Tag>) -> ZomeApiResult<Address> 
     let post_entry = Entry::App("post".into(), post.into());
     let post_entry_address = api::commit_entry(&post_entry)?;
     // Link from author
-    api::link_entries(&api::AGENT_ADDRESS, &post_entry_address, "author", "")?;
+    api::link_entries(&api::AGENT_ADDRESS, &post_entry_address, "post_author", "")?;
     for tag in tags {
         let tag_anchor = anchor("tag".to_owned(), tag.to_string())?;
         // Link from post to tag anchor and vice versa
         utils::link_entries_bidir(
             &post_entry_address,
             &tag_anchor,
-            "original_tag",
-            "original_tag",
+            "post_to_original_tag",
+            "original_tag_to_post",
             "",
             "",
         )?;
@@ -374,7 +374,7 @@ fn post_anchor_link_valid(
 fn handle_crosspost(post_address: Address, tags: Vec<Tag>) -> ZomeApiResult<()> {
     for tag in tags {
         let tag_anchor = anchor("tag".to_owned(), tag.to_string())?;
-        utils::link_entries_bidir(&tag_anchor, &post_address, "crosspost_tag", "crosspost_tag", "", "")?;
+        utils::link_entries_bidir(&tag_anchor, &post_address, "crosspost_tag_to_post", "post_to_crosspost_tag", "", "")?;
     }
     Ok(())
 }
@@ -404,8 +404,8 @@ fn handle_post_tags(address: Address) -> ZomeApiResult<PostTags> {
     }
 
     match (
-        api::get_links(&address, LinkMatch::Exactly("original_tag"), LinkMatch::Any),
-        api::get_links(&address, LinkMatch::Exactly("crosspost_tag"), LinkMatch::Any),
+        api::get_links(&address, LinkMatch::Exactly("post_to_original_tag"), LinkMatch::Any),
+        api::get_links(&address, LinkMatch::Exactly("post_to_crosspost_tag"), LinkMatch::Any),
     ) {
         (Ok(original_tags), Ok(crosspost_tags)) => Ok(PostTags {
             original_tags: get_tags(original_tags),
@@ -418,7 +418,7 @@ fn handle_post_tags(address: Address) -> ZomeApiResult<PostTags> {
 
 /// Return the addresses of posts a user has made by their key address
 fn handle_user_posts(author: Address) -> ZomeApiResult<Vec<Address>> {
-    api::get_links(&author, LinkMatch::Exactly("author"), LinkMatch::Any).map(|links| links.addresses())
+    api::get_links(&author, LinkMatch::Exactly("post_author"), LinkMatch::Any).map(|links| links.addresses())
 }
 
 /// Username of an agent. Used instead of string to get around issues of
@@ -497,7 +497,7 @@ define_zome! {
                 // Posts link to and from their original tags
                 to!(
                     "anchor",
-                    link_type: "original_tag",
+                    link_type: "post_to_original_tag",
                     validation_package: || hdk::ValidationPackageDefinition::ChainHeaders,
                     validation: |link_validation_data: hdk::LinkValidationData| {
                         let (link, validation_data) = match link_validation_data {
@@ -520,7 +520,7 @@ define_zome! {
                 ),
                 from!(
                     "anchor",
-                    link_type: "original_tag",
+                    link_type: "original_tag_to_post",
                     validation_package: || hdk::ValidationPackageDefinition::ChainHeaders,
                     validation: |link_validation_data: hdk::LinkValidationData| {
                         let (link, validation_data) = match link_validation_data {
@@ -544,7 +544,7 @@ define_zome! {
                 // Posts link to and from crossposted tags
                 to!(
                     "anchor",
-                    link_type: "crosspost_tag",
+                    link_type: "post_to_crosspost_tag",
                     validation_package: || hdk::ValidationPackageDefinition::ChainHeaders,
                     validation: |link_validation_data: hdk::LinkValidationData| {
                         let (link, validation_data) = match link_validation_data {
@@ -567,7 +567,7 @@ define_zome! {
                 ),
                 from!(
                     "anchor",
-                    link_type: "crosspost_tag",
+                    link_type: "crosspost_tag_to_post",
                     validation_package: || hdk::ValidationPackageDefinition::ChainHeaders,
                     validation: |link_validation_data: hdk::LinkValidationData| {
                         let (link, validation_data) = match link_validation_data {
@@ -591,7 +591,7 @@ define_zome! {
                 // Posts links from (to implicit by `key_hash` field) their author's key hash
                 from!(
                     "%agent_id",
-                    link_type: "author",
+                    link_type: "post_author",
                     validation_package: || hdk::ValidationPackageDefinition::Entry,
                     validation: |link_validation_data: hdk::LinkValidationData| {
                         let link = match link_validation_data {

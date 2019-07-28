@@ -84,13 +84,13 @@ diorama.registerScenario('Test votes zome', async (s, t, { alice }) => {
     );
     // NEGATIVE - Invalid target //
     t.deepEquals(
-        JSON.parse((await alice.call('votes', 'vote', {
+        (await alice.call('votes', 'vote', {
             fraction: 1,
             in_terms_of: [1],
             utc_unix_time: 0,
             target: "invalid",
-        })).Err.Internal).kind,
-        { ErrorGeneric: 'Base for link not found' },
+        })).Err.Internal,
+        'Vote target was not app entry.',
         'Cannot vote on invalid target',
     );
 
@@ -243,7 +243,7 @@ diorama.registerScenario('Test anchors zome', async (s, t, { alice }) => {
         await alice.call('anchors', 'anchors', {
             anchor_type: 'type'
         }),
-        { Ok: { links: [{ address: anchorAddress.Ok, headers: [], tag: '' }] } },
+        { Ok: { links: [{ address: anchorAddress.Ok, headers: [], tag: '', status: 'live' }] } },
         "Exactly 1 anchor with type 'type'"
     );
 
@@ -404,7 +404,7 @@ diorama.registerScenario('Test posts zome', async (s, t, { alice }) => {
             query: { type: "and", values: [{ type: "exactly", values: 1 }, { type: "exactly", values: 2 }] },
             exclude_crossposts: false,
         }),
-        { Ok: [{ address: testPost.Ok, in_terms_of: [1, 2] }] },
+        { Ok: [{ address: testPost.Ok, in_terms_of: [2, 1] }] },
         'And query finds post'
     );
 

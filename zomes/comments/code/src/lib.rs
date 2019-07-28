@@ -1,5 +1,3 @@
-#![feature(try_from)]
-
 #[macro_use]
 extern crate hdk;
 extern crate serde;
@@ -7,18 +5,20 @@ extern crate serde;
 extern crate serde_derive;
 extern crate serde_json;
 #[macro_use]
-extern crate holochain_core_types_derive;
+extern crate holochain_json_derive;
 
 use hdk::utils;
 use hdk::{
     api,
-    error::ZomeApiResult,
+    holochain_json_api::{ json::JsonString, error::JsonError },
+    error::{ ZomeApiResult, ZomeApiError },
     EntryValidationData,
     LinkValidationData,
     holochain_core_types::{
-        cas::content::Address, dna::entry_types::Sharing, entry::Entry, error::HolochainError,
-        json::JsonString, time::Iso8601, validation::ValidationPackageDefinition, link::LinkMatch
+        dna::entry_types::Sharing, entry::Entry,
+        time::Iso8601, validation::ValidationPackageDefinition, link::LinkMatch
     },
+    holochain_persistence_api::cas::content::Address,
 };
 
 /// Represents a users comment
@@ -69,11 +69,22 @@ fn handle_create_comment(comment: CommentContent, target: Address) -> ZomeApiRes
 /// Create a post given a full `Post` struct, including `timestamp` and
 /// `key_hash`
 fn handle_create_comment_raw(comment: Comment, target: Address) -> ZomeApiResult<Address> {
+    let target_type = match api::get_entry(&target)? {
+        Some(Entry::App(t, _)) => t,
+        _ => return Err(ZomeApiError::Internal("Comment target was not app entry.".to_string())),
+    };
+
+    let (link1type, link2type) = match Into::<String>::into(target_type).as_ref() {
+        "post" => ("comment_on_post", "child_of_post"),
+        "comment" => ("comment_on_comment", "child_of_comment"),
+        _ => return Err(ZomeApiError::Internal("Comment target was not post or comment entry.".to_string())),
+    };
+
     let comment_entry = Entry::App("comment".into(), comment.into());
     let comment_address = api::commit_entry(&comment_entry)?;
-    utils::link_entries_bidir(&target, &comment_address, "comment", "child_of", "", "")?;
+    utils::link_entries_bidir(&target, &comment_address, link1type, link2type, "", "")?;
     // Link from author
-    api::link_entries(&api::AGENT_ADDRESS, &comment_address, "author", "")?;
+    api::link_entries(&api::AGENT_ADDRESS, &comment_address, "comment_author", "")?;
     Ok(comment_address)
 }
 
@@ -99,7 +110,7 @@ fn handle_delete_comment(address: Address) -> ZomeApiResult<Address> {
 
 /// Return the addresses of entries linked by "comment"
 fn handle_comments_from_address(address: Address) -> ZomeApiResult<Vec<Address>> {
-    Ok(api::get_links(&address, LinkMatch::Exactly("comment"), LinkMatch::Any)?.addresses().clone())
+    Ok(api::get_links(&address, LinkMatch::Regex("comment_on_\\w+"), LinkMatch::Any)?.addresses().clone())
 }
 
 define_zome! {
@@ -163,7 +174,7 @@ define_zome! {
                 // Comments can be made on other comments
                 from!(
                     "comment",
-                    link_type: "comment",
+                    link_type: "comment_on_comment",
                     validation_package: || ValidationPackageDefinition::Entry,
                     validation: |link_validation_data: hdk::LinkValidationData| {
                         let link = match link_validation_data {
@@ -181,7 +192,7 @@ define_zome! {
                 ),
                 to!(
                     "comment",
-                    link_type: "child_of",
+                    link_type: "child_of_comment",
                     validation_package: || ValidationPackageDefinition::Entry,
                     validation: |link_validation_data: hdk::LinkValidationData| {
                         let link = match link_validation_data {
@@ -200,7 +211,7 @@ define_zome! {
                 // Comments can be made on posts
                 from!(
                     "post",
-                    link_type: "comment",
+                    link_type: "comment_on_post",
                     validation_package: || ValidationPackageDefinition::Entry,
                     validation: |link_validation_data: hdk::LinkValidationData| {
                         // TODO: Should linking to the same comment from
@@ -210,7 +221,7 @@ define_zome! {
                 ),
                 to!(
                     "post",
-                    link_type: "child_of",
+                    link_type: "child_of_post",
                     validation_package: || ValidationPackageDefinition::Entry,
                     validation: |link_validation_data: hdk::LinkValidationData| {
                         let link = match link_validation_data {
@@ -229,7 +240,7 @@ define_zome! {
                 // Comments links from (to implicit by `key_hash` field) their author's key hash
                 from!(
                     "%agent_id",
-                    link_type: "author",
+                    link_type: "comment_author",
                     validation_package: || hdk::ValidationPackageDefinition::Entry,
                     validation: |link_validation_data: hdk::LinkValidationData| {
                         let link = match link_validation_data {
