@@ -2,6 +2,13 @@ import React, { Component } from 'react';
 import PropTypes from 'prop-types';
 import { connect } from 'react-redux';
 import { readPost } from '../actions';
+import { Paper, Box, Typography, withStyles, Divider, Button } from '@material-ui/core';
+
+const styles = {
+    root: {
+        padding: 8,
+    },
+};
 
 class PostView extends Component {
     componentDidUpdate(prevProps) {
@@ -12,20 +19,33 @@ class PostView extends Component {
         }
     }
 
-    render() {
+    renderPost() {
         const post = this.props.postsRead[this.props.address];
         if (post && post.Ok) {
-            return (<div>
-                <h2>{post.Ok.title}</h2>
-                <p>{post.Ok.content}</p>
-            </div>);
+            return (<Box>
+                <Typography className={this.props.classes.root} variant="h4">{post.Ok.title}</Typography>
+                <Typography className={this.props.classes.root} variant="subtitle2">
+                    {`Submitted by ${post.Ok.key_hash}` /* TODO: Resolve name and make this a link */}
+                </Typography>
+                <Divider></Divider>
+                <Typography className={this.props.classes.root} variant="body1">{post.Ok.content}</Typography>
+                <Button variant="outlined">Reply</Button>
+            </Box>);
         } else if (post && post.Err) {
-            return (<div>Failed to get post: {JSON.stringify(post.Err)}</div>)
+            return (<Typography variant="body1">Failed to get post: {JSON.stringify(post.Err)}</Typography>)
         } else if (!this.props.holochainConnected) {
-            return (<div>Connecting to Holochain...</div>);
+            return (<Typography variant="body1">Connecting to Holochain...</Typography>);
         } else {
-            return (<div>Loading post...</div>);
+            return (<Typography variant="body1">Loading post...</Typography>);
         }
+    }
+
+    render() {
+        return (
+            <Paper className={this.props.classes.root}>
+                {this.renderPost()}
+            </Paper>
+        );
     }
 }
 
@@ -39,4 +59,4 @@ const propsMap = (state, ownProps) => ({
     postsRead: state.postsRead,
 });
 
-export default connect(propsMap, { readPost })(PostView);
+export default connect(propsMap, { readPost })(withStyles(styles)(PostView));
