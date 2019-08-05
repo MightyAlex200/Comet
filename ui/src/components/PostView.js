@@ -51,6 +51,10 @@ class PostView extends Component {
 
 PostView.propTypes = {
     address: PropTypes.string.isRequired,
+    holochainConnected: PropTypes.bool.isRequired,
+    callZome: PropTypes.func,
+    postsRead: PropTypes.object.isRequired,
+    classes: PropTypes.object.isRequired,
 };
 
 const propsMap = (state, ownProps) => ({
