@@ -1,5 +1,5 @@
 import React from 'react';
-import { createPost } from '../actions';
+import { createPost, consumePostJustCreated } from '../actions';
 import { withStyles, Typography, TextField, Button } from '@material-ui/core';
 import PropTypes from 'prop-types';
 import { connect } from 'react-redux';
@@ -28,6 +28,7 @@ class ComposePost extends React.Component {
     componentDidUpdate(prevProps) {
         if (this.props.postJustCreated) {
             this.props.history.push(`/post/${this.props.postJustCreated}`);
+            this.props.consumePostJustCreated();
         }
     }
 
@@ -110,6 +111,7 @@ ComposePost.propTypes = {
     callZome: PropTypes.func,
     holochainConnected: PropTypes.bool.isRequired,
     postJustCreated: PropTypes.string,
+    consumePostJustCreated: PropTypes.func.isRequired,
     history: PropTypes.object.isRequired,
 };
 
@@ -119,4 +121,4 @@ const propsMap = state => ({
     postJustCreated: state.postJustCreated,
 });
 
-export default connect(propsMap, { createPost })(withStyles(styles)(withRouter(ComposePost)));
+export default connect(propsMap, { createPost, consumePostJustCreated })(withStyles(styles)(withRouter(ComposePost)));

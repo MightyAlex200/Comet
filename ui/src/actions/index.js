@@ -60,3 +60,7 @@ export const createPost = (post, tags, callZome) => dispatch => {
             }
         });
 }
+
+export const consumePostJustCreated = () => dispatch => {
+    dispatch(postCreated(null));
+}
