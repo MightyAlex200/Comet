@@ -1,4 +1,4 @@
-import { POST_READ, HOLOCHAIN_CONNECTED, ZOME_ERROR } from '../actions/'
+import { POST_READ, HOLOCHAIN_CONNECTED, ZOME_ERROR, POST_CREATED } from '../actions/'
 import defaultState from './defaultState';
 
 export default (state = defaultState, action) => {
@@ -10,6 +10,11 @@ export default (state = defaultState, action) => {
             return {
                 ...state,
                 postsRead: { ...state.postsRead, [action.address]: action.post },
+            };
+        case POST_CREATED:
+            return {
+                ...state,
+                postJustCreated: action.address,
             };
         case HOLOCHAIN_CONNECTED:
             return { ...state, callZome: action.callZome, holochainConnected: true, };
