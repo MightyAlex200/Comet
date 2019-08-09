@@ -4,4 +4,5 @@ export default {
     callZome: null,
     postJustCreated: null,
     errors: [],
+    usernames: {},
 };

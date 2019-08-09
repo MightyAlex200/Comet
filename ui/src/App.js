@@ -62,7 +62,7 @@ class App extends React.Component {
                 </AppBar>
                 <Drawer variant="permanent" className={this.props.classes.drawer} classes={{ paper: this.props.classes.drawer }}>
                   <List>
-                    <ListItem button>
+                    <ListItem component={RouterLink} to="/my_profile" button>
                       <ListItemIcon>
                         <AccountCircleIcon />
                       </ListItemIcon>

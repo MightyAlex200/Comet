@@ -40,11 +40,11 @@ class PostSummary extends React.Component {
             return (
                 <React.Fragment>
                     <Link component={RouterLink} to={`/post/${this.props.address}`} variant="h5">{post.Ok.title}</Link>
-                    <PostSignature post={post.Ok}/>
+                    <PostSignature post={post.Ok} />
                 </React.Fragment>
             );
         } else if (post) {
-            return (<Typography variant="body1">{JSON.stringify(post.Err)}</Typography>)
+            return (<Typography variant="body1">{`Failed to get post: ${JSON.stringify(post.Err)}`}</Typography>)
         } else if (this.props.holochainConnected) {
             return (<Typography variant="body1">Loading Post...</Typography>);
         } else {

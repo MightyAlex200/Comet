@@ -1,4 +1,4 @@
-import { POST_READ, HOLOCHAIN_CONNECTED, ZOME_ERROR, POST_CREATED } from '../actions/'
+import { POST_READ, HOLOCHAIN_CONNECTED, ZOME_ERROR, POST_CREATED, USERNAME_RESOLVED } from '../actions/'
 import defaultState from './defaultState';
 
 export default (state = defaultState, action) => {
@@ -19,6 +19,14 @@ export default (state = defaultState, action) => {
                 ...state,
                 postJustCreated: action.address,
             };
+        case USERNAME_RESOLVED:
+            return {
+                ...state,
+                usernames: {
+                    ...state.usernames,
+                    [action.keyHash]: action.username,
+                },
+            }
         case HOLOCHAIN_CONNECTED:
             return { ...state, callZome: action.callZome, holochainConnected: true, };
         default:
