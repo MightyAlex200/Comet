@@ -1,5 +1,5 @@
 import React from 'react';
-import { Box, Typography, withStyles, TextField, Button } from '@material-ui/core';
+import { Link, Box, Typography, withStyles, TextField, Button } from '@material-ui/core';
 import { Link as RouterLink } from 'react-router-dom';
 import PostSummary from './PostSummary';
 
@@ -32,6 +32,8 @@ function DebugPage(props) {
                 <Button component={RouterLink} to={`/post/${state.postViewAddress}`}>View post</Button>
                 <Typography variant="body1">Preview will appear below</Typography>
                 <PostSummary address={state.postViewAddress} />
+                <hr />
+                <Link component={RouterLink} to="/compose_post">Click here to compose a post</Link>
             </form>
         </Box>
     );

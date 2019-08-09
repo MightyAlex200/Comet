@@ -23,10 +23,10 @@ export const holochainConnection = (callZome) => ({
     callZome,
 });
 
-export const zomeError = (func, action, error, ident) => ({
+export const zomeError = (func, failedAction, error, ident) => ({
     type: ZOME_ERROR,
     func,
-    action,
+    failedAction,
     error,
 });
 

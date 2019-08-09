@@ -4,7 +4,10 @@ import defaultState from './defaultState';
 export default (state = defaultState, action) => {
     switch (action.type) {
         case ZOME_ERROR:
-            return state;
+            const func = action.func;
+            const failedAction = action.failedAction;
+            const error = action.error;
+            return { ...state, errors: [...state.errors, { func, failedAction, error }] };
         case POST_READ:
             // TODO: Delete unused posts
             return {

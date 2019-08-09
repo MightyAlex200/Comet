@@ -3,4 +3,5 @@ export default {
     postsRead: {},
     callZome: null,
     postJustCreated: null,
+    errors: [],
 };
