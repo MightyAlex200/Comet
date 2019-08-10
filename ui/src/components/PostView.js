@@ -16,6 +16,9 @@ const styles = theme => ({
         padding: theme.spacing(3),
         textAlign: 'center',
     },
+    commentsHeader: {
+        padding: theme.spacing(1),
+    },
 });
 
 class PostView extends Component {
@@ -89,6 +92,7 @@ class PostView extends Component {
                 <Paper className={this.props.classes.root}>
                     {this.renderPost()}
                 </Paper>
+                <Typography className={this.props.classes.commentsHeader} variant="h2">Comments</Typography>
                 {this.props.noComments ? null : <CommentsView newComment={this.state.newComment} target={this.props.address} />}
             </Box>
         );
