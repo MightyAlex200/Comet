@@ -3,7 +3,7 @@ import { connect } from 'react-redux';
 import { fetchComments } from '../actions';
 import PropTypes from 'prop-types';
 import CommentView from './CommentView';
-import { withStyles, Paper, Box, CircularProgress } from '@material-ui/core';
+import { withStyles, Paper, Box, CircularProgress, Typography } from '@material-ui/core';
 
 const styles = theme => ({
     root: {
@@ -16,6 +16,9 @@ const styles = theme => ({
     comment: {
         paddingTop: theme.spacing(1),
         paddingLeft: theme.spacing(1),
+    },
+    commentsHeader: {
+        padding: theme.spacing(1),
     },
 });
 
@@ -47,10 +50,20 @@ class CommentsView extends React.Component {
     render() {
         const comments = this.props.commentsByAddress[this.props.target];
         if (comments && comments.Ok) {
-            return comments.Ok.map(address =>
-                <Box className={this.props.classes.comment} key={address}>
-                    <CommentView address={address}/>
-                </Box>
+            return (
+                <React.Fragment>
+                    {this.props.header ?
+                        <Typography className={this.props.classes.commentsHeader} variant="h2">
+                            {`${comments.Ok.length} Comment${(comments.Ok.length === 1) ? '' : 's'}`}
+                        </Typography>
+                        : null
+                    }
+                    {comments.Ok.map(address =>
+                        <Box className={this.props.classes.comment} key={address}>
+                            <CommentView address={address} />
+                        </Box>
+                    )}
+                </React.Fragment>
             );
         } else if (comments) {
             return (
@@ -80,6 +93,7 @@ CommentsView.propTypes = {
     target: PropTypes.string.isRequired,
     classes: PropTypes.object.isRequired,
     newComment: PropTypes.object,
+    header: PropTypes.bool,
 };
 
 const propsMap = props => ({
