@@ -2,6 +2,7 @@ import React from 'react';
 import { Link, Box, Typography, withStyles, TextField, Button } from '@material-ui/core';
 import { Link as RouterLink } from 'react-router-dom';
 import PostSummary from './PostSummary';
+import CommentView from './CommentView';
 
 const styles = theme => ({
     root: {
@@ -29,9 +30,10 @@ function DebugPage(props) {
                     margin="normal"
                 />
                 <br />
-                <Button component={RouterLink} to={`/post/${state.postViewAddress}`}>View post</Button>
+                <Button variant="outlined" component={RouterLink} to={`/post/${state.postViewAddress}`}>View post</Button>
                 <Typography variant="body1">Preview will appear below</Typography>
                 <PostSummary address={state.postViewAddress} />
+                <CommentView address={state.postViewAddress} />
                 <hr />
                 <Link component={RouterLink} to="/compose_post">Click here to compose a post</Link>
             </form>
