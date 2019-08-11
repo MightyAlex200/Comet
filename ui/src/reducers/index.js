@@ -7,8 +7,13 @@ import {
     COMMENT_READ,
     COMMENT_CREATED,
     COMMENTS_FETCHED,
+    VOTES_FETCHED,
+    POST_TAGS_FETCHED,
+    MY_VOTE_FETCHED,
+    VOTE_CAST,
 } from '../actions/'
 import defaultState from './defaultState';
+import util from '../util';
 
 export default (state = defaultState, action) => {
     switch (action.type) {
@@ -32,6 +37,38 @@ export default (state = defaultState, action) => {
             return {
                 ...state,
                 commentsByAddress: { ...state.commentsByAddress, [action.target]: action.addresses }
+            };
+        case VOTES_FETCHED:
+            return {
+                ...state,
+                votes: {
+                    ...state.votes,
+                    [action.target]: action.votes,
+                },
+            };
+        case POST_TAGS_FETCHED:
+            return {
+                ...state,
+                postTags: {
+                    ...state.postTags,
+                    [action.address]: action.postTags,
+                },
+            };
+        case MY_VOTE_FETCHED:
+            return {
+                ...state,
+                myVotes: {
+                    ...state.myVotes,
+                    [action.address]: {
+                        ...state.myVotes[action.address],
+                        [util.inTermsOfToString(action.inTermsOf)]: action.vote,
+                    },
+                },
+            };
+        case VOTE_CAST:
+            return {
+                ...state,
+                voteJustCast: action.voteJustCast,
             };
         case POST_CREATED:
             return {

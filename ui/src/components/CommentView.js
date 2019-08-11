@@ -9,6 +9,7 @@ import { Box, Typography, CircularProgress } from '@material-ui/core';
 import ReactMarkdown from 'react-markdown';
 import CommentsView from './CommentsView';
 import CommentCompose from './CommentCompose';
+import VoteView from './VoteView';
 
 const styles = theme => ({
     root: {
@@ -17,6 +18,13 @@ const styles = theme => ({
     centerProgress: {
         padding: theme.spacing(3),
         textAlign: 'center',
+    },
+    sideBySide: {
+        display: 'flex',
+    },
+    expand: {
+        flexGrow: 1,
+        paddingLeft: theme.spacing(1),
     },
 });
 
@@ -53,12 +61,17 @@ class CommentView extends React.Component {
         const comment = this.props.commentsRead[this.props.address];
         if (comment && comment.Ok) {
             return (
-                <Box>
-                    <PostSignature post={comment.Ok} />
-                    <ReactMarkdown className={this.props.classes.root} source={comment.Ok.content} />
-                    <Divider/>
-                    <br/>
-                    <CommentCompose callback={this.setNewComment} address={this.props.address}/>
+                <Box className={this.props.classes.sideBySide}>
+                    <Box>
+                        <VoteView inTermsOf={this.props.inTermsOf} address={this.props.address} />
+                    </Box>
+                    <Box className={this.props.classes.expand}>
+                        <PostSignature post={comment.Ok} />
+                        <ReactMarkdown className={this.props.classes.root} source={comment.Ok.content} />
+                        <Divider />
+                        <br />
+                        <CommentCompose callback={this.setNewComment} address={this.props.address} />
+                    </Box>
                 </Box>
             );
         } else if (comment) {
@@ -95,6 +108,7 @@ CommentView.propTypes = {
     readComment: PropTypes.func.isRequired,
     address: PropTypes.string.isRequired,
     classes: PropTypes.object.isRequired,
+    inTermsOf: PropTypes.array,
 };
 
 const propsMap = props => ({

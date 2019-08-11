@@ -3,6 +3,7 @@ import { connect } from 'react-redux';
 import PropTypes from 'prop-types';
 import { withStyles, Collapse, TextField, Button } from '@material-ui/core';
 import { createComment } from '../actions';
+import util from '../util';
 
 const styles = theme => ({
     root: {
@@ -23,7 +24,7 @@ class CommentCompose extends React.Component {
 
     componentDidUpdate(prevProps) {
         if (this.props.commentJustCreatedTarget === this.props.address && this.props.commentJustCreated !== prevProps.commentJustCreated) {
-            this.setState(state => ({...state, submitted: false, composeOpen: false}));
+            this.setState(state => ({ ...state, submitted: false, composeOpen: false }));
             if (this.props.callback) {
                 this.props.callback(this.props.commentJustCreated);
             }
@@ -36,12 +37,8 @@ class CommentCompose extends React.Component {
     }
 
     submitComment = () => {
-        this.props.createComment(this.getComment(this.getUtcUnixTime()), this.props.address, this.props.callZome);
-        this.setState(state => ({...state, submitted: true}));
-    }
-
-    getUtcUnixTime() {
-        return Math.floor(new Date().getTime() / 1000);
+        this.props.createComment(this.getComment(util.getUtcUnixTime()), this.props.address, this.props.callZome);
+        this.setState(state => ({ ...state, submitted: true }));
     }
 
     getComment(utc_unix_time) {

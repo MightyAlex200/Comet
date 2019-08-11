@@ -60,7 +60,7 @@ class CommentsView extends React.Component {
                     }
                     {comments.Ok.map(address =>
                         <Box className={this.props.classes.comment} key={address}>
-                            <CommentView address={address} />
+                            <CommentView inTermsOf={this.props.inTermsOf} address={address} />
                         </Box>
                     )}
                 </React.Fragment>
@@ -92,7 +92,8 @@ CommentsView.propTypes = {
     fetchComments: PropTypes.func.isRequired,
     target: PropTypes.string.isRequired,
     classes: PropTypes.object.isRequired,
-    newComment: PropTypes.object,
+    newComment: PropTypes.string,
+    inTermsOf: PropTypes.array,
     header: PropTypes.bool,
 };
 

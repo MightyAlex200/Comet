@@ -4,6 +4,7 @@ import { withStyles, Typography, TextField, Button } from '@material-ui/core';
 import PropTypes from 'prop-types';
 import { connect } from 'react-redux';
 import { withRouter } from 'react-router-dom';
+import util from '../util';
 
 const styles = theme => ({
     header: {
@@ -39,11 +40,7 @@ class ComposePost extends React.Component {
 
     onSubmit = event => {
         event.preventDefault();
-        this.props.createPost(this.getPost(this.getUtcUnixTime()), this.getTags(), this.props.callZome);
-    }
-
-    getUtcUnixTime() {
-        return Math.floor(new Date().getTime() / 1000);
+        this.props.createPost(this.getPost(util.getUtcUnixTime()), this.getTags(), this.props.callZome);
     }
 
     getTags() {
