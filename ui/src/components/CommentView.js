@@ -31,21 +31,30 @@ const styles = theme => ({
 class CommentView extends React.Component {
     state = {
         newComment: null,
+        commentCache: false,
     }
 
     componentDidMount() {
-        const commentRead = this.props.holochainConnected && this.props.commentsRead[this.props.address];
-        if (this.props.holochainConnected && !commentRead) {
-            this.fetchComment();
-        }
+        this.cache();
     }
 
     componentDidUpdate(prevProps) {
-        const holochainJustConnected = prevProps.holochainConnected !== this.props.holochainConnected;
-        const addressChanged = prevProps.address !== this.props.address;
-        const commentRead = this.props.holochainConnected && this.props.commentsRead[this.props.address];
-        if (this.props.holochainConnected && (addressChanged || holochainJustConnected) && !commentRead) {
+        this.invalidateCache(prevProps);
+        this.cache();
+    }
+
+    cache() {
+        if (!this.props.holochainConnected) { return; }
+
+        if (!this.state.commentCache) {
             this.fetchComment();
+            this.setState(state => ({ ...state, commentCache: true }));
+        }
+    }
+
+    invalidateCache(prevProps) {
+        if (prevProps.address !== this.props.address) {
+            this.setState(state => ({ ...state, commentCache: false }));
         }
     }
 
@@ -95,7 +104,7 @@ class CommentView extends React.Component {
                 <Paper className={this.props.classes.root}>
                     {this.renderComment()}
                 </Paper>
-                <CommentsView newComment={this.state.newComment} target={this.props.address} />
+                <CommentsView inTermsOf={this.props.inTermsOf} newComment={this.state.newComment} target={this.props.address} />
             </React.Fragment>
         );
     }

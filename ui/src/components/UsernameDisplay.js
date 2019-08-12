@@ -6,19 +6,35 @@ import { connect } from 'react-redux';
 import { getUsername } from '../actions';
 
 class UsernameDisplay extends React.Component {
+    constructor(props) {
+        super(props);
+        this.state = {
+            usernameCache: props.usernames[props.keyHash] !== undefined,
+        };
+    }
+
     componentDidMount() {
-        const usernameResolved = this.props.holochainConnected && this.props.usernames[this.props.keyHash];
-        if (this.props.holochainConnected && !usernameResolved) {
-            this.fetchUsername();
-        }
+        this.cache();
     }
 
     componentDidUpdate(prevProps) {
-        const holochainJustConnected = prevProps.holochainConnected !== this.props.holochainConnected;
-        const keyHashChanged = prevProps.keyHash !== this.props.keyHash;
-        const usernameResolved = this.props.holochainConnected && this.props.usernames[this.props.keyHash];
-        if (this.props.holochainConnected && (keyHashChanged || holochainJustConnected) && !usernameResolved) {
+        this.invalidateCache(prevProps);
+        this.cache();
+    }
+
+    cache() {
+        if (!this.props.holochainConnected) { return; }
+
+        if (!this.state.usernameCache) {
             this.fetchUsername();
+            this.setState(state => ({ ...state, usernameCache: true }));
+        }
+    }
+
+    invalidateCache(prevProps) {
+        const username = this.props.usernames[this.props.keyHash];
+        if (!username && (prevProps.keyHash !== this.props.keyHash)) {
+            this.setState(state => ({ ...state, usernameCache: false }));
         }
     }
 
@@ -40,6 +56,7 @@ UsernameDisplay.propTypes = {
     keyHash: PropTypes.string.isRequired,
     holochainConnected: PropTypes.bool.isRequired,
     callZome: PropTypes.func,
+    getUsername: PropTypes.func.isRequired,
 }
 
 const propsMap = (props, myProps) => ({

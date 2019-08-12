@@ -18,35 +18,41 @@ const styles = theme => ({
 })
 
 class PostSummary extends React.Component {
+    state = {
+        postCache: false,
+        tagCache: false,
+    }
+
     componentDidMount() {
-        const postRead = this.props.holochainConnected && this.props.postsRead[this.props.address];
-        if (this.props.holochainConnected && !postRead) {
-            this.getPost();
-        }
-
-        if (!this.props.holochainConnected) { return; }
-
-        const tags = this.props.postTags[this.props.address];
-
-        if (!this.props.inTermsOf && !tags) {
-            this.getTags();
-        }
+        this.cache();
     }
 
     componentDidUpdate(prevProps) {
-        const holochainJustConnected = prevProps.holochainConnected !== this.props.holochainConnected;
-        const addressChanged = prevProps.address !== this.props.address;
-        const postRead = this.props.holochainConnected && this.props.postsRead[this.props.address];
-        if (this.props.holochainConnected && (addressChanged || holochainJustConnected) && !postRead) {
-            this.getPost();
-        }
+        this.invalidateCache(prevProps);
+        this.cache();
+    }
 
+    cache() {
         if (!this.props.holochainConnected) { return; }
 
-        const tags = this.props.postTags[this.props.address];
+        if (!this.state.postCache) {
+            this.getPost();
+            this.setState(state => ({ ...state, postCache: true }));
+        }
 
-        if (!this.props.inTermsOf && !tags) {
+        if (!this.props.inTermsOf && !this.state.tagCache) {
             this.getTags();
+            this.setState(state => ({ ...state, tagCache: true }));
+        }
+    }
+
+    invalidateCache(prevProps) {
+        if (prevProps.address !== this.props.address) {
+            this.setState(state => ({ ...state, postCache: false }));
+        }
+
+        if (prevProps.inTermsOf && !this.props.inTermsOf) {
+            this.setState(state => ({ ...state, tagCache: false }));
         }
     }
 

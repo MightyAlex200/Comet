@@ -32,7 +32,8 @@ class VoteView extends React.Component {
   }
 
   state = {
-    justVoted: false,
+    votesCache: false,
+    myVoteCache: false,
   }
 
   constructor(props) {
@@ -48,23 +49,27 @@ class VoteView extends React.Component {
   }
 
   componentDidUpdate(prevProps) {
+    this.invalidateCache(prevProps);
     this.cache();
-    if ((!prevProps.voteJustCast || (prevProps.voteJustCast.address !== this.props.voteJustCast.address)) && this.state.justVoted) {
-      this.setState(state => ({ ...state, justVoted: false }));
-    }
   }
 
   cache() {
     if (!this.props.holochainConnected) { return; }
-    const votes = this.props.votes[this.props.address];
 
-    if (!votes) {
+    if (!this.state.votesCache) {
       this.getVotes();
+      this.setState(state => ({ ...state, votesCache: true }));
     }
 
-    const myVote = this.props.myVotes[this.props.address];
-    if (!myVote || this.state.justVoted) {
+    if (!this.state.myVoteCache) {
       this.getMyVote();
+      this.setState(state => ({ ...state, myVoteCache: true }));
+    }
+  }
+
+  invalidateCache(prevProps) {
+    if ((prevProps.address !== this.props.address) || (prevProps.inTermsOf !== this.props.inTermsOf)) {
+      this.setState(state => ({ ...state, votesCache: false, myVoteCache: false }));
     }
   }
 
@@ -72,7 +77,7 @@ class VoteView extends React.Component {
     this.props.fetchVotes(this.props.address, this.props.callZome);
   }
 
-  getMyVote() {
+  getMyVote = () => {
     this.props.fetchMyVote(this.props.address, this.getInTermsOf(), this.props.callZome);
   }
 
@@ -130,7 +135,10 @@ class VoteView extends React.Component {
     }
 
     this.props.castVote(this.props.address, util.getUtcUnixTime(), weight, this.getInTermsOf(), this.props.callZome)
-      .then(this.getMyVote());
+      .then(() => {
+        this.setState(state => ({ ...state, votesCache: false, myVoteCache: false }));
+        this.cache();
+      });
   }
 
   render() {

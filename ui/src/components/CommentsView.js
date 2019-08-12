@@ -23,6 +23,10 @@ const styles = theme => ({
 });
 
 class CommentsView extends React.Component {
+    state = {
+        commentsCache: false,
+    }
+
     componentDidMount() {
         const commentsFetched = this.props.commentsByAddress[this.props.target];
         if (!commentsFetched && this.props.holochainConnected) {
@@ -40,6 +44,19 @@ class CommentsView extends React.Component {
 
         if (this.props.newComment && (this.props.newComment !== prevProps.newComment)) {
             this.fetchComments();
+        }
+    }
+
+    cache() {
+        if (!this.state.commentsCache) {
+            this.fetchComments();
+            this.setState(state => ({ ...state, commentsCache: true }));
+        }
+    }
+
+    invalidateCache(prevProps) {
+        if ((prevProps.newComment !== this.props.newComment) || (prevProps.target !== this.props.target)) {
+            this.setState(state => ({ ...state, commentsCache: false }));
         }
     }
 

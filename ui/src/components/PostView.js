@@ -1,7 +1,7 @@
 import React, { Component } from 'react';
 import PropTypes from 'prop-types';
 import { connect } from 'react-redux';
-import { readPost, createComment, fetchPostTags } from '../actions';
+import { readPost, fetchPostTags } from '../actions';
 import { Paper, Box, Typography, withStyles, Divider, Button, CircularProgress } from '@material-ui/core';
 import PostSignature from './PostSignature';
 import ReactMarkdown from 'react-markdown';
@@ -27,39 +27,38 @@ const styles = theme => ({
 
 class PostView extends Component {
     state = {
-        retry: true,
+        postCache: false,
+        tagCache: false,
         newComment: null,
     }
 
     componentDidMount() {
-        const postRead = this.props.holochainConnected && this.props.postsRead[this.props.address];
-        if (this.props.holochainConnected && !postRead) {
-            this.fetchPost();
-        }
-
-        if (!this.props.holochainConnected) { return; }
-
-        const tags = this.props.postTags[this.props.address];
-
-        if (!this.props.inTermsOf && !tags) {
-            this.getTags();
-        }
+        this.cache();
     }
 
     componentDidUpdate(prevProps) {
-        const holochainJustConnected = prevProps.holochainConnected !== this.props.holochainConnected;
-        const addressChanged = prevProps.address !== this.props.address;
-        const postRead = this.props.holochainConnected && this.props.postsRead[this.props.address];
-        if (this.props.holochainConnected && (((addressChanged || holochainJustConnected) && !postRead) || this.state.retry)) {
-            this.fetchPost();
-        }
+        this.invalidateCache(prevProps);
+        this.cache();
+    }
 
+    cache() {
         if (!this.props.holochainConnected) { return; }
 
-        const tags = this.props.postTags[this.props.address];
+        if (!this.state.postCache) {
+            this.fetchPost();
+            this.setState(state => ({ ...state, postCache: true }));
+        }
 
-        if (!this.props.inTermsOf && !tags) {
+        if (!this.props.inTermsOf && !this.state.tagCache) {
             this.getTags();
+            this.setState(state => ({ ...state, tagCache: true }));
+        }
+    }
+
+    invalidateCache(prevProps) {
+        const post = this.props.postsRead[this.props.address];
+        if (!post && (prevProps.address !== this.props.address)) {
+            this.setState(state => ({ ...state, postCache: false }));
         }
     }
 
@@ -68,12 +67,11 @@ class PostView extends Component {
     }
 
     fetchPost() {
-        this.setState(state => ({ ...state, retry: false }));
         this.props.readPost(this.props.address, this.props.callZome);
     }
 
     setRetry = () => {
-        this.setState(state => ({ ...state, retry: true }));
+        this.setState(state => ({ ...state, postCache: false }));
     }
 
     setNewComment = newComment => {
@@ -152,7 +150,6 @@ PostView.propTypes = {
     postsRead: PropTypes.object.isRequired,
     classes: PropTypes.object.isRequired,
     readPost: PropTypes.func.isRequired,
-    createComment: PropTypes.func.isRequired,
     noComments: PropTypes.bool,
     fetchPostTags: PropTypes.func.isRequired,
     postTags: PropTypes.object.isRequired,
@@ -165,4 +162,4 @@ const propsMap = (state, ownProps) => ({
     postsRead: state.postsRead,
 });
 
-export default connect(propsMap, { readPost, createComment, fetchPostTags })(withStyles(styles)(PostView));
+export default connect(propsMap, { readPost, fetchPostTags })(withStyles(styles)(PostView));
