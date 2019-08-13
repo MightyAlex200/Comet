@@ -7,6 +7,7 @@ import ArrowUpwardIcon from '@material-ui/icons/ArrowUpward';
 import ArrowDownwardIcon from '@material-ui/icons/ArrowDownward';
 import ErrorIcon from '@material-ui/icons/Error';
 import util from '../util';
+import approx from 'approximate-number';
 
 const styles = theme => ({
   root: {
@@ -176,7 +177,7 @@ class VoteView extends React.Component {
                 <ArrowUpwardIcon ref={this.foregroundUpArrow} onClick={this.onClickVote(true, this.foregroundUpArrow)} style={{ clipPath: upArrowForegroundPath }} className={this.props.classes.upArrow} />
               </Box>
             </Box>
-            <Typography variant="body1">{this.calculateScore(votes.Ok, inTermsOf)}</Typography>
+            <Typography variant="body1">{approx(this.calculateScore(votes.Ok, inTermsOf))}</Typography>
             <Box className={this.props.classes.inlineBlock}>
               <Box className={this.props.classes.root}>
                 <ArrowDownwardIcon ref={this.backgroundDownArrow} onClick={this.onClickVote(false, this.backgroundDownArrow)} style={{ clipPath: downArrowBackgroundPath }} />
