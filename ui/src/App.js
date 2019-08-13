@@ -1,6 +1,6 @@
 import React from 'react';
 import { Provider } from 'react-redux';
-import store from './store';
+import { store, persistor } from './store';
 import ConnectHolochain from './components/ConnectHolochain';
 import CssBaseline from '@material-ui/core/CssBaseline';
 import Container from '@material-ui/core/Container';
@@ -15,6 +15,7 @@ import deepOrange from '@material-ui/core/colors/deepOrange';
 import blue from '@material-ui/core/colors/blue';
 import { SnackbarProvider } from 'notistack';
 import ErrorHandler from './components/ErrorHandler';
+import { PersistGate } from 'redux-persist/integration/react';
 
 import MainPage from './components/MainPage';
 import DebugPage from './components/DebugPage';
@@ -50,39 +51,41 @@ class App extends React.Component {
       <div className="App">
         <CssBaseline />
         <Provider store={store}>
-          <SnackbarProvider>
-            <ConnectHolochain />
-            <ErrorHandler />
-            <Router>
-              <ThemeProvider theme={theme}>
-                <AppBar className={this.props.classes.root} position="relative">
-                  <Toolbar>
-                    <Link style={{ color: "inherit" }} component={RouterLink} to="/" variant="h6">Comet</Link>
-                  </Toolbar>
-                </AppBar>
-                <Drawer variant="permanent" className={this.props.classes.drawer} classes={{ paper: this.props.classes.drawer }}>
-                  <List>
-                    <ListItem component={RouterLink} to="/my_profile" button>
-                      <ListItemIcon>
-                        <AccountCircleIcon />
-                      </ListItemIcon>
-                      <ListItemText primary="Profile" />
-                    </ListItem>
-                  </List>
-                </Drawer>
-                <Box className={this.props.classes.root}>
-                  <Container fixed className={this.props.classes.content}>
+          <PersistGate persistor={persistor}>
+            <SnackbarProvider>
+              <ConnectHolochain />
+              <ErrorHandler />
+              <Router>
+                <ThemeProvider theme={theme}>
+                  <AppBar className={this.props.classes.root} position="relative">
+                    <Toolbar>
+                      <Link style={{ color: "inherit" }} component={RouterLink} to="/" variant="h6">Comet</Link>
+                    </Toolbar>
+                  </AppBar>
+                  <Drawer variant="permanent" className={this.props.classes.drawer} classes={{ paper: this.props.classes.drawer }}>
+                    <List>
+                      <ListItem component={RouterLink} to="/my_profile" button>
+                        <ListItemIcon>
+                          <AccountCircleIcon />
+                        </ListItemIcon>
+                        <ListItemText primary="Profile" />
+                      </ListItem>
+                    </List>
+                  </Drawer>
+                  <Box className={this.props.classes.root}>
+                    <Container fixed className={this.props.classes.content}>
 
-                    <Route path="/" exact component={MainPage} />
-                    <Route path="/debug" exact component={DebugPage} />
-                    <Route path="/post/:address" render={({ match }) => <PostView address={match.params.address} />} />
-                    <Route path="/compose_post" exact component={ComposePost} />
+                      <Route path="/" exact component={MainPage} />
+                      <Route path="/debug" exact component={DebugPage} />
+                      <Route path="/post/:address" render={({ match }) => <PostView address={match.params.address} />} />
+                      <Route path="/compose_post" exact component={ComposePost} />
 
-                  </Container>
-                </Box>
-              </ThemeProvider>
-            </Router>
-          </SnackbarProvider>
+                    </Container>
+                  </Box>
+                </ThemeProvider>
+              </Router>
+            </SnackbarProvider>
+          </PersistGate>
         </Provider>
       </div>
     );

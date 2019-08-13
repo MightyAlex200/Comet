@@ -70,16 +70,21 @@ class PostSummary extends React.Component {
         if (post && post.Ok) {
             return (
                 <React.Fragment>
-                    <Link component={RouterLink} to={`/post/${this.props.address}`} variant="h5">{post.Ok.title}</Link>
-                    <PostSignature post={post.Ok} />
+                    <Box className={this.props.classes.root}>
+                        <VoteView keyHash={post.Ok.key_hash} inTermsOf={this.getInTermsOf()} address={this.props.address} />
+                        <Box className={this.props.classes.padded}>
+                            <Link component={RouterLink} to={`/post/${this.props.address}`} variant="h5">{post.Ok.title}</Link>
+                            <PostSignature post={post.Ok} />
+                        </Box>
+                    </Box>
                 </React.Fragment>
             );
         } else if (post) {
-            return (<Typography variant="body1">{`Failed to get post: ${JSON.stringify(post.Err)}`}</Typography>)
+            return (<Typography className={this.props.classes.padded} variant="body1">{`Failed to get post: ${JSON.stringify(post.Err)}`}</Typography>)
         } else if (this.props.holochainConnected) {
-            return (<Typography variant="body1">Loading Post...</Typography>);
+            return (<Typography className={this.props.classes.padded} variant="body1">Loading Post...</Typography>);
         } else {
-            return (<Typography variant="body1">Connecting to Holochain...</Typography>);
+            return (<Typography className={this.props.classes.padded} variant="body1">Connecting to Holochain...</Typography>);
         }
     }
 
@@ -94,11 +99,8 @@ class PostSummary extends React.Component {
 
     render() {
         return (
-            <Paper className={this.props.classes.root}>
-                <VoteView inTermsOf={this.getInTermsOf()} address={this.props.address} />
-                <Box className={this.props.classes.padded}>
-                    {this.renderInternal()}
-                </Box>
+            <Paper>
+                {this.renderInternal()}
             </Paper>
         )
     }

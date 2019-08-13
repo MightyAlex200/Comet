@@ -94,7 +94,7 @@ class PostView extends Component {
                 <React.Fragment>
                     <Box className={this.props.classes.sideBySide}>
                         <Box>
-                            <VoteView inTermsOf={this.getInTermsOf()} address={this.props.address} />
+                            <VoteView keyHash={post.Ok.key_hash} inTermsOf={this.getInTermsOf()} address={this.props.address} />
                         </Box>
                         <Box className={this.props.classes.post}>
                             <Typography className={this.props.classes.root} variant="h4">{post.Ok.title}</Typography>

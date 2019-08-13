@@ -2,7 +2,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import { withStyles, Box, Typography, CircularProgress } from '@material-ui/core';
 import { connect } from 'react-redux';
-import { fetchVotes, fetchMyVote, castVote } from '../actions';
+import { fetchVotes, fetchMyVote, castVote, updateKarma } from '../actions';
 import ArrowUpwardIcon from '@material-ui/icons/ArrowUpward';
 import ArrowDownwardIcon from '@material-ui/icons/ArrowDownward';
 import ErrorIcon from '@material-ui/icons/Error';
@@ -12,15 +12,20 @@ const styles = theme => ({
   root: {
     display: 'flex',
     flexDirection: 'column',
+  },
+  center: {
     textAlign: 'center',
+  },
+  inlineBlock: {
+    display: 'inline-block',
   },
   upArrow: {
     color: 'orange',
-    marginTop: '-100%',
+    position: 'absolute',
   },
   downArrow: {
     color: 'cornflowerblue',
-    marginTop: '-100%',
+    position: 'absolute',
   },
 });
 
@@ -123,6 +128,7 @@ class VoteView extends React.Component {
   }
 
   onClickVote = (positive, ref) => event => {
+    if (!this.state.myVoteCache) { return; }
     const rect = ref.current.getBoundingClientRect();
     let whereClicked = (event.nativeEvent.clientY - rect.y) / rect.height;
     whereClicked = Math.max(.25, Math.min(.75, whereClicked));
@@ -136,6 +142,15 @@ class VoteView extends React.Component {
 
     this.props.castVote(this.props.address, util.getUtcUnixTime(), weight, this.getInTermsOf(), this.props.callZome)
       .then(() => {
+        const myVotes = this.props.myVotes[this.props.address];
+        if (myVotes) {
+          const myVote = myVotes[util.inTermsOfToString(this.getInTermsOf())];
+          if (myVote) {
+            this.props.updateKarma(-myVote.Ok.fraction, this.props.keyHash, this.getInTermsOf());
+          }
+        }
+        this.props.updateKarma(weight, this.props.keyHash, this.getInTermsOf());
+
         this.setState(state => ({ ...state, votesCache: false, myVoteCache: false }));
         this.cache();
       });
@@ -154,12 +169,20 @@ class VoteView extends React.Component {
           downArrowForegroundPath,
         } = this.getArrowPaths();
         return (
-          <Box className={this.props.classes.root}>
-            <ArrowUpwardIcon ref={this.backgroundUpArrow} onClick={this.onClickVote(true, this.backgroundUpArrow)} style={{ clipPath: upArrowBackgroundPath }} />
-            <ArrowUpwardIcon ref={this.foregroundUpArrow} onClick={this.onClickVote(true, this.foregroundUpArrow)} style={{ clipPath: upArrowForegroundPath }} className={this.props.classes.upArrow} />
+          <Box className={this.props.classes.center}>
+            <Box className={this.props.classes.inlineBlock}>
+              <Box className={this.props.classes.root}>
+                <ArrowUpwardIcon ref={this.backgroundUpArrow} onClick={this.onClickVote(true, this.backgroundUpArrow)} style={{ clipPath: upArrowBackgroundPath }} />
+                <ArrowUpwardIcon ref={this.foregroundUpArrow} onClick={this.onClickVote(true, this.foregroundUpArrow)} style={{ clipPath: upArrowForegroundPath }} className={this.props.classes.upArrow} />
+              </Box>
+            </Box>
             <Typography variant="body1">{this.calculateScore(votes.Ok, inTermsOf)}</Typography>
-            <ArrowDownwardIcon ref={this.backgroundDownArrow} onClick={this.onClickVote(false, this.backgroundDownArrow)} style={{ clipPath: downArrowBackgroundPath }} />
-            <ArrowDownwardIcon ref={this.foregroundDownArrow} onClick={this.onClickVote(false, this.foregroundDownArrow)} style={{ clipPath: downArrowForegroundPath }} className={this.props.classes.downArrow} />
+            <Box className={this.props.classes.inlineBlock}>
+              <Box className={this.props.classes.root}>
+                <ArrowDownwardIcon ref={this.backgroundDownArrow} onClick={this.onClickVote(false, this.backgroundDownArrow)} style={{ clipPath: downArrowBackgroundPath }} />
+                <ArrowDownwardIcon ref={this.foregroundDownArrow} onClick={this.onClickVote(false, this.foregroundDownArrow)} style={{ clipPath: downArrowForegroundPath }} className={this.props.classes.downArrow} />
+              </Box>
+            </Box >
           </Box>
         );
       } else {
@@ -190,6 +213,8 @@ VoteView.propTypes = {
   myVotes: PropTypes.object.isRequired,
   fetchMyVote: PropTypes.func.isRequired,
   castVote: PropTypes.func.isRequired,
+  updateKarma: PropTypes.func.isRequired,
+  keyHash: PropTypes.string.isRequired,
 };
 
 const propsMap = props => ({
@@ -200,4 +225,4 @@ const propsMap = props => ({
   myVotes: props.myVotes,
 });
 
-export default connect(propsMap, { fetchVotes, fetchMyVote, castVote })(withStyles(styles)(VoteView));
+export default connect(propsMap, { fetchVotes, fetchMyVote, castVote, updateKarma })(withStyles(styles)(VoteView));

@@ -72,7 +72,7 @@ class CommentView extends React.Component {
             return (
                 <Box className={this.props.classes.sideBySide}>
                     <Box>
-                        <VoteView inTermsOf={this.props.inTermsOf} address={this.props.address} />
+                        <VoteView keyHash={comment.Ok.key_hash} inTermsOf={this.props.inTermsOf} address={this.props.address} />
                     </Box>
                     <Box className={this.props.classes.expand}>
                         <PostSignature post={comment.Ok} />

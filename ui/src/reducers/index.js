@@ -8,6 +8,7 @@ import {
     VOTES_FETCHED,
     POST_TAGS_FETCHED,
     MY_VOTE_FETCHED,
+    UPDATE_KARMA_MAP,
 } from '../actions/'
 import defaultState from './defaultState';
 import util from '../util';
@@ -35,6 +36,14 @@ export default (state = defaultState, action) => {
                 ...state,
                 commentsByAddress: { ...state.commentsByAddress, [action.target]: action.addresses }
             };
+        case UPDATE_KARMA_MAP:
+            return {
+                ...state,
+                karmaMap: {
+                    ...state.karmaMap,
+                    [`${action.keyHash}:${action.tag}`]: (state.karmaMap[action.keyHash] || 0) + action.weight,
+                }
+            }
         case VOTES_FETCHED:
             return {
                 ...state,

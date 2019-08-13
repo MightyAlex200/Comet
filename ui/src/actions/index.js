@@ -3,6 +3,7 @@ import { connect } from '@holochain/hc-web-client';
 export const POST_READ = 'POST_READ';
 export const COMMENT_READ = 'COMMENT_READ';
 export const COMMENTS_FETCHED = 'COMMENTS_FETCHED';
+export const UPDATE_KARMA_MAP = 'UPDATE_KARMA_MAP';
 export const VOTES_FETCHED = 'VOTES_FETCHED';
 export const POST_TAGS_FETCHED = 'POST_TAGS_FETCHED';
 export const MY_VOTE_FETCHED = 'MY_VOTE_FETCHED';
@@ -28,6 +29,13 @@ export const commentsFetched = (target, addresses) => ({
     type: COMMENTS_FETCHED,
     target,
     addresses,
+});
+
+export const updateKarmaMap = (weight, keyHash, tag) => ({
+    type: UPDATE_KARMA_MAP,
+    weight,
+    keyHash,
+    tag,
 });
 
 export const votesFetched = (target, votes) => ({
@@ -128,6 +136,12 @@ export const fetchComments = (address, callZome) => dispatch => {
             }
         });
 };
+
+export const updateKarma = (weight, keyHash, tags) => dispatch => {
+    for (const tag of tags) {
+        dispatch(updateKarmaMap(weight, keyHash, tag));
+    }
+}
 
 export const fetchVotes = (address, callZome) => dispatch => {
     callFunction('votes', 'votes_from_address', { address }, callZome)
