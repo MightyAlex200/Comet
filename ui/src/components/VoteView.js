@@ -146,7 +146,7 @@ class VoteView extends React.Component {
         const myVotes = this.props.myVotes[this.props.address];
         if (myVotes) {
           const myVote = myVotes[util.inTermsOfToString(this.getInTermsOf())];
-          if (myVote) {
+          if (myVote && myVote.Ok) {
             this.props.updateKarma(-myVote.Ok.fraction, this.props.keyHash, this.getInTermsOf());
           }
         }
