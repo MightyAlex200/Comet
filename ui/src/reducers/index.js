@@ -37,11 +37,12 @@ export default (state = defaultState, action) => {
                 commentsByAddress: { ...state.commentsByAddress, [action.target]: action.addresses }
             };
         case UPDATE_KARMA_MAP:
+            const key = `${action.keyHash}:${action.tag}`;
             return {
                 ...state,
                 karmaMap: {
                     ...state.karmaMap,
-                    [`${action.keyHash}:${action.tag}`]: (state.karmaMap[action.keyHash] || 0) + action.weight,
+                    [key]: (state.karmaMap[key] || 0) + action.weight,
                 }
             }
         case VOTES_FETCHED:
