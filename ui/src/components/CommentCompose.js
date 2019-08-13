@@ -22,22 +22,21 @@ class CommentCompose extends React.Component {
         submitted: false,
     }
 
-    componentDidUpdate(prevProps) {
-        if (this.props.commentJustCreatedTarget === this.props.address && this.props.commentJustCreated !== prevProps.commentJustCreated) {
-            this.setState(state => ({ ...state, submitted: false, composeOpen: false }));
-            if (this.props.callback) {
-                this.props.callback(this.props.commentJustCreated);
-            }
-        }
-    }
-
     updateComment = event => {
         const val = event.target.value;
         this.setState(state => ({ ...state, comment: val }));
     }
 
     submitComment = () => {
-        this.props.createComment(this.getComment(util.getUtcUnixTime()), this.props.address, this.props.callZome);
+        this.props.createComment(this.getComment(util.getUtcUnixTime()), this.props.address, this.props.callZome)
+            .then(result => {
+                if (result.Ok) {
+                    this.setState(state => ({ ...state, submitted: false, composeOpen: false }));
+                    if (this.props.callback) {
+                        this.props.callback(result.Ok);
+                    }
+                }
+            });
         this.setState(state => ({ ...state, submitted: true }));
     }
 
@@ -93,16 +92,12 @@ CommentCompose.propTypes = {
     callZome: PropTypes.func,
     createComment: PropTypes.func.isRequired,
     classes: PropTypes.object.isRequired,
-    commentJustCreatedTarget: PropTypes.string,
-    commentJustCreated: PropTypes.string,
     callback: PropTypes.func,
 };
 
 const propsMap = props => ({
     holochainConnected: props.holochainConnected,
     callZome: props.callZome,
-    commentJustCreatedTarget: props.commentJustCreatedTarget,
-    commentJustCreated: props.commentJustCreated,
 });
 
 export default connect(propsMap, { createComment })(withStyles(styles)(CommentCompose));

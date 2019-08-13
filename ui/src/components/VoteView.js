@@ -190,7 +190,6 @@ VoteView.propTypes = {
   myVotes: PropTypes.object.isRequired,
   fetchMyVote: PropTypes.func.isRequired,
   castVote: PropTypes.func.isRequired,
-  voteJustCast: PropTypes.object,
 };
 
 const propsMap = props => ({
@@ -199,7 +198,6 @@ const propsMap = props => ({
   holochainConnected: props.holochainConnected,
   callZome: props.callZome,
   myVotes: props.myVotes,
-  voteJustCast: props.voteJustCast,
 });
 
 export default connect(propsMap, { fetchVotes, fetchMyVote, castVote })(withStyles(styles)(VoteView));

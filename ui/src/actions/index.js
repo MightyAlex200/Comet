@@ -2,13 +2,10 @@ import { connect } from '@holochain/hc-web-client';
 
 export const POST_READ = 'POST_READ';
 export const COMMENT_READ = 'COMMENT_READ';
-export const POST_CREATED = 'POST_CREATED';
-export const COMMENT_CREATED = 'COMMENT_CREATED';
 export const COMMENTS_FETCHED = 'COMMENTS_FETCHED';
 export const VOTES_FETCHED = 'VOTES_FETCHED';
 export const POST_TAGS_FETCHED = 'POST_TAGS_FETCHED';
 export const MY_VOTE_FETCHED = 'MY_VOTE_FETCHED';
-export const VOTE_CAST = 'VOTE_CAST';
 export const USERNAME_RESOLVED = 'USERNAME_RESOLVED';
 export const HOLOCHAIN_CONNECTED = 'HOLOCHAIN_CONNECTED';
 export const ZOME_ERROR = 'ZOME_ERROR';
@@ -21,21 +18,10 @@ export const postRead = (address, post) => ({
     post,
 });
 
-export const postCreated = (address) => ({
-    type: POST_CREATED,
-    address,
-});
-
 export const commentRead = (address, comment) => ({
     type: COMMENT_READ,
     address,
     comment,
-});
-
-export const commentCreated = (address, target) => ({
-    type: COMMENT_CREATED,
-    target,
-    address,
 });
 
 export const commentsFetched = (target, addresses) => ({
@@ -62,11 +48,6 @@ export const myVoteFetched = (address, vote, inTermsOf) => ({
     vote,
     inTermsOf,
 });
-
-export const voteCast = (voteJustCast) => ({
-    type: VOTE_CAST,
-    voteJustCast,
-})
 
 export const usernameResolved = (keyHash, username) => ({
     type: USERNAME_RESOLVED,
@@ -116,28 +97,24 @@ export const readComment = (address, callZome) => dispatch => {
 };
 
 export const createPost = (post, tags, callZome) => dispatch => {
-    callFunction('posts', 'create_post', { post, tags }, callZome)
+    return callFunction('posts', 'create_post', { post, tags }, callZome)
         .then(res => {
             const result = JSON.parse(res);
-            if (result.Ok) {
-                dispatch(postCreated(result.Ok));
-            }
             if (result.Err) {
                 dispatch(zomeError('posts/create_post', 'create post', result.Err));
             }
+            return result;
         });
 };
 
 export const createComment = (comment, target, callZome) => dispatch => {
-    callFunction('comments', 'create_comment', { comment, target }, callZome)
+    return callFunction('comments', 'create_comment', { comment, target }, callZome)
         .then(res => {
             const result = JSON.parse(res);
-            if (result.Ok) {
-                dispatch(commentCreated(result.Ok, target));
-            }
             if (result.Err) {
                 dispatch(zomeError('comments/create_comment', 'create comment', result.Err));
             }
+            return result;
         });
 };
 
@@ -189,17 +166,10 @@ export const castVote = (target, utcUnixTime, fraction, inTermsOf, callZome) => 
     return callFunction('votes', 'vote', { target, in_terms_of: inTermsOf, utc_unix_time: utcUnixTime, fraction }, callZome)
         .then(res => {
             const result = JSON.parse(res);
-            if (result.Ok) {
-                dispatch(voteCast({ target, fraction, inTermsOf }));
-            }
             if (result.Err) {
                 dispatch(zomeError('votes/vote', 'cast your vote', result.Err));
             }
         });
-};
-
-export const consumePostJustCreated = () => dispatch => {
-    dispatch(postCreated(null));
 };
 
 export const getUsername = (keyHash, callZome) => dispatch => {

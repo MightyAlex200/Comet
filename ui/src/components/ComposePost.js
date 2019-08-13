@@ -1,5 +1,5 @@
 import React from 'react';
-import { createPost, consumePostJustCreated } from '../actions';
+import { createPost } from '../actions';
 import { withStyles, Typography, TextField, Button } from '@material-ui/core';
 import PropTypes from 'prop-types';
 import { connect } from 'react-redux';
@@ -26,13 +26,6 @@ class ComposePost extends React.Component {
         tagInput: '',
     };
 
-    componentDidUpdate(prevProps) {
-        if (this.props.postJustCreated) {
-            this.props.history.push(`/post/${this.props.postJustCreated}`);
-            this.props.consumePostJustCreated();
-        }
-    }
-
     onChange = prop => event => {
         const val = event.target.value;
         this.setState(state => ({ ...state, [prop]: val }));
@@ -40,7 +33,12 @@ class ComposePost extends React.Component {
 
     onSubmit = event => {
         event.preventDefault();
-        this.props.createPost(this.getPost(util.getUtcUnixTime()), this.getTags(), this.props.callZome);
+        this.props.createPost(this.getPost(util.getUtcUnixTime()), this.getTags(), this.props.callZome)
+            .then(result => {
+                if (result.Ok) {
+                    this.props.history.push(`/post/${result.Ok}`);
+                }
+            });
     }
 
     getTags() {
@@ -107,15 +105,12 @@ ComposePost.propTypes = {
     createPost: PropTypes.func.isRequired,
     callZome: PropTypes.func,
     holochainConnected: PropTypes.bool.isRequired,
-    postJustCreated: PropTypes.string,
-    consumePostJustCreated: PropTypes.func.isRequired,
     history: PropTypes.object.isRequired,
 };
 
 const propsMap = state => ({
     holochainConnected: state.holochainConnected,
     callZome: state.callZome,
-    postJustCreated: state.postJustCreated,
 });
 
-export default connect(propsMap, { createPost, consumePostJustCreated })(withStyles(styles)(withRouter(ComposePost)));
+export default connect(propsMap, { createPost })(withStyles(styles)(withRouter(ComposePost)));

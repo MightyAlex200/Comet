@@ -7,11 +7,7 @@ export default {
     postTags: {},
     karmaMap: {},
     myVotes: {},
-    voteJustCast: null,
     callZome: null,
-    postJustCreated: null,
-    commentJustCreatedTarget: null,
-    commentJustCreated: null,
     errors: [],
     usernames: {},
 };

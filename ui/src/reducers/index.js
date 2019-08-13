@@ -2,15 +2,12 @@ import {
     POST_READ,
     HOLOCHAIN_CONNECTED,
     ZOME_ERROR,
-    POST_CREATED,
     USERNAME_RESOLVED,
     COMMENT_READ,
-    COMMENT_CREATED,
     COMMENTS_FETCHED,
     VOTES_FETCHED,
     POST_TAGS_FETCHED,
     MY_VOTE_FETCHED,
-    VOTE_CAST,
 } from '../actions/'
 import defaultState from './defaultState';
 import util from '../util';
@@ -64,22 +61,6 @@ export default (state = defaultState, action) => {
                         [util.inTermsOfToString(action.inTermsOf)]: action.vote,
                     },
                 },
-            };
-        case VOTE_CAST:
-            return {
-                ...state,
-                voteJustCast: action.voteJustCast,
-            };
-        case POST_CREATED:
-            return {
-                ...state,
-                postJustCreated: action.address,
-            };
-        case COMMENT_CREATED:
-            return {
-                ...state,
-                commentJustCreatedTarget: action.target,
-                commentJustCreated: action.address,
             };
         case USERNAME_RESOLVED:
             return {
