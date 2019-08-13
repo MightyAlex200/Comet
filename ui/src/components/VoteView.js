@@ -95,7 +95,7 @@ class VoteView extends React.Component {
 
   calculateScore(votes, inTermsOf) {
     return votes.map(vote =>
-      this.calculateWeight(vote.key_hash, inTermsOf)
+      vote.fraction * this.calculateWeight(vote.key_hash, inTermsOf)
     ).reduce((a, b) => a + b, 0);
   }
 
