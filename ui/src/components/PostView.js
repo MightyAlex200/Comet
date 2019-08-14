@@ -153,6 +153,7 @@ PostView.propTypes = {
     noComments: PropTypes.bool,
     fetchPostTags: PropTypes.func.isRequired,
     postTags: PropTypes.object.isRequired,
+    inTermsOf: PropTypes.array,
 };
 
 const propsMap = (state, ownProps) => ({

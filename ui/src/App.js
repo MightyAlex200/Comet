@@ -77,7 +77,11 @@ class App extends React.Component {
 
                       <Route path="/" exact component={MainPage} />
                       <Route path="/debug" exact component={DebugPage} />
-                      <Route path="/post/:address" render={({ match }) => <PostView address={match.params.address} />} />
+                      <Route path="/post/:address/:tags*"
+                        render={({ match }) =>
+                          <PostView inTermsOf={match.params.tags ? match.params.tags.split(',').filter(tag => tag.match(/^\d+$/)).map(tag => +tag) : null} address={match.params.address} />
+                        }
+                      />
                       <Route path="/compose_post" exact component={ComposePost} />
 
                     </Container>
