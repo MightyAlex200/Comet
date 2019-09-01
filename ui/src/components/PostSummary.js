@@ -6,6 +6,7 @@ import { withStyles, Box, Typography, Paper, Link } from '@material-ui/core';
 import { Link as RouterLink } from 'react-router-dom';
 import PostSignature from './PostSignature';
 import VoteView from './VoteView';
+import TagsView from './TagsView';
 
 const styles = theme => ({
     root: {
@@ -40,7 +41,7 @@ class PostSummary extends React.Component {
             this.setState(state => ({ ...state, postCache: true }));
         }
 
-        if (!this.props.inTermsOf && !this.state.tagCache) {
+        if (!this.state.tagCache) {
             this.getTags();
             this.setState(state => ({ ...state, tagCache: true }));
         }
@@ -51,7 +52,7 @@ class PostSummary extends React.Component {
             this.setState(state => ({ ...state, postCache: false }));
         }
 
-        if (prevProps.inTermsOf && !this.props.inTermsOf) {
+        if (prevProps.address !== this.props.address) {
             this.setState(state => ({ ...state, tagCache: false }));
         }
     }
@@ -73,7 +74,8 @@ class PostSummary extends React.Component {
                     <VoteView keyHash={post.Ok.key_hash} inTermsOf={this.getInTermsOf()} address={this.props.address} />
                     <Box className={this.props.classes.padded}>
                         <Link component={RouterLink} to={`/post/${this.props.address}`} variant="h5">{post.Ok.title}</Link>
-                        <PostSignature post={post.Ok} />
+                        <br />
+                        <PostSignature post={post.Ok} /> <TagsView postTags={this.props.postTags[this.props.address]} inTermsOf={this.getInTermsOf()} />
                     </Box>
                 </Box>
             );

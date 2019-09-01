@@ -8,6 +8,7 @@ import ReactMarkdown from 'react-markdown';
 import CommentsView from './CommentsView';
 import CommentCompose from './CommentCompose';
 import VoteView from './VoteView';
+import TagsView from './TagsView';
 
 const styles = theme => ({
     root: {
@@ -49,7 +50,7 @@ class PostView extends Component {
             this.setState(state => ({ ...state, postCache: true }));
         }
 
-        if (!this.props.inTermsOf && !this.state.tagCache) {
+        if (!this.state.tagCache) {
             this.getTags();
             this.setState(state => ({ ...state, tagCache: true }));
         }
@@ -59,6 +60,11 @@ class PostView extends Component {
         const post = this.props.postsRead[this.props.address];
         if (!post && (prevProps.address !== this.props.address)) {
             this.setState(state => ({ ...state, postCache: false }));
+        }
+
+        const tags = this.props.postTags[this.props.address];
+        if (!tags && (prevProps.address !== this.props.address)) {
+            this.setState(state => ({ ...state, tagCache: false }));
         }
     }
 
@@ -90,16 +96,17 @@ class PostView extends Component {
     renderPost() {
         const post = this.props.postsRead[this.props.address];
         if (post && post.Ok) {
+            const inTermsOf = this.getInTermsOf();
             return (
                 <React.Fragment>
                     <Box className={this.props.classes.sideBySide}>
                         <Box>
-                            <VoteView keyHash={post.Ok.key_hash} inTermsOf={this.getInTermsOf()} address={this.props.address} />
+                            <VoteView keyHash={post.Ok.key_hash} inTermsOf={inTermsOf} address={this.props.address} />
                         </Box>
                         <Box className={this.props.classes.post}>
                             <Typography className={this.props.classes.root} variant="h4">{post.Ok.title}</Typography>
                             <Box className={this.props.classes.root}>
-                                <PostSignature post={post.Ok} />
+                                <PostSignature post={post.Ok} /> <TagsView inTermsOf={inTermsOf} postTags={this.props.postTags[this.props.address]} />
                             </Box>
                             <Divider />
                             <ReactMarkdown className={this.props.classes.root} source={post.Ok.content} />

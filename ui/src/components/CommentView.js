@@ -10,6 +10,7 @@ import ReactMarkdown from 'react-markdown';
 import CommentsView from './CommentsView';
 import CommentCompose from './CommentCompose';
 import VoteView from './VoteView';
+import TagsView from './TagsView';
 
 const styles = theme => ({
     root: {
@@ -75,7 +76,7 @@ class CommentView extends React.Component {
                         <VoteView keyHash={comment.Ok.key_hash} inTermsOf={this.props.inTermsOf} address={this.props.address} />
                     </Box>
                     <Box className={this.props.classes.expand}>
-                        <PostSignature post={comment.Ok} />
+                        <PostSignature post={comment.Ok} /> <TagsView inTermsOf={this.props.inTermsOf} />
                         <ReactMarkdown className={this.props.classes.root} source={comment.Ok.content} />
                         <Divider />
                         <br />

@@ -1,5 +1,7 @@
 import { connect } from '@holochain/hc-web-client';
 
+export const UPDATE_TAG_NAME = 'UPDATE_TAG_NAME';
+export const DELETE_TAG_NAME = 'DELETE_TAG_NAME';
 export const POST_READ = 'POST_READ';
 export const COMMENT_READ = 'COMMENT_READ';
 export const COMMENTS_FETCHED = 'COMMENTS_FETCHED';
@@ -13,6 +15,17 @@ export const HOLOCHAIN_CONNECTED = 'HOLOCHAIN_CONNECTED';
 export const ZOME_ERROR = 'ZOME_ERROR';
 
 export const INSTANCE_ID = 'test-instance';
+
+export const updateTagName = (tag, name) => ({
+    type: UPDATE_TAG_NAME,
+    tag,
+    name,
+});
+
+export const deleteTagName = tag => ({
+    type: DELETE_TAG_NAME,
+    tag,
+});
 
 export const postRead = (address, post) => ({
     type: POST_READ,

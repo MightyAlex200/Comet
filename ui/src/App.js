@@ -16,6 +16,7 @@ import blue from '@material-ui/core/colors/blue';
 import { SnackbarProvider } from 'notistack';
 import ErrorHandler from './components/ErrorHandler';
 import { PersistGate } from 'redux-persist/integration/react';
+import util from './util';
 
 import MainPage from './components/MainPage';
 import DebugPage from './components/DebugPage';
@@ -80,7 +81,7 @@ class App extends React.Component {
                       <Route path="/debug" exact component={DebugPage} />
                       <Route path="/post/:address/:tags*"
                         render={({ match }) =>
-                          <PostView inTermsOf={match.params.tags ? match.params.tags.split(',').filter(tag => tag.match(/^\d+$/)).map(tag => +tag) : null} address={match.params.address} />
+                          <PostView inTermsOf={match.params.tags ? util.unique(match.params.tags.split(',').filter(tag => tag.match(/^\d+$/)).map(tag => +tag)) : null} address={match.params.address} />
                         }
                       />
                       <Route path="/compose_post" exact component={ComposePost} />

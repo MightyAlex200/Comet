@@ -10,6 +10,8 @@ import {
     MY_VOTE_FETCHED,
     UPDATE_KARMA_MAP,
     USER_POSTS_FETCHED,
+    UPDATE_TAG_NAME,
+    DELETE_TAG_NAME,
 } from '../actions/'
 import defaultState from './defaultState';
 import util from '../util';
@@ -21,6 +23,18 @@ export default (state = defaultState, action) => {
             const failedAction = action.failedAction;
             const error = action.error;
             return { ...state, errors: [...state.errors, { func, failedAction, error }] };
+        case UPDATE_TAG_NAME:
+            return {
+                ...state,
+                tagNames: { ...state.tagNames, [action.tag]: action.name },
+            };
+        case DELETE_TAG_NAME:
+            const newTagNames = { ...state.tagNames };
+            delete newTagNames[action.tag];
+            return {
+                ...state,
+                tagNames: newTagNames,
+            };
         case POST_READ:
             // TODO: Delete unused posts
             return {

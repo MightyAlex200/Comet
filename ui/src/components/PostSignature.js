@@ -6,7 +6,7 @@ import UsernameDisplay from './UsernameDisplay';
 
 function PostSignature(props) {
     return (
-        <Typography variant="subtitle2">
+        <Typography style={{ display: 'inline' }} variant="subtitle2">
             Posted by
             {' '}
             <UsernameDisplay keyHash={props.post.key_hash} />
