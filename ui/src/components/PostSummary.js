@@ -69,15 +69,13 @@ class PostSummary extends React.Component {
 
         if (post && post.Ok) {
             return (
-                <React.Fragment>
-                    <Box className={this.props.classes.root}>
-                        <VoteView keyHash={post.Ok.key_hash} inTermsOf={this.getInTermsOf()} address={this.props.address} />
-                        <Box className={this.props.classes.padded}>
-                            <Link component={RouterLink} to={`/post/${this.props.address}`} variant="h5">{post.Ok.title}</Link>
-                            <PostSignature post={post.Ok} />
-                        </Box>
+                <Box className={this.props.classes.root}>
+                    <VoteView keyHash={post.Ok.key_hash} inTermsOf={this.getInTermsOf()} address={this.props.address} />
+                    <Box className={this.props.classes.padded}>
+                        <Link component={RouterLink} to={`/post/${this.props.address}`} variant="h5">{post.Ok.title}</Link>
+                        <PostSignature post={post.Ok} />
                     </Box>
-                </React.Fragment>
+                </Box>
             );
         } else if (post) {
             return (<Typography className={this.props.classes.padded} variant="body1">{`Failed to get post: ${JSON.stringify(post.Err)}`}</Typography>)

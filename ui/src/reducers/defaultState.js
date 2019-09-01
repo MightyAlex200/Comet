@@ -1,6 +1,7 @@
 export default {
     holochainConnected: false,
     postsRead: Object.create(null),
+    userPosts: Object.create(null),
     commentsRead: Object.create(null),
     commentsByAddress: Object.create(null),
     votes: Object.create(null),

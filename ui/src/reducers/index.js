@@ -9,6 +9,7 @@ import {
     POST_TAGS_FETCHED,
     MY_VOTE_FETCHED,
     UPDATE_KARMA_MAP,
+    USER_POSTS_FETCHED,
 } from '../actions/'
 import defaultState from './defaultState';
 import util from '../util';
@@ -80,6 +81,14 @@ export default (state = defaultState, action) => {
                     [action.keyHash]: action.username,
                 },
             };
+        case USER_POSTS_FETCHED:
+            return {
+                ...state,
+                userPosts: {
+                    ...state.userPosts,
+                    [action.keyHash]: action.posts,
+                },
+            }
         case HOLOCHAIN_CONNECTED:
             return { ...state, callZome: action.callZome, holochainConnected: true, };
         default:

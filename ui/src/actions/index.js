@@ -8,6 +8,7 @@ export const VOTES_FETCHED = 'VOTES_FETCHED';
 export const POST_TAGS_FETCHED = 'POST_TAGS_FETCHED';
 export const MY_VOTE_FETCHED = 'MY_VOTE_FETCHED';
 export const USERNAME_RESOLVED = 'USERNAME_RESOLVED';
+export const USER_POSTS_FETCHED = 'USER_POSTS_FETCHED';
 export const HOLOCHAIN_CONNECTED = 'HOLOCHAIN_CONNECTED';
 export const ZOME_ERROR = 'ZOME_ERROR';
 
@@ -61,6 +62,12 @@ export const usernameResolved = (keyHash, username) => ({
     type: USERNAME_RESOLVED,
     keyHash,
     username,
+});
+
+export const userPostsFetched = (keyHash, posts) => ({
+    type: USER_POSTS_FETCHED,
+    keyHash,
+    posts,
 });
 
 export const holochainConnection = (callZome) => ({
@@ -193,7 +200,18 @@ export const getUsername = (keyHash, callZome) => dispatch => {
             if (result.Ok) {
                 dispatch(usernameResolved(keyHash, result.Ok));
             } else {
-                dispatch(zomeError('post/get_username', 'resolve username', result.Err));
+                dispatch(zomeError('posts/get_username', 'resolve username', result.Err));
+            }
+        });
+};
+
+export const fetchUserPosts = (keyHash, callZome) => dispatch => {
+    callFunction('posts', 'user_posts', { author: keyHash }, callZome)
+        .then(res => {
+            const result = JSON.parse(res);
+            dispatch(userPostsFetched(keyHash, result));
+            if (result.Err) {
+                dispatch(zomeError('posts/user_posts', 'fetch user posts', result.Err));
             }
         });
 };

@@ -21,6 +21,7 @@ import MainPage from './components/MainPage';
 import DebugPage from './components/DebugPage';
 import PostView from './components/PostView';
 import ComposePost from './components/ComposePost';
+import UserView from './components/UserView';
 
 const drawerWidth = 240;
 
@@ -83,6 +84,7 @@ class App extends React.Component {
                         }
                       />
                       <Route path="/compose_post" exact component={ComposePost} />
+                      <Route path="/user/:keyHash" render={({ match }) => <UserView keyHash={match.params.keyHash} />} />
 
                     </Container>
                   </Box>
