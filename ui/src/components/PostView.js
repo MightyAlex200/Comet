@@ -106,7 +106,7 @@ class PostView extends Component {
                         <Box className={this.props.classes.post}>
                             <Typography className={this.props.classes.root} variant="h4">{post.Ok.title}</Typography>
                             <Box className={this.props.classes.root}>
-                                <PostSignature post={post.Ok} /> <TagsView inTermsOf={inTermsOf} postTags={this.props.postTags[this.props.address]} />
+                                <PostSignature inTermsOf={inTermsOf} post={post.Ok} /> <TagsView inTermsOf={inTermsOf} postTags={this.props.postTags[this.props.address]} />
                             </Box>
                             <Divider />
                             <ReactMarkdown className={this.props.classes.root} source={post.Ok.content} />

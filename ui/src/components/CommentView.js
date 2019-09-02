@@ -76,7 +76,7 @@ class CommentView extends React.Component {
                         <VoteView keyHash={comment.Ok.key_hash} inTermsOf={this.props.inTermsOf} address={this.props.address} />
                     </Box>
                     <Box className={this.props.classes.expand}>
-                        <PostSignature post={comment.Ok} /> <TagsView inTermsOf={this.props.inTermsOf} />
+                        <PostSignature inTermsOf={this.props.inTermsOf} post={comment.Ok} /> <TagsView inTermsOf={this.props.inTermsOf} />
                         <ReactMarkdown className={this.props.classes.root} source={comment.Ok.content} />
                         <Divider />
                         <br />

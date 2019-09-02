@@ -37,6 +37,12 @@ class VoteView extends React.Component {
     return Math.min(VoteView.maxWeight, Math.max(weight, -VoteView.maxWeight));
   }
 
+  static calculateWeight(keyHash, inTermsOf, karmaMap) {
+    return VoteView.capWeight(
+      inTermsOf.map(tag => (karmaMap[keyHash + ':' + tag] || 0)).reduce((a, b) => a + b, 0)
+    );
+  }
+
   state = {
     votesCache: false,
     myVoteCache: false,
@@ -87,15 +93,9 @@ class VoteView extends React.Component {
     this.props.fetchMyVote(this.props.address, this.getInTermsOf(), this.props.callZome);
   }
 
-  calculateWeight(keyHash, inTermsOf) {
-    return VoteView.capWeight(
-      inTermsOf.map(tag => (this.props.karmaMap[keyHash + ':' + tag] || 0)).reduce((a, b) => a + b, 0)
-    );
-  }
-
   calculateScore(votes, inTermsOf) {
     return votes.map(vote =>
-      vote.fraction * this.calculateWeight(vote.key_hash, inTermsOf)
+      vote.fraction * VoteView.calculateWeight(vote.key_hash, inTermsOf, this.props.karmaMap)
     ).reduce((a, b) => a + b, 0);
   }
 

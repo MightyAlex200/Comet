@@ -9,7 +9,7 @@ function PostSignature(props) {
         <Typography style={{ display: 'inline' }} variant="subtitle2">
             Posted by
             {' '}
-            <UsernameDisplay keyHash={props.post.key_hash} />
+            <UsernameDisplay inTermsOf={props.inTermsOf} keyHash={props.post.key_hash} />
             {' '}
             <TimeAgo date={props.post.timestamp} />
         </Typography>
@@ -18,6 +18,7 @@ function PostSignature(props) {
 
 PostSignature.propTypes = {
     post: PropTypes.object.isRequired,
+    inTermsOf: PropTypes.array,
 }
 
 export default PostSignature;

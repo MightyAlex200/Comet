@@ -75,7 +75,7 @@ class PostSummary extends React.Component {
                     <Box className={this.props.classes.padded}>
                         <Link component={RouterLink} to={`/post/${this.props.address}`} variant="h5">{post.Ok.title}</Link>
                         <br />
-                        <PostSignature post={post.Ok} /> <TagsView postTags={this.props.postTags[this.props.address]} inTermsOf={this.getInTermsOf()} />
+                        <PostSignature inTermsOf={this.getInTermsOf()} post={post.Ok} /> <TagsView postTags={this.props.postTags[this.props.address]} inTermsOf={this.getInTermsOf()} />
                     </Box>
                 </Box>
             );
