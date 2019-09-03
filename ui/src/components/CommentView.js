@@ -6,11 +6,11 @@ import { connect } from 'react-redux';
 import { withStyles } from '@material-ui/core';
 import PostSignature from './PostSignature';
 import { Box, Typography, CircularProgress } from '@material-ui/core';
-import ReactMarkdown from 'react-markdown';
 import CommentsView from './CommentsView';
 import CommentCompose from './CommentCompose';
 import VoteView from './VoteView';
 import TagsView from './TagsView';
+import MarkdownRenderer from './MarkdownRender';
 
 const styles = theme => ({
     root: {
@@ -77,7 +77,7 @@ class CommentView extends React.Component {
                     </Box>
                     <Box className={this.props.classes.expand}>
                         <PostSignature inTermsOf={this.props.inTermsOf} post={comment.Ok} /> <TagsView inTermsOf={this.props.inTermsOf} />
-                        <ReactMarkdown className={this.props.classes.root} source={comment.Ok.content} />
+                        <MarkdownRenderer className={this.props.classes.root} source={comment.Ok.content} />
                         <Divider />
                         <br />
                         <CommentCompose callback={this.setNewComment} address={this.props.address} />

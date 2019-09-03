@@ -4,11 +4,11 @@ import { connect } from 'react-redux';
 import { readPost, fetchPostTags } from '../actions';
 import { Paper, Box, Typography, withStyles, Divider, Button, CircularProgress } from '@material-ui/core';
 import PostSignature from './PostSignature';
-import ReactMarkdown from 'react-markdown';
 import CommentsView from './CommentsView';
 import CommentCompose from './CommentCompose';
 import VoteView from './VoteView';
 import TagsView from './TagsView';
+import MarkdownRenderer from './MarkdownRender';
 
 const styles = theme => ({
     root: {
@@ -109,7 +109,7 @@ class PostView extends Component {
                                 <PostSignature inTermsOf={inTermsOf} post={post.Ok} /> <TagsView inTermsOf={inTermsOf} postTags={this.props.postTags[this.props.address]} />
                             </Box>
                             <Divider />
-                            <ReactMarkdown className={this.props.classes.root} source={post.Ok.content} />
+                            <MarkdownRenderer className={this.props.classes.root} source={post.Ok.content} />
                         </Box>
                     </Box>
                     <Divider />
