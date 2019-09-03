@@ -32,7 +32,7 @@ class TagView extends React.Component {
     }
 
     onChange = event => {
-        const val = event.target.value;
+        const val = event.target.value.replace(/,/g, '');
         this.setState(state => ({ ...state, tagNameContent: val }));
     }
 
