@@ -1,6 +1,7 @@
 export default {
     holochainConnected: false,
     tagNames: Object.create(null),
+    nameTags: Object.create(null),
     postsRead: Object.create(null),
     userPosts: Object.create(null),
     commentsRead: Object.create(null),

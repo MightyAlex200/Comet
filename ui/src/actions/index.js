@@ -95,6 +95,14 @@ export const zomeError = (func, failedAction, error, ident) => ({
     error,
 });
 
+export const tagNameUpdate = (tag, name) => dispatch => {
+    dispatch(updateTagName(tag, name));
+};
+
+export const tagNameDelete = tag => dispatch => {
+    dispatch(deleteTagName(tag));
+};
+
 export const connectToHolochain = () => dispatch => {
     connect({ url: 'ws://localhost:8888' })
         .then(({ callZome }) => dispatch(holochainConnection(callZome)));

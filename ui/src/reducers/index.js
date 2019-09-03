@@ -24,16 +24,35 @@ export default (state = defaultState, action) => {
             const error = action.error;
             return { ...state, errors: [...state.errors, { func, failedAction, error }] };
         case UPDATE_TAG_NAME:
+            const updatedTagNames = { ...state.tagNames };
+            for (const key in updatedTagNames)
+                if (updatedTagNames[key] === action.name)
+                    delete updatedTagNames[key];
+            updatedTagNames[action.tag.toString()] = action.name;
+
+            const updatedNameTags = { ...state.nameTags };
+            for (const key in updatedNameTags)
+                if (updatedNameTags[key] === action.tag.toString())
+                    delete updatedNameTags[key];
+            updatedNameTags[action.name] = action.tag.toString();
+
             return {
                 ...state,
-                tagNames: { ...state.tagNames, [action.tag]: action.name },
+                tagNames: updatedTagNames,
+                nameTags: updatedNameTags,
             };
         case DELETE_TAG_NAME:
             const newTagNames = { ...state.tagNames };
-            delete newTagNames[action.tag];
+            delete newTagNames[action.tag.toString()];
+            const newNameTags = { ...state.nameTags };
+            for (const key in newNameTags)
+                if (newNameTags[key] === action.tag.toString())
+                    delete newNameTags[key];
+
             return {
                 ...state,
                 tagNames: newTagNames,
+                nameTags: newNameTags,
             };
         case POST_READ:
             // TODO: Delete unused posts
