@@ -75,6 +75,14 @@ class ComposePost extends React.Component {
         }
     }
 
+    getClosestTag(tag) {
+        for (const val of Object.values(this.props.tagNames)) {
+            if (tag.toLowerCase() === val.toLowerCase()) {
+                return val;
+            }
+        }
+    }
+
     getPost(utc_unix_time) {
         return {
             title: this.state.title,
@@ -120,6 +128,12 @@ class ComposePost extends React.Component {
                     ? <>
                         {`Error: tag(s) ${this.getTags().filter(tag => !this.isTagValid(tag)).map(tag => `"${tag}"`).join(', ')} not found`}
                         <br />
+                        {this.getTags()
+                            .filter(tag => !this.isTagValid(tag))
+                            .map(invalidTag => this.getClosestTag(invalidTag))
+                            .filter(tag => tag)
+                            .map((tag, i) => <React.Fragment key={i}>Did you mean "{tag}"?<br /></React.Fragment>)
+                        }
                         <Link component="button" onClick={this.createNewTags}>
                             Create them
                         </Link>
