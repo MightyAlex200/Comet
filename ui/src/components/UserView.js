@@ -66,7 +66,7 @@ class UserView extends React.Component {
                     {posts.Ok.length === 0
                         ? <Typography variant="body1">User has no posts</Typography>
                         : posts.Ok
-                            .reverse()
+                            .reverse() // TODO: Actually order
                             .map(address => <Box className={this.props.classes.root} key={address}><PostSummary address={address} /></Box>)
                     }
                 </Box>
