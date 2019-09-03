@@ -1,6 +1,6 @@
 import React from 'react';
-import { createPost } from '../actions';
-import { withStyles, Typography, TextField, Button } from '@material-ui/core';
+import { createPost, tagNameUpdate } from '../actions';
+import { withStyles, Typography, TextField, Button, Link } from '@material-ui/core';
 import PropTypes from 'prop-types';
 import { connect } from 'react-redux';
 import { withRouter } from 'react-router-dom';
@@ -24,6 +24,7 @@ class ComposePost extends React.Component {
         title: '',
         content: '',
         tagInput: '',
+        submitted: false,
     };
 
     onChange = prop => event => {
@@ -33,16 +34,45 @@ class ComposePost extends React.Component {
 
     onSubmit = event => {
         event.preventDefault();
-        this.props.createPost(this.getPost(util.getUtcUnixTime()), this.getTags(), this.props.callZome)
+        this.props.createPost(this.getPost(util.getUtcUnixTime()), this.getTags().map(tagName => Number(this.props.nameTags[tagName])), this.props.callZome)
             .then(result => {
                 if (result.Ok) {
                     this.props.history.push(`/post/${result.Ok}`);
                 }
             });
+        this.setState(state => ({ ...state, submitted: true }));
     }
 
-    getTags() {
-        return this.state.tagInput.split(',').map(a => JSON.parse(a.trim()));
+    shouldSubmitBeDisabled = () => {
+        return this.state.submitted
+            || !this.props.holochainConnected
+            || !this.state.title
+            || !this.state.content
+            || !this.areTagsValid();
+    }
+
+    getTags = () => {
+        return this.state.tagInput.split(',').map(tag => tag.trim());
+    }
+
+    isTagValid = tag => this.props.nameTags[tag];
+
+    areTagsValid = () => {
+        return this.getTags().every(this.isTagValid);
+    }
+
+    getRandomTagNumber = () => {
+        let n;
+        do {
+            n = Math.round(Math.random() * Number.MAX_SAFE_INTEGER);
+        } while (this.props.tagNames[n]);
+        return n;
+    }
+
+    createNewTags = () => {
+        for (const tagName of this.getTags().filter(tag => !this.isTagValid(tag))) {
+            this.props.tagNameUpdate(this.getRandomTagNumber(), tagName)
+        }
     }
 
     getPost(utc_unix_time) {
@@ -54,6 +84,7 @@ class ComposePost extends React.Component {
     }
 
     render() {
+        const tagsError = !this.areTagsValid() && this.state.tagInput !== '';
         return (
             <form onSubmit={this.onSubmit}>
                 <Typography className={this.props.classes.header} variant="h1">Create a post</Typography>
@@ -63,6 +94,7 @@ class ComposePost extends React.Component {
                     variant="outlined"
                     value={this.state.title}
                     onChange={this.onChange('title')}
+                    disabled={this.state.submitted}
                 />
                 <br />
                 <TextField
@@ -71,6 +103,7 @@ class ComposePost extends React.Component {
                     variant="outlined"
                     value={this.state.content}
                     onChange={this.onChange('content')}
+                    disabled={this.state.submitted}
                     multiline
                 />
                 <br />
@@ -80,15 +113,22 @@ class ComposePost extends React.Component {
                     variant="outlined"
                     value={this.state.tagInput}
                     onChange={this.onChange('tagInput')}
+                    disabled={this.state.submitted}
+                    error={tagsError}
                 />
+                {tagsError
+                    ? <>
+                        {`Error: tag(s) ${this.getTags().filter(tag => !this.isTagValid(tag)).map(tag => `"${tag}"`).join(', ')} not found`}
+                        <br />
+                        <Link component="button" onClick={this.createNewTags}>
+                            Create them
+                        </Link>
+                    </>
+                    : null
+                }
                 <br />
                 <Button
-                    disabled={
-                        !this.props.holochainConnected
-                        || !this.state.title
-                        || !this.state.content
-                        || !this.state.tagInput.split(',').every(a => a.match(/^\d+$/))
-                    }
+                    disabled={this.shouldSubmitBeDisabled()}
                     type="submit"
                     className={this.props.classes.button}
                     variant="contained"
@@ -106,11 +146,16 @@ ComposePost.propTypes = {
     callZome: PropTypes.func,
     holochainConnected: PropTypes.bool.isRequired,
     history: PropTypes.object.isRequired,
+    nameTags: PropTypes.object.isRequired,
+    tagNames: PropTypes.object.isRequired,
+    tagNameUpdate: PropTypes.func.isRequired,
 };
 
 const propsMap = state => ({
     holochainConnected: state.holochainConnected,
     callZome: state.callZome,
+    nameTags: state.nameTags,
+    tagNames: state.tagNames,
 });
 
-export default connect(propsMap, { createPost })(withStyles(styles)(withRouter(ComposePost)));
+export default connect(propsMap, { createPost, tagNameUpdate })(withStyles(styles)(withRouter(ComposePost)));
