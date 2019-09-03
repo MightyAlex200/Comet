@@ -14,5 +14,6 @@ export default {
     errors: [],
     usernames: Object.create(null),
     hidePosts: true,
+    hideComments: true,
     minimumScore: 0, // TODO: set this to like -30
 };

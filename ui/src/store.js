@@ -12,7 +12,7 @@ const composeEnhancers = window.__REDUX_DEVTOOLS_EXTENSION_COMPOSE__ || compose;
 const persistConfig = {
     key: 'root',
     storage,
-    whitelist: ['karmaMap', 'tagNames', 'nameTags', 'minimumScore', 'hidePosts'],
+    whitelist: ['karmaMap', 'tagNames', 'nameTags', 'minimumScore', 'hidePosts', 'hideComments'],
 };
 
 export const store = createStore(persistReducer(persistConfig, rootReducer), defaultState, composeEnhancers(applyMiddleware(...middleware)));
