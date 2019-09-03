@@ -13,4 +13,6 @@ export default {
     callZome: null,
     errors: [],
     usernames: Object.create(null),
+    hidePosts: true,
+    minimumScore: 0, // TODO: set this to like -30
 };

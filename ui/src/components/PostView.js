@@ -2,7 +2,7 @@ import React, { Component } from 'react';
 import PropTypes from 'prop-types';
 import { connect } from 'react-redux';
 import { readPost, fetchPostTags } from '../actions';
-import { Paper, Box, Typography, withStyles, Divider, Button, CircularProgress } from '@material-ui/core';
+import { Link, Paper, Box, Typography, withStyles, Divider, Button, CircularProgress } from '@material-ui/core';
 import PostSignature from './PostSignature';
 import CommentsView from './CommentsView';
 import CommentCompose from './CommentCompose';
@@ -31,6 +31,8 @@ class PostView extends Component {
         postCache: false,
         tagCache: false,
         newComment: null,
+        hidden: false,
+        showTemp: false,
     }
 
     componentDidMount() {
@@ -93,6 +95,18 @@ class PostView extends Component {
         return inTermsOf || [];
     }
 
+    onScoreUpdate = score => {
+        this.setState(state => ({ ...state, hidden: (this.props.hidePosts && score < this.props.minimumScore) }));
+    }
+
+    showTemp = () => {
+        this.setState(state => ({ ...state, showTemp: true }));
+    }
+
+    hideTemp = () => {
+        this.setState(state => ({ ...state, showTemp: false }));
+    }
+
     renderPost() {
         const post = this.props.postsRead[this.props.address];
         if (post && post.Ok) {
@@ -101,10 +115,11 @@ class PostView extends Component {
                 <React.Fragment>
                     <Box className={this.props.classes.sideBySide}>
                         <Box>
-                            <VoteView keyHash={post.Ok.key_hash} inTermsOf={inTermsOf} address={this.props.address} />
+                            <VoteView onScoreUpdate={this.onScoreUpdate} keyHash={post.Ok.key_hash} inTermsOf={inTermsOf} address={this.props.address} />
                         </Box>
                         <Box className={this.props.classes.post}>
-                            <Typography className={this.props.classes.root} variant="h4">{post.Ok.title}</Typography>
+                            <Typography style={{ display: 'inline' }} className={this.props.classes.root} variant="h4">{post.Ok.title}</Typography>
+                            {this.state.hidden ? <Link component="button" onClick={this.hideTemp}>(hide)</Link> : null}
                             <Box className={this.props.classes.root}>
                                 <PostSignature inTermsOf={inTermsOf} post={post.Ok} /> <TagsView inTermsOf={inTermsOf} postTags={this.props.postTags[this.props.address]} />
                             </Box>
@@ -134,19 +149,27 @@ class PostView extends Component {
     }
 
     render() {
-        return (
-            <Box>
+        if (!this.state.hidden || this.state.showTemp) {
+            return (
+                <Box>
+                    <Paper className={this.props.classes.root}>
+                        {this.renderPost()}
+                    </Paper>
+                    {this.props.noComments ?
+                        null :
+                        <React.Fragment>
+                            <CommentsView header inTermsOf={this.getInTermsOf()} newComment={this.state.newComment} target={this.props.address} />
+                        </React.Fragment>
+                    }
+                </Box>
+            );
+        } else {
+            return (
                 <Paper className={this.props.classes.root}>
-                    {this.renderPost()}
+                    This post is hidden <Link component="button" onClick={this.showTemp}>(show it)</Link>
                 </Paper>
-                {this.props.noComments ?
-                    null :
-                    <React.Fragment>
-                        <CommentsView header inTermsOf={this.getInTermsOf()} newComment={this.state.newComment} target={this.props.address} />
-                    </React.Fragment>
-                }
-            </Box>
-        );
+            );
+        }
     }
 }
 
@@ -161,6 +184,8 @@ PostView.propTypes = {
     fetchPostTags: PropTypes.func.isRequired,
     postTags: PropTypes.object.isRequired,
     inTermsOf: PropTypes.array,
+    hidePosts: PropTypes.bool.isRequired,
+    minimumScore: PropTypes.number.isRequired,
 };
 
 const propsMap = (state, ownProps) => ({
@@ -168,6 +193,8 @@ const propsMap = (state, ownProps) => ({
     callZome: state.callZome,
     postTags: state.postTags,
     postsRead: state.postsRead,
+    hidePosts: state.hidePosts,
+    minimumScore: state.minimumScore,
 });
 
 export default connect(propsMap, { readPost, fetchPostTags })(withStyles(styles)(PostView));

@@ -22,6 +22,8 @@ class PostSummary extends React.Component {
     state = {
         postCache: false,
         tagCache: false,
+        hidden: false,
+        showTemp: false,
     }
 
     componentDidMount() {
@@ -65,26 +67,44 @@ class PostSummary extends React.Component {
         this.props.readPost(this.props.address, this.props.callZome);
     }
 
+    onScoreUpdate = score => {
+        this.setState(state => ({ ...state, hidden: (this.props.hidePosts && score < this.props.minimumScore) }));
+    }
+
+    showTemp = () => {
+        this.setState(state => ({ ...state, showTemp: true }));
+    }
+
+    hideTemp = () => {
+        this.setState(state => ({ ...state, showTemp: false }));
+    }
+
     renderInternal() {
         const post = this.props.postsRead[this.props.address];
 
-        if (post && post.Ok) {
-            return (
-                <Box className={this.props.classes.root}>
-                    <VoteView keyHash={post.Ok.key_hash} inTermsOf={this.getInTermsOf()} address={this.props.address} />
-                    <Box className={this.props.classes.padded}>
-                        <Link component={RouterLink} to={`/post/${this.props.address}`} variant="h5">{post.Ok.title}</Link>
-                        <br />
-                        <PostSignature inTermsOf={this.getInTermsOf()} post={post.Ok} /> <TagsView postTags={this.props.postTags[this.props.address]} inTermsOf={this.getInTermsOf()} />
+        if (!this.state.hidden || this.state.showTemp) {
+            if (post && post.Ok) {
+                return (
+                    <Box className={this.props.classes.root}>
+                        <VoteView onScoreUpdate={this.onScoreUpdate} keyHash={post.Ok.key_hash} inTermsOf={this.getInTermsOf()} address={this.props.address} />
+                        <Box className={this.props.classes.padded}>
+                            <Link component={RouterLink} to={`/post/${this.props.address}`} variant="h5">{post.Ok.title}</Link>
+                            {' '}
+                            {this.state.hidden ? <Link component="button" onClick={this.hideTemp}>(hide)</Link> : null}
+                            <br />
+                            <PostSignature inTermsOf={this.getInTermsOf()} post={post.Ok} /> <TagsView postTags={this.props.postTags[this.props.address]} inTermsOf={this.getInTermsOf()} />
+                        </Box>
                     </Box>
-                </Box>
-            );
-        } else if (post) {
-            return (<Typography className={this.props.classes.padded} variant="body1">{`Failed to get post: ${JSON.stringify(post.Err)}`}</Typography>)
-        } else if (this.props.holochainConnected) {
-            return (<Typography className={this.props.classes.padded} variant="body1">Loading Post...</Typography>);
+                );
+            } else if (post) {
+                return (<Typography className={this.props.classes.padded} variant="body1">{`Failed to get post: ${JSON.stringify(post.Err)}`}</Typography>)
+            } else if (this.props.holochainConnected) {
+                return (<Typography className={this.props.classes.padded} variant="body1">Loading Post...</Typography>);
+            } else {
+                return (<Typography className={this.props.classes.padded} variant="body1">Connecting to Holochain...</Typography>);
+            }
         } else {
-            return (<Typography className={this.props.classes.padded} variant="body1">Connecting to Holochain...</Typography>);
+            return (<Typography className={this.props.classes.padded} variant="body1">This post is hidden <Link component="button" onClick={this.showTemp}>(show it)</Link></Typography>);
         }
     }
 
@@ -115,6 +135,8 @@ PostSummary.propTypes = {
     inTermsOf: PropTypes.object,
     fetchPostTags: PropTypes.func.isRequired,
     postTags: PropTypes.object.isRequired,
+    hidePosts: PropTypes.bool.isRequired,
+    minimumScore: PropTypes.number.isRequired,
 }
 
 const propsMap = (state, ownProps) => ({
@@ -122,6 +144,8 @@ const propsMap = (state, ownProps) => ({
     callZome: state.callZome,
     postTags: state.postTags,
     postsRead: state.postsRead,
+    hidePosts: state.hidePosts,
+    minimumScore: state.minimumScore,
 });
 
 export default connect(propsMap, { readPost, fetchPostTags })(withStyles(styles)(PostSummary));

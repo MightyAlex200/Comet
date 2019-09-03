@@ -63,6 +63,13 @@ class VoteView extends React.Component {
   componentDidUpdate(prevProps) {
     this.invalidateCache(prevProps);
     this.cache();
+
+    const votes = this.props.votes[this.props.address];
+    const inTermsOf = this.getInTermsOf();
+
+    if (votes && votes.Ok && inTermsOf && this.props.onScoreUpdate) {
+      this.props.onScoreUpdate(this.calculateScore(votes.Ok, inTermsOf));
+    }
   }
 
   cache() {
@@ -216,6 +223,7 @@ VoteView.propTypes = {
   castVote: PropTypes.func.isRequired,
   updateKarma: PropTypes.func.isRequired,
   keyHash: PropTypes.string.isRequired,
+  onScoreUpdate: PropTypes.func,
 };
 
 const propsMap = props => ({
