@@ -12,6 +12,10 @@ import {
     USER_POSTS_FETCHED,
     UPDATE_TAG_NAME,
     DELETE_TAG_NAME,
+    SET_HIDE_POSTS,
+    SET_HIDE_COMMENTS,
+    SET_HIDE_THRESHOLD,
+    DELETE_KARMA_MAP,
 } from '../actions/'
 import defaultState from './defaultState';
 import util from '../util';
@@ -54,6 +58,26 @@ export default (state = defaultState, action) => {
                 tagNames: newTagNames,
                 nameTags: newNameTags,
             };
+        case SET_HIDE_POSTS:
+            return {
+                ...state,
+                hidePosts: action.hidePosts,
+            };
+        case SET_HIDE_COMMENTS:
+            return {
+                ...state,
+                hideComments: action.hideComments,
+            };
+        case SET_HIDE_THRESHOLD:
+            return {
+                ...state,
+                minimumScore: action.hideThreshold,
+            };
+        case DELETE_KARMA_MAP:
+            return {
+                ...state,
+                karmaMap: Object.create(null),
+            }
         case POST_READ:
             // TODO: Delete unused posts
             return {

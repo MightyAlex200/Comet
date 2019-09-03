@@ -11,6 +11,7 @@ import { withStyles, ThemeProvider } from '@material-ui/styles';
 import { Link, AppBar, Toolbar, Drawer, List, ListItem, ListItemText, ListItemIcon, Box, createMuiTheme } from '@material-ui/core';
 import { Link as RouterLink } from 'react-router-dom';
 import AccountCircleIcon from '@material-ui/icons/AccountCircle';
+import SettingsIcon from '@material-ui/icons/Settings';
 import deepOrange from '@material-ui/core/colors/deepOrange';
 import blue from '@material-ui/core/colors/blue';
 import { SnackbarProvider } from 'notistack';
@@ -20,6 +21,7 @@ import util from './util';
 
 import MainPage from './components/MainPage';
 import DebugPage from './components/DebugPage';
+import SettingsPage from './components/SettingsPage';
 import PostView from './components/PostView';
 import ComposePost from './components/ComposePost';
 import UserView from './components/UserView';
@@ -72,6 +74,12 @@ class App extends React.Component {
                         </ListItemIcon>
                         <ListItemText primary="Profile" />
                       </ListItem>
+                      <ListItem component={RouterLink} to="/settings" button>
+                        <ListItemIcon>
+                          <SettingsIcon />
+                        </ListItemIcon>
+                        <ListItemText primary="Settings" />
+                      </ListItem>
                     </List>
                   </Drawer>
                   <Box className={this.props.classes.root}>
@@ -86,6 +94,7 @@ class App extends React.Component {
                       />
                       <Route path="/compose_post" exact component={ComposePost} />
                       <Route path="/user/:keyHash" render={({ match }) => <UserView keyHash={match.params.keyHash} />} />
+                      <Route path="/settings" component={SettingsPage} />
 
                     </Container>
                   </Box>

@@ -2,6 +2,10 @@ import { connect } from '@holochain/hc-web-client';
 
 export const UPDATE_TAG_NAME = 'UPDATE_TAG_NAME';
 export const DELETE_TAG_NAME = 'DELETE_TAG_NAME';
+export const SET_HIDE_POSTS = 'SET_HIDE_POSTS';
+export const SET_HIDE_COMMENTS = 'SET_HIDE_COMMENTS';
+export const SET_HIDE_THRESHOLD = 'SET_HIDE_THRESHOLD';
+export const DELETE_KARMA_MAP = 'DELETE_KARMA_MAP';
 export const POST_READ = 'POST_READ';
 export const COMMENT_READ = 'COMMENT_READ';
 export const COMMENTS_FETCHED = 'COMMENTS_FETCHED';
@@ -25,6 +29,25 @@ export const updateTagName = (tag, name) => ({
 export const deleteTagName = tag => ({
     type: DELETE_TAG_NAME,
     tag,
+});
+
+export const setHidePosts = hidePosts => ({
+    type: SET_HIDE_POSTS,
+    hidePosts,
+});
+
+export const setHideComments = hideComments => ({
+    type: SET_HIDE_COMMENTS,
+    hideComments,
+});
+
+export const setHideThreshold = hideThreshold => ({
+    type: SET_HIDE_THRESHOLD,
+    hideThreshold,
+});
+
+export const deleteKarmaMap = () => ({
+    type: DELETE_KARMA_MAP,
 });
 
 export const postRead = (address, post) => ({
