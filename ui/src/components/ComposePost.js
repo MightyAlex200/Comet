@@ -106,7 +106,7 @@ class ComposePost extends React.Component {
                 />
                 <br />
                 <TextField
-                    label="Post content"
+                    label="Post content (Markdown supported)"
                     className={this.props.classes.input}
                     variant="outlined"
                     value={this.state.content}

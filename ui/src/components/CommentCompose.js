@@ -57,7 +57,7 @@ class CommentCompose extends React.Component {
                 <Collapse in={this.state.composeOpen}>
                     <TextField
                         className={this.props.classes.root}
-                        label="Comment"
+                        label="Comment (Markdown supported)"
                         variant="outlined"
                         value={this.state.comment}
                         onChange={this.updateComment}
