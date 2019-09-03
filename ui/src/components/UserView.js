@@ -65,7 +65,10 @@ class UserView extends React.Component {
                     {this.header()}
                     {posts.Ok.length === 0
                         ? <Typography variant="body1">User has no posts</Typography>
-                        : posts.Ok.map(address => <Box className={this.props.classes.root} key={address}><PostSummary address={address} /></Box>)}
+                        : posts.Ok
+                            .reverse()
+                            .map(address => <Box className={this.props.classes.root} key={address}><PostSummary address={address} /></Box>)
+                    }
                 </Box>
             );
         } else {
