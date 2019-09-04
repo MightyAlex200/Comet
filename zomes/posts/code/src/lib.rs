@@ -437,6 +437,11 @@ fn handle_get_username(agent_address: Address) -> ZomeApiResult<Username> {
     }
 }
 
+/// Get address of local agent
+fn handle_get_agent_address() -> Address {
+    api::AGENT_ADDRESS.clone()
+}
+
 define_zome! {
     entries: [
         entry!(
@@ -677,6 +682,11 @@ define_zome! {
             outputs: |username: ZomeApiResult<Username>|,
             handler: handle_get_username
         }
+        get_agent_address: {
+            inputs: | |,
+            outputs: |agent_address: Address|,
+            handler: handle_get_agent_address
+        }
     ]
 
     traits: {
@@ -690,7 +700,8 @@ define_zome! {
             crosspost,
             post_tags,
             user_posts,
-            get_username
+            get_username,
+            get_agent_address
         ]
     }
 }
