@@ -79,6 +79,7 @@ lawless space.
         - [x] Can get usernames of users
           - [x] Positive
           - [x] Negative
+        - [x] Can get agent address
     - [ ] Comments
         - [ ] Creating a comment
           - [x] Positive

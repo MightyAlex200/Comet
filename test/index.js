@@ -615,6 +615,13 @@ diorama.registerScenario('Test posts zome', async (s, t, { alice }) => {
         { Err: { Internal: 'No entry at this address' } },
         'Posts can\'t be read after deletion',
     );
+
+    /// AGENT ADDRESS ///
+    t.equal(
+        await alice.call('posts', 'get_agent_address', {}),
+        'HcScjwO9ji9633ZYxa6IYubHJHW6ctfoufv5eq4F7ZOxay8wR76FP4xeG9pY3ui',
+        'Agent address can be retrieved',
+    );
 });
 
 diorama.registerScenario('Test comments zome', async (s, t, { alice }) => {
