@@ -1,8 +1,25 @@
 import React, { Component } from 'react';
 import PropTypes from 'prop-types';
 import { connect } from 'react-redux';
-import { readPost, fetchPostTags } from '../actions';
-import { Link, Paper, Box, Typography, withStyles, Divider, Button, CircularProgress } from '@material-ui/core';
+import { withSnackbar } from 'notistack';
+import { withRouter } from 'react-router-dom';
+import { readPost, fetchPostTags, deletePost } from '../actions';
+import {
+    Link,
+    Paper,
+    Box,
+    Typography,
+    withStyles,
+    Divider,
+    Button,
+    CircularProgress,
+    IconButton,
+    Dialog,
+    DialogActions,
+    DialogContent,
+    DialogTitle,
+} from '@material-ui/core';
+import DeleteIcon from '@material-ui/icons/Delete';
 import PostSignature from './PostSignature';
 import CommentsView from './CommentsView';
 import CommentCompose from './CommentCompose';
@@ -33,6 +50,7 @@ class PostView extends Component {
         newComment: null,
         hidden: false,
         showTemp: false,
+        deletePromptOpen: false,
     }
 
     componentDidMount() {
@@ -107,6 +125,22 @@ class PostView extends Component {
         this.setState(state => ({ ...state, showTemp: false }));
     }
 
+    promptDelete = () => {
+        this.setState(state => ({ ...state, deletePromptOpen: true }));
+    }
+
+    closeDeletePrompt = () => {
+        this.setState(state => ({ ...state, deletePromptOpen: false }));
+    }
+
+    deletePost = () => {
+        this.props.deletePost(this.props.address, this.props.callZome)
+            .then(() => {
+                this.props.enqueueSnackbar('Post deleted', { variant: 'success' });
+                this.props.history.goBack();
+            });
+    }
+
     renderPost() {
         const post = this.props.postsRead[this.props.address];
         if (post && post.Ok) {
@@ -120,6 +154,33 @@ class PostView extends Component {
                         <Box className={this.props.classes.post}>
                             <Typography style={{ display: 'inline' }} className={this.props.classes.root} variant="h4">{post.Ok.title}</Typography>
                             {this.state.hidden ? <Link component="button" onClick={this.hideTemp}>(hide)</Link> : null}
+                            {this.props.agentAddress === post.Ok.key_hash
+                                ? (
+                                    <IconButton onClick={this.promptDelete} size="small" style={{ float: 'right' }}>
+                                        <DeleteIcon />
+                                    </IconButton>
+                                )
+                                : null
+                            }
+                            <Dialog open={this.state.deletePromptOpen} onClose={this.closeDeletePrompt}>
+                                <DialogTitle>
+                                    Delete post?
+                                </DialogTitle>
+                                <DialogContent>
+                                    Are you sure you want to delete this post?
+                                    <Typography variant="subtitle2">
+                                        The post will not be shown, but its contents will still exist on the network
+                                    </Typography>
+                                </DialogContent>
+                                <DialogActions>
+                                    <Button onClick={this.deletePost}>
+                                        Yes
+                                    </Button>
+                                    <Button onClick={this.closeDeletePrompt}>
+                                        No
+                                    </Button>
+                                </DialogActions>
+                            </Dialog>
                             <Box className={this.props.classes.root}>
                                 <PostSignature inTermsOf={inTermsOf} post={post.Ok} /> <TagsView inTermsOf={inTermsOf} postTags={this.props.postTags[this.props.address]} />
                             </Box>
@@ -186,6 +247,9 @@ PostView.propTypes = {
     inTermsOf: PropTypes.array,
     hidePosts: PropTypes.bool.isRequired,
     minimumScore: PropTypes.number.isRequired,
+    deletePost: PropTypes.func.isRequired,
+    history: PropTypes.object.isRequired,
+    agentAddress: PropTypes.string,
 };
 
 const propsMap = (state, ownProps) => ({
@@ -195,6 +259,7 @@ const propsMap = (state, ownProps) => ({
     postsRead: state.postsRead,
     hidePosts: state.hidePosts,
     minimumScore: state.minimumScore,
+    agentAddress: state.agentAddress,
 });
 
-export default connect(propsMap, { readPost, fetchPostTags })(withStyles(styles)(PostView));
+export default connect(propsMap, { readPost, fetchPostTags, deletePost })(withSnackbar(withRouter(withStyles(styles)(PostView))));

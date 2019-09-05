@@ -2,12 +2,15 @@ import { connect } from '@holochain/hc-web-client';
 
 export const UPDATE_TAG_NAME = 'UPDATE_TAG_NAME';
 export const DELETE_TAG_NAME = 'DELETE_TAG_NAME';
+export const AGENT_ADDRESS_RECEIVED = 'AGENT_ADDRESS_RECEIVED'
 export const SET_HIDE_POSTS = 'SET_HIDE_POSTS';
 export const SET_HIDE_COMMENTS = 'SET_HIDE_COMMENTS';
 export const SET_HIDE_THRESHOLD = 'SET_HIDE_THRESHOLD';
 export const DELETE_KARMA_MAP = 'DELETE_KARMA_MAP';
 export const POST_READ = 'POST_READ';
+export const POST_DELETED = 'POST_DELETED';
 export const COMMENT_READ = 'COMMENT_READ';
+export const COMMENT_DELETED = 'COMMENT_DELETED';
 export const COMMENTS_FETCHED = 'COMMENTS_FETCHED';
 export const UPDATE_KARMA_MAP = 'UPDATE_KARMA_MAP';
 export const VOTES_FETCHED = 'VOTES_FETCHED';
@@ -29,6 +32,11 @@ export const updateTagName = (tag, name) => ({
 export const deleteTagName = tag => ({
     type: DELETE_TAG_NAME,
     tag,
+});
+
+export const agentAddressReceived = agentAddress => ({
+    type: AGENT_ADDRESS_RECEIVED,
+    agentAddress,
 });
 
 export const setHidePosts = hidePosts => ({
@@ -56,10 +64,20 @@ export const postRead = (address, post) => ({
     post,
 });
 
+export const postDeleted = address => ({
+    type: POST_DELETED,
+    address,
+});
+
 export const commentRead = (address, comment) => ({
     type: COMMENT_READ,
     address,
     comment,
+});
+
+export const commentDeleted = address => ({
+    type: COMMENT_DELETED,
+    address,
 });
 
 export const commentsFetched = (target, addresses) => ({
@@ -133,6 +151,13 @@ export const connectToHolochain = () => dispatch => {
 
 const callFunction = (zome, func, params, callZome) => callZome(INSTANCE_ID, zome, func)(params);
 
+export const getAgentAddress = (callZome) => dispatch => {
+    callFunction('posts', 'get_agent_address', {}, callZome)
+        .then(res => {
+            dispatch(agentAddressReceived(JSON.parse(res)));
+        });
+};
+
 export const readPost = (address, callZome) => dispatch => {
     callFunction('posts', 'read_post', { address }, callZome)
         .then(res => {
@@ -144,6 +169,16 @@ export const readPost = (address, callZome) => dispatch => {
         });
 };
 
+export const deletePost = (address, callZome) => dispatch => {
+    return callFunction('posts', 'delete_post', { address }, callZome)
+        .then(res => {
+            const result = JSON.parse(res);
+            if (result.Err) {
+                dispatch(zomeError('post/delete_post', 'delete post', result.Err));
+            }
+        });
+}
+
 export const readComment = (address, callZome) => dispatch => {
     callFunction('comments', 'read_comment', { address }, callZome)
         .then(res => {
@@ -154,6 +189,16 @@ export const readComment = (address, callZome) => dispatch => {
             }
         });
 };
+
+export const deleteComment = (address, callZome) => dispatch => {
+    return callFunction('comments', 'delete_comment', { address }, callZome)
+        .then(res => {
+            const result = JSON.parse(res);
+            if (result.Err) {
+                dispatch(zomeError('comments/delete_comment', 'delete comment', result.Err));
+            }
+        });
+}
 
 export const createPost = (post, tags, callZome) => dispatch => {
     return callFunction('posts', 'create_post', { post, tags }, callZome)

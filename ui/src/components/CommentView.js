@@ -1,11 +1,24 @@
 import React from 'react';
 import PropTypes from 'prop-types';
-import { readComment } from '../actions';
+import { readComment, deleteComment } from '../actions';
 import { Paper, Divider } from '@material-ui/core';
 import { connect } from 'react-redux';
 import { withStyles } from '@material-ui/core';
 import PostSignature from './PostSignature';
-import { Link, Box, Typography, CircularProgress } from '@material-ui/core';
+import { withSnackbar } from 'notistack';
+import {
+    Link,
+    Box,
+    Typography,
+    CircularProgress,
+    IconButton,
+    Dialog,
+    DialogTitle,
+    DialogContent,
+    DialogActions,
+    Button,
+} from '@material-ui/core';
+import DeleteIcon from '@material-ui/icons/Delete';
 import CommentsView from './CommentsView';
 import CommentCompose from './CommentCompose';
 import VoteView from './VoteView';
@@ -35,6 +48,7 @@ class CommentView extends React.Component {
         commentCache: false,
         hidden: false,
         manualHiding: false,
+        deletePromptOpen: false,
     }
 
     componentDidMount() {
@@ -81,6 +95,23 @@ class CommentView extends React.Component {
         this.setState(state => ({ ...state, hidden: true, manualHiding: true }));
     }
 
+    promptDelete = () => {
+        this.setState(state => ({ ...state, deletePromptOpen: true }));
+    }
+
+    closeDeletePrompt = () => {
+        this.setState(state => ({ ...state, deletePromptOpen: false }));
+    }
+
+    deleteComment = () => {
+        this.props.deleteComment(this.props.address, this.props.callZome)
+            .then(() => {
+                this.props.enqueueSnackbar('Comment deleted', { variant: 'success' });
+                this.closeDeletePrompt();
+                // TODO: Rework `newComment` to just be a callback to refresh comments, and then use that here
+            });
+    }
+
     renderComment() {
         const comment = this.props.commentsRead[this.props.address];
         if (comment && comment.Ok) {
@@ -93,6 +124,33 @@ class CommentView extends React.Component {
                         {!this.state.hidden ? <Link component="button" onClick={this.hide}>[-]</Link> : null}
                         {' '}
                         <PostSignature inTermsOf={this.props.inTermsOf} post={comment.Ok} /> <TagsView inTermsOf={this.props.inTermsOf} />
+                        {this.props.agentAddress === comment.Ok.key_hash
+                            ? (
+                                <IconButton onClick={this.promptDelete} size="small" style={{ float: 'right' }}>
+                                    <DeleteIcon />
+                                </IconButton>
+                            )
+                            : null
+                        }
+                        <Dialog open={this.state.deletePromptOpen} onClose={this.closeDeletePrompt}>
+                            <DialogTitle>
+                                Delete comment?
+                                </DialogTitle>
+                            <DialogContent>
+                                Are you sure you want to delete this comment?
+                                <Typography variant="subtitle2">
+                                    The comment will not be shown, but its contents will still exist on the network
+                                </Typography>
+                            </DialogContent>
+                            <DialogActions>
+                                <Button onClick={this.deleteComment}>
+                                    Yes
+                                    </Button>
+                                <Button onClick={this.closeDeletePrompt}>
+                                    No
+                                    </Button>
+                            </DialogActions>
+                        </Dialog>
                         <MarkdownRenderer className={this.props.classes.root} source={comment.Ok.content} />
                         <Divider />
                         <br />
@@ -145,6 +203,8 @@ CommentView.propTypes = {
     inTermsOf: PropTypes.array,
     hideComments: PropTypes.bool.isRequired,
     minimumScore: PropTypes.number.isRequired,
+    agentAddress: PropTypes.string,
+    deleteComment: PropTypes.func.isRequired,
 };
 
 const propsMap = props => ({
@@ -153,6 +213,7 @@ const propsMap = props => ({
     commentsRead: props.commentsRead,
     hideComments: props.hideComments,
     minimumScore: props.minimumScore,
+    agentAddress: props.agentAddress,
 });
 
-export default connect(propsMap, { readComment })(withStyles(styles)(CommentView));
+export default connect(propsMap, { readComment, deleteComment })(withSnackbar(withStyles(styles)(CommentView)));

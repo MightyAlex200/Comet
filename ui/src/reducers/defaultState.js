@@ -1,5 +1,6 @@
 export default {
     holochainConnected: false,
+    agentAddress: null,
     tagNames: Object.create(null),
     nameTags: Object.create(null),
     postsRead: Object.create(null),

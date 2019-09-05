@@ -16,6 +16,9 @@ import {
     SET_HIDE_COMMENTS,
     SET_HIDE_THRESHOLD,
     DELETE_KARMA_MAP,
+    AGENT_ADDRESS_RECEIVED,
+    POST_DELETED,
+    COMMENT_DELETED,
 } from '../actions/'
 import defaultState from './defaultState';
 import util from '../util';
@@ -58,6 +61,11 @@ export default (state = defaultState, action) => {
                 tagNames: newTagNames,
                 nameTags: newNameTags,
             };
+        case AGENT_ADDRESS_RECEIVED:
+            return {
+                ...state,
+                agentAddress: action.agentAddress,
+            };
         case SET_HIDE_POSTS:
             return {
                 ...state,
@@ -84,11 +92,25 @@ export default (state = defaultState, action) => {
                 ...state,
                 postsRead: { ...state.postsRead, [action.address]: action.post },
             };
+        case POST_DELETED:
+            const newPostsRead = { ...state.postsRead };
+            delete newPostsRead[action.address];
+            return {
+                ...state,
+                postsRead: newPostsRead,
+            };
         case COMMENT_READ:
             return {
                 ...state,
                 commentsRead: { ...state.commentsRead, [action.address]: action.comment },
             };
+        case COMMENT_DELETED:
+            let newCommentsRead = { ...state.commentsRead };
+            delete newCommentsRead[action.address];
+            return {
+                ...state,
+                commentsRead: newCommentsRead,
+            }
         case COMMENTS_FETCHED:
             return {
                 ...state,
