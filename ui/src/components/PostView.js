@@ -135,9 +135,11 @@ class PostView extends Component {
 
     deletePost = () => {
         this.props.deletePost(this.props.address, this.props.callZome)
-            .then(() => {
-                this.props.enqueueSnackbar('Post deleted', { variant: 'success' });
-                this.props.history.goBack();
+            .then(result => {
+                if (!result.Err) {
+                    this.props.enqueueSnackbar('Post deleted', { variant: 'success' });
+                    this.props.history.goBack();
+                }
             });
     }
 

@@ -176,6 +176,7 @@ export const deletePost = (address, callZome) => dispatch => {
             if (result.Err) {
                 dispatch(zomeError('post/delete_post', 'delete post', result.Err));
             }
+            return result;
         });
 }
 
@@ -197,6 +198,7 @@ export const deleteComment = (address, callZome) => dispatch => {
             if (result.Err) {
                 dispatch(zomeError('comments/delete_comment', 'delete comment', result.Err));
             }
+            return result;
         });
 }
 

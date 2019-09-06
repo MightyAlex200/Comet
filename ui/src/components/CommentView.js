@@ -105,10 +105,12 @@ class CommentView extends React.Component {
 
     deleteComment = () => {
         this.props.deleteComment(this.props.address, this.props.callZome)
-            .then(() => {
-                this.props.enqueueSnackbar('Comment deleted', { variant: 'success' });
-                this.closeDeletePrompt();
-                // TODO: Rework `newComment` to just be a callback to refresh comments, and then use that here
+            .then(result => {
+                if (!result.Err) {
+                    this.props.enqueueSnackbar('Comment deleted', { variant: 'success' });
+                    this.closeDeletePrompt();
+                    // TODO: Rework `newComment` to just be a callback to refresh comments, and then use that here
+                }
             });
     }
 
