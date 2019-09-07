@@ -352,6 +352,12 @@ fn handle_delete_post(address: Address) -> ZomeApiResult<Address> {
             "",
         ).ok();
     }
+    api::remove_link(
+        &utils::get_as_type::<Post>(address.clone())?.key_hash,
+        &address,
+        "post_author",
+        "",
+    ).ok();
     api::remove_entry(&address)
 }
 
