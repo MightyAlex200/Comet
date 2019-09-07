@@ -44,7 +44,7 @@ const styles = theme => ({
 
 class CommentView extends React.Component {
     state = {
-        newComment: null,
+        newComment: false,
         commentCache: false,
         hidden: false,
         manualHiding: false,
@@ -79,8 +79,8 @@ class CommentView extends React.Component {
         this.props.readComment(this.props.address, this.props.callZome);
     }
 
-    setNewComment = newComment => {
-        this.setState(state => ({ ...state, newComment }));
+    setNewComment = () => {
+        this.setState(state => ({ ...state, newComment: !state.newComment }));
     }
 
     onScoreUpdate = score => {
@@ -109,7 +109,7 @@ class CommentView extends React.Component {
                 if (!result.Err) {
                     this.props.enqueueSnackbar('Comment deleted', { variant: 'success' });
                     this.closeDeletePrompt();
-                    // TODO: Rework `newComment` to just be a callback to refresh comments, and then use that here
+                    this.props.updateParent();
                 }
             });
     }
@@ -207,6 +207,7 @@ CommentView.propTypes = {
     minimumScore: PropTypes.number.isRequired,
     agentAddress: PropTypes.string,
     deleteComment: PropTypes.func.isRequired,
+    updateParent: PropTypes.func.isRequired,
 };
 
 const propsMap = props => ({

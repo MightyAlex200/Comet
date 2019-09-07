@@ -33,7 +33,7 @@ class CommentCompose extends React.Component {
                 if (result.Ok) {
                     this.setState(state => ({ ...state, submitted: false, composeOpen: false }));
                     if (this.props.callback) {
-                        this.props.callback(result.Ok);
+                        this.props.callback();
                     }
                 }
             });

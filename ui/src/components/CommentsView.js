@@ -28,26 +28,17 @@ class CommentsView extends React.Component {
     }
 
     componentDidMount() {
-        const commentsFetched = this.props.commentsByAddress[this.props.target];
-        if (!commentsFetched && this.props.holochainConnected) {
-            this.fetchComments();
-        }
+        this.cache();
     }
 
     componentDidUpdate(prevProps) {
-        const holochainJustConnected = prevProps.holochainConnected !== this.props.holochainConnected;
-        const targetChanged = prevProps.target !== this.props.target;
-        const commentsFetched = this.props.commentsByAddress[this.props.target];
-        if (this.props.holochainConnected && (targetChanged || holochainJustConnected) && !commentsFetched) {
-            this.fetchComments();
-        }
-
-        if (this.props.newComment && (this.props.newComment !== prevProps.newComment)) {
-            this.fetchComments();
-        }
+        this.invalidateCache(prevProps);
+        this.cache();
     }
 
     cache() {
+        if (!this.props.holochainConnected) { return; }
+
         if (!this.state.commentsCache) {
             this.fetchComments();
             this.setState(state => ({ ...state, commentsCache: true }));
@@ -77,7 +68,7 @@ class CommentsView extends React.Component {
                     }
                     {comments.Ok.map(address =>
                         <Box className={this.props.classes.comment} key={address}>
-                            <CommentView inTermsOf={this.props.inTermsOf} address={address} />
+                            <CommentView updateParent={() => this.setState(state => ({ ...state, commentsCache: false }))} inTermsOf={this.props.inTermsOf} address={address} />
                         </Box>
                     )}
                 </React.Fragment>
@@ -109,7 +100,7 @@ CommentsView.propTypes = {
     fetchComments: PropTypes.func.isRequired,
     target: PropTypes.string.isRequired,
     classes: PropTypes.object.isRequired,
-    newComment: PropTypes.string,
+    newComment: PropTypes.bool,
     inTermsOf: PropTypes.array,
     header: PropTypes.bool,
 };
