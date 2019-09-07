@@ -333,6 +333,25 @@ fn handle_update_post(old_address: Address, new_entry: PostContent) -> ZomeApiRe
 
 /// Delete a post
 fn handle_delete_post(address: Address) -> ZomeApiResult<Address> {
+    let tags = handle_post_tags(address.clone())?;
+    for tag in tags.original_tags {
+        let tag_anchor = anchor("tag".to_owned(), tag.to_string())?;
+        api::remove_link(
+            &tag_anchor,
+            &address,
+            "original_tag_to_post",
+            "",
+        ).ok();
+    }
+    for tag in tags.crosspost_tags {
+        let tag_anchor = anchor("tag".to_owned(), tag.to_string())?;
+        api::remove_link(
+            &tag_anchor,
+            &address,
+            "crosspost_tag_to_post",
+            "",
+        ).ok();
+    }
     api::remove_entry(&address)
 }
 
@@ -515,6 +534,9 @@ define_zome! {
                                 validation_data,
                             } => (link, validation_data),
                         };
+                        if link.link.tag() != "" {
+                            return Err("Tag must be the empty string".to_string());
+                        }
                         post_anchor_link_valid(
                             link.link().base().clone(),
                             link.link().target().clone(),
@@ -538,6 +560,9 @@ define_zome! {
                                 validation_data,
                             } => (link, validation_data),
                         };
+                        if link.link.tag() != "" {
+                            return Err("Tag must be the empty string".to_string());
+                        }
                         post_anchor_link_valid(
                             link.link().target().clone(),
                             link.link().base().clone(),
@@ -562,6 +587,9 @@ define_zome! {
                                 validation_data,
                             } => (link, validation_data),
                         };
+                        if link.link.tag() != "" {
+                            return Err("Tag must be the empty string".to_string());
+                        }
                         post_anchor_link_valid(
                             link.link().base().clone(),
                             link.link().target().clone(),
@@ -585,6 +613,9 @@ define_zome! {
                                 validation_data,
                             } => (link, validation_data),
                         };
+                        if link.link.tag() != "" {
+                            return Err("Tag must be the empty string".to_string());
+                        }
                         post_anchor_link_valid(
                             link.link().target().clone(),
                             link.link().base().clone(),

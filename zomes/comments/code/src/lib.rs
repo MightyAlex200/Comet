@@ -105,6 +105,22 @@ fn handle_update_comment(
 
 /// Delete a comment
 fn handle_delete_comment(address: Address) -> ZomeApiResult<Address> {
+    for post_parent in api::get_links(&address, LinkMatch::Exactly("child_of_post"), LinkMatch::Any)?.addresses() {
+        api::remove_link(
+            &post_parent,
+            &address,
+            "comment_on_post",
+            "",
+        ).ok();
+    }
+    for comment_parent in api::get_links(&address, LinkMatch::Exactly("child_of_comment"), LinkMatch::Any)?.addresses() {
+        api::remove_link(
+            &comment_parent,
+            &address,
+            "comment_on_comment",
+            "",
+        ).ok();
+    }
     api::remove_entry(&address)
 }
 
@@ -187,6 +203,9 @@ define_zome! {
                                 validation_data,
                             } => link,
                         };
+                        if link.link.tag() != "" {
+                            return Err("Tag must be the empty string".to_string());
+                        }
                         validate_comment_link(link.link().base(), link.link().target())
                     }
                 ),
@@ -205,6 +224,9 @@ define_zome! {
                                 validation_data,
                             } => link,
                         };
+                        if link.link.tag() != "" {
+                            return Err("Tag must be the empty string".to_string());
+                        }
                         validate_comment_link(link.link().target(), link.link().base())
                     }
                 ),
@@ -234,6 +256,9 @@ define_zome! {
                                 validation_data,
                             } => link,
                         };
+                        if link.link.tag() != "" {
+                            return Err("Tag must be the empty string".to_string());
+                        }
                         validate_comment_link(link.link().target(), link.link().base())
                     }
                 ),

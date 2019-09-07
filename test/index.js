@@ -616,6 +616,17 @@ diorama.registerScenario('Test posts zome', async (s, t, { alice }) => {
         'Posts can\'t be read after deletion',
     );
 
+    /// SEARCH ///
+    // NEGATIVE //
+    t.deepEquals(
+        await alice.call('posts', 'search', {
+            query: { type: "exactly", values: 1 },
+            exclude_crossposts: false,
+        }),
+        { Ok: [] },
+        'Query finds no post after deletion'
+    );
+
     /// AGENT ADDRESS ///
     t.equal(
         await alice.call('posts', 'get_agent_address', {}),
@@ -708,6 +719,50 @@ diorama.registerScenario('Test comments zome', async (s, t, { alice }) => {
     );
 
     t.deepEqual(
+        await alice.call('comments', 'comments_from_address', {
+            address: postAddress.Ok,
+        }),
+        { Ok: [commentAddress.Ok] },
+        'Comments can be retrieved from the address of a post',
+    );
+
+    t.deepEqual(
+        await alice.call('comments', 'comments_from_address', {
+            address: commentAddress.Ok,
+        }),
+        { Ok: [otherCommentAddress.Ok] },
+        'Comments can be retrieved from the address of a comment',
+    );
+
+    await s.consistent();
+
+    t.deepEqual(
+        await alice.call('comments', 'delete_comment', {
+            address: otherCommentAddress.Ok
+        }),
+        { Ok: 'QmWZHszfNJSdC4knQtRVqLPCtrTx2iRJ8d83N6srB8TeLX' },
+        'Comments can be deleted',
+    );
+
+    await s.consistent();
+
+    t.deepEqual(
+        await alice.call('comments', 'read_comment', {
+            address: otherCommentAddress.Ok
+        }),
+        { Err: { Internal: 'No entry at this address' } },
+        'Comments can\'t be read after deletion',
+    );
+
+    t.deepEqual(
+        await alice.call('comments', 'comments_from_address', {
+            address: commentAddress.Ok,
+        }),
+        { Ok: [] },
+        'Deleted Comments can\'t be retrieved from the address of a comment',
+    );
+
+    t.deepEqual(
         await alice.call('comments', 'delete_comment', {
             address: commentAddress.Ok
         }),
@@ -729,16 +784,8 @@ diorama.registerScenario('Test comments zome', async (s, t, { alice }) => {
         await alice.call('comments', 'comments_from_address', {
             address: postAddress.Ok,
         }),
-        { Ok: [commentAddress.Ok] },
-        'Comments can be retrieved from the address of a post',
-    );
-
-    t.deepEqual(
-        await alice.call('comments', 'comments_from_address', {
-            address: commentAddress.Ok,
-        }),
-        { Ok: [otherCommentAddress.Ok] },
-        'Comments can be retrieved from the address of a comment',
+        { Ok: [] },
+        'Deleted comments can\'t be retrieved from the address of a post',
     );
 });
 
