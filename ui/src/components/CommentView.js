@@ -49,6 +49,7 @@ class CommentView extends React.Component {
         hidden: false,
         manualHiding: false,
         deletePromptOpen: false,
+        deletingComment: false,
     }
 
     componentDidMount() {
@@ -104,8 +105,10 @@ class CommentView extends React.Component {
     }
 
     deleteComment = () => {
+        this.setState(state => ({ ...state, deletingComment: true }));
         this.props.deleteComment(this.props.address, this.props.callZome)
             .then(result => {
+                this.setState(state => ({ ...state, deletingComment: false }));
                 if (!result.Err) {
                     this.props.enqueueSnackbar('Comment deleted', { variant: 'success' });
                     this.closeDeletePrompt();
@@ -145,10 +148,10 @@ class CommentView extends React.Component {
                                 </Typography>
                             </DialogContent>
                             <DialogActions>
-                                <Button onClick={this.deleteComment}>
+                                <Button disabled={this.state.deletingComment} onClick={this.deleteComment}>
                                     Yes
                                     </Button>
-                                <Button onClick={this.closeDeletePrompt}>
+                                <Button disabled={this.state.deletingComment} onClick={this.closeDeletePrompt}>
                                     No
                                     </Button>
                             </DialogActions>

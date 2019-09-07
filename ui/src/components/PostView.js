@@ -51,6 +51,7 @@ class PostView extends Component {
         hidden: false,
         showTemp: false,
         deletePromptOpen: false,
+        deletingPost: false,
     }
 
     componentDidMount() {
@@ -134,8 +135,10 @@ class PostView extends Component {
     }
 
     deletePost = () => {
+        this.setState(state => ({ ...state, deletingPost: true }));
         this.props.deletePost(this.props.address, this.props.callZome)
             .then(result => {
+                this.setState(state => ({ ...state, deletingComment: false }));
                 if (!result.Err) {
                     this.props.enqueueSnackbar('Post deleted', { variant: 'success' });
                     this.props.history.goBack();
@@ -175,10 +178,10 @@ class PostView extends Component {
                                     </Typography>
                                 </DialogContent>
                                 <DialogActions>
-                                    <Button onClick={this.deletePost}>
+                                    <Button disabled={this.state.deletingPost} onClick={this.deletePost}>
                                         Yes
                                     </Button>
-                                    <Button onClick={this.closeDeletePrompt}>
+                                    <Button disabled={this.state.deletingPost} onClick={this.closeDeletePrompt}>
                                         No
                                     </Button>
                                 </DialogActions>
